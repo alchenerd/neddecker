@@ -1,0 +1,6 @@
+.env
+TODO
+*-env
+__pycache__
+*.json
+play/migrations/*
