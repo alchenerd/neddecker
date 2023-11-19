@@ -5,7 +5,7 @@ from datetime import date
 from os import path, listdir, unlink
 from bs4 import BeautifulSoup
 from django.core.management.base import BaseCommand, CommandError
-from play.models import Deck
+from play.models import Deck, Card, Face
 
 class Command(BaseCommand):
     """
@@ -99,27 +99,56 @@ class Command(BaseCommand):
         with open(fpath, 'rb') as f:
             data = f.read()
         data = json.loads(data.decode('utf-8'))
+        obj_cards = []
+        obj_faces = []
         for card in data:
             if card.get('legalities', {}).get('modern', '') == 'legal':
-                print(card.get('name', 'NaN'))
-        print(len(data))
+                obj_card = Card(
+                        cmc=card.get('cmc', 0.0),
+                        colors=card.get('colors', ''),
+                        defense=card.get('defense', ''),
+                        loyalty=card.get('loyalty', ''),
+                        mana_cost=card.get('mana_cost', ''),
+                        name=card.get('name', ''),
+                        oracle_text=card.get('oracle_text', ''),
+                        power=card.get('power', ''),
+                        produced_mana=card.get('produced_mana', ''),
+                        toughness=card.get('toughness', ''),
+                        type_line=card.get('type_line', ''))
+                obj_cards.append(obj_card)
+                if card.get('card_faces', None):
+                    faces = card['card_faces']
+                    for face in faces:
+                        obj_face = Face(
+                                card=obj_card,
+                                cmc=face.get('cmc', 0.0),
+                                colors=face.get('colors', ''),
+                                defense=face.get('defense', ''),
+                                loyalty=face.get('loyalty', ''),
+                                mana_cost=face.get('mana_cost'),
+                                name=face.get('name', ''),
+                                oracle_text=face.get('oracle_text', ''),
+                                power=face.get('power', ''),
+                                toughness=face.get('toughness', ''),
+                                type_line=face.get('type_line', ''))
+                        obj_faces.append(obj_face)
+        Card.objects.bulk_create(obj_cards)
+        Face.objects.bulk_create(obj_faces)
+        print(f'{len(data)} instances parsed and added.')
 
     def handle(self, *args, **kwargs):
         try:
             if self.goldfish_outdated():
+                print('Goldfish data is outdated; discarding table Deck...')
                 Deck.objects.all().delete()
                 print('Updating mtggoldfish...')
                 self.update_goldfish()
                 print('Update mtggoldfish done!')
             if self.scryfall_outdated():
+                print('Scryfall data is outdated; discarding table Card and Face...')
+                Card.objects.all().delete()
+                Face.objects.all().delete()
                 print('Updating scryfall...')
                 self.update_scryfall()
-            self.update_scryfall()
-            """
-            decks = Deck.objects.all().order_by('meta')[:10]
-            for deck in decks:
-                print(f'[{deck.name}]')
-                print(deck.decklist)
-            """
         except Exception as e:
             raise CommandError('syncdb failed:', e)

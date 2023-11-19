@@ -17,31 +17,30 @@ class Card(models.Model):
     Cards scraped from scryfall
     """
     cmc = models.FloatField(blank=False) # e.g. 6
-    colors = models.CharField(max_length=100) # need preprocessing e.g. ["G"]
-    defense = models.CharField(max_length=100) # for battles
-    loyalty = models.CharField(max_length=100) # for planeswalkers
-    mana_cost = models.CharField(max_length=100) # e.g. "{4}{G}{G}"
+    colors = models.CharField(max_length=100, blank=True) # need preprocessing e.g. ["G"]
+    defense = models.CharField(max_length=100, blank=True) # for battles
+    loyalty = models.CharField(max_length=100, blank=True) # for planeswalkers
+    mana_cost = models.CharField(max_length=100, blank=True) # e.g. "{4}{G}{G}"
     name = models.CharField(max_length=100) # e.g. "Colossal Dreadmaw"
-    oracle_text = models.CharField(max_length=500) # e.g. "Trample"
-    power = models.CharField(max_length=100) # e.g. "6"
-    produced_mana = models.CharField(max_length=100)# see colors
-    toughness = models.CharField(max_length=100) # e.g. "6"
-    type_line = models.CharField(max_length=100) # e.g. "Creature - Dinosaur"
+    oracle_text = models.CharField(max_length=1024, blank=True) # e.g. "Trample"
+    power = models.CharField(max_length=100, blank=True) # e.g. "6"
+    produced_mana = models.CharField(max_length=100, blank=True)# see colors
+    toughness = models.CharField(max_length=100, blank=True) # e.g. "6"
+    type_line = models.CharField(max_length=100, blank=True) # e.g. "Creature - Dinosaur"
 
 class Face(models.Model):
     """
     Faces for multiple-faced cards
     """
-    full_name = models.CharField(max_length=100) # foriegn key to Card
+    card = models.ForeignKey('Card', on_delete=models.CASCADE)
     cmc = models.FloatField(blank=False)
-    colors = models.CharField(max_length=100)
-    defense = models.CharField(max_length=100)
-    loyalty = models.CharField(max_length=100)
-    mana_cost = models.CharField(max_length=100)
+    colors = models.CharField(max_length=100, blank=True)
+    defense = models.CharField(max_length=100, blank=True)
+    loyalty = models.CharField(max_length=100, blank=True)
+    mana_cost = models.CharField(max_length=100, blank=True)
     name = models.CharField(max_length=100) # name of this face
-    oracle_text = models.TextField(max_length=500)
-    power = models.CharField(max_length=100)
-    toughness = models.CharField(max_length=100)
-    type_line = models.CharField(max_length=100)
-
+    oracle_text = models.TextField(max_length=1024, blank=True)
+    power = models.CharField(max_length=100, blank=True)
+    toughness = models.CharField(max_length=100, blank=True)
+    type_line = models.CharField(max_length=100, blank=True)
     
