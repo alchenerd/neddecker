@@ -1,6 +1,7 @@
 import requests
 import re
 import json
+import ijson
 from datetime import date
 from os import path, listdir, unlink
 from bs4 import BeautifulSoup
@@ -95,46 +96,44 @@ class Command(BaseCommand):
         directory = 'scryfall'
         fname = listdir(directory)[0]
         fpath = path.join(directory, fname)
-        data = ''
-        with open(fpath, 'rb') as f:
-            data = f.read()
-        data = json.loads(data.decode('utf-8'))
         obj_cards = []
         obj_faces = []
-        for card in data:
-            if card.get('legalities', {}).get('modern', '') == 'legal':
-                obj_card = Card(
-                        cmc=card.get('cmc', 0.0),
-                        colors=card.get('colors', ''),
-                        defense=card.get('defense', ''),
-                        loyalty=card.get('loyalty', ''),
-                        mana_cost=card.get('mana_cost', ''),
-                        name=card.get('name', ''),
-                        oracle_text=card.get('oracle_text', ''),
-                        power=card.get('power', ''),
-                        produced_mana=card.get('produced_mana', ''),
-                        toughness=card.get('toughness', ''),
-                        type_line=card.get('type_line', ''))
-                obj_cards.append(obj_card)
-                if card.get('card_faces', None):
-                    faces = card['card_faces']
-                    for face in faces:
-                        obj_face = Face(
-                                card=obj_card,
-                                cmc=face.get('cmc', 0.0),
-                                colors=face.get('colors', ''),
-                                defense=face.get('defense', ''),
-                                loyalty=face.get('loyalty', ''),
-                                mana_cost=face.get('mana_cost'),
-                                name=face.get('name', ''),
-                                oracle_text=face.get('oracle_text', ''),
-                                power=face.get('power', ''),
-                                toughness=face.get('toughness', ''),
-                                type_line=face.get('type_line', ''))
-                        obj_faces.append(obj_face)
+        with open(fpath, 'r', encoding='utf-8') as f:
+            for cards in ijson.items(f, ''):
+                for card in cards:
+                    if card.get('legalities', {}).get('modern', '') == 'legal':
+                        obj_card = Card(
+                                cmc=card.get('cmc', 0.0),
+                                colors=card.get('colors', ''),
+                                defense=card.get('defense', ''),
+                                loyalty=card.get('loyalty', ''),
+                                mana_cost=card.get('mana_cost', ''),
+                                name=card.get('name', ''),
+                                oracle_text=card.get('oracle_text', ''),
+                                power=card.get('power', ''),
+                                produced_mana=card.get('produced_mana', ''),
+                                toughness=card.get('toughness', ''),
+                                type_line=card.get('type_line', ''))
+                        obj_cards.append(obj_card)
+                        if card.get('card_faces', None):
+                            faces = card['card_faces']
+                            for face in faces:
+                                obj_face = Face(
+                                        card=obj_card,
+                                        cmc=face.get('cmc', 0.0),
+                                        colors=face.get('colors', ''),
+                                        defense=face.get('defense', ''),
+                                        loyalty=face.get('loyalty', ''),
+                                        mana_cost=face.get('mana_cost'),
+                                        name=face.get('name', ''),
+                                        oracle_text=face.get('oracle_text', ''),
+                                        power=face.get('power', ''),
+                                        toughness=face.get('toughness', ''),
+                                        type_line=face.get('type_line', ''))
+                                obj_faces.append(obj_face)
         Card.objects.bulk_create(obj_cards)
         Face.objects.bulk_create(obj_faces)
-        print(f'{len(data)} instances parsed and added.')
+        print(f'Scyfall JSON file parsed and added.')
 
     def handle(self, *args, **kwargs):
         try:
