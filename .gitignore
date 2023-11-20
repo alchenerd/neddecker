@@ -3,4 +3,5 @@ TODO
 *-env
 __pycache__
 *.json
+*.done
 play/migrations/*
