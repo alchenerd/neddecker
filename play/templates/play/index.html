@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Ned Decker</title>
+    </head>
+    <body>
+    {% if top_5_decks %}
+        <ul>
+        {% for deck in top_5_decks %}
+        <li><a href="{% url 'play:play' %}">{{ deck.name }}</a></li>
+        {% endfor %}
+        </ul>
+{% else %}
+        <p>No decks are available.</p>
+{% endif %}
+    </body>
+</html>

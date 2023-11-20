@@ -3,7 +3,7 @@ import re
 import json
 import ijson
 from datetime import date
-from os import path, listdir, unlink
+from os import path, listdir, unlink, utime
 from bs4 import BeautifulSoup
 from django.core.management.base import BaseCommand, CommandError
 from play.models import Deck, Card, Face
@@ -71,8 +71,7 @@ class Command(BaseCommand):
         fname = uri.split('/')[-1]
         directory = 'scryfall'
         fpath = path.join(directory, fname)
-        if path.exists(fpath):
-            # TODO: check the proof of db update instead
+        if path.exists(fpath + '.done'):
             return False
         # delete everything in scryfall/
         for fname_ in listdir(directory):
@@ -134,6 +133,11 @@ class Command(BaseCommand):
         Card.objects.bulk_create(obj_cards)
         Face.objects.bulk_create(obj_faces)
         print(f'Scyfall JSON file parsed and added.')
+        with open(fname + '.done', 'a'):
+            try:
+                utime(fname, None)
+            except OSError:
+                pass
 
     def handle(self, *args, **kwargs):
         try:
