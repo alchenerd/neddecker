@@ -27,6 +27,8 @@ class Card(models.Model):
     produced_mana = models.CharField(max_length=255, blank=True)# see colors
     toughness = models.CharField(max_length=255, blank=True) # e.g. "6"
     type_line = models.CharField(max_length=255, blank=True) # e.g. "Creature - Dinosaur"
+    def __str__(self):
+        return self.name + '::' + self.oracle_text
 
 class Face(models.Model):
     """
@@ -43,4 +45,6 @@ class Face(models.Model):
     power = models.CharField(max_length=255, blank=True)
     toughness = models.CharField(max_length=255, blank=True)
     type_line = models.CharField(max_length=255, blank=True)
+    def __str__(self):
+        return self.name + '::' + self.oracle_text
     
