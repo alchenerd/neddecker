@@ -100,36 +100,37 @@ class Command(BaseCommand):
         with open(fpath, 'r', encoding='utf-8') as f:
             for cards in ijson.items(f, ''):
                 for card in cards:
-                    if card.get('legalities', {}).get('modern', '') == 'legal':
-                        obj_card = Card(
-                                cmc=card.get('cmc', 0.0),
-                                colors=card.get('colors', ''),
-                                defense=card.get('defense', ''),
-                                loyalty=card.get('loyalty', ''),
-                                mana_cost=card.get('mana_cost', ''),
-                                name=card.get('name', ''),
-                                oracle_text=card.get('oracle_text', ''),
-                                power=card.get('power', ''),
-                                produced_mana=card.get('produced_mana', ''),
-                                toughness=card.get('toughness', ''),
-                                type_line=card.get('type_line', ''))
-                        obj_cards.append(obj_card)
-                        if card.get('card_faces', None):
-                            faces = card['card_faces']
-                            for face in faces:
-                                obj_face = Face(
-                                        card=obj_card,
-                                        cmc=face.get('cmc', 0.0),
-                                        colors=face.get('colors', ''),
-                                        defense=face.get('defense', ''),
-                                        loyalty=face.get('loyalty', ''),
-                                        mana_cost=face.get('mana_cost'),
-                                        name=face.get('name', ''),
-                                        oracle_text=face.get('oracle_text', ''),
-                                        power=face.get('power', ''),
-                                        toughness=face.get('toughness', ''),
-                                        type_line=face.get('type_line', ''))
-                                obj_faces.append(obj_face)
+                    print(f"Processing {card['name']}")
+                    obj_card = Card(
+                            cmc=card.get('cmc', 0.0),
+                            colors=''.join(card.get('colors', '')),
+                            defense=card.get('defense', ''),
+                            loyalty=card.get('loyalty', ''),
+                            mana_cost=card.get('mana_cost', ''),
+                            name=card.get('name', ''),
+                            oracle_text=card.get('oracle_text', ''),
+                            power=card.get('power', ''),
+                            produced_mana=card.get('produced_mana', ''),
+                            toughness=card.get('toughness', ''),
+                            type_line=card.get('type_line', ''))
+                    obj_cards.append(obj_card)
+                    if card.get('card_faces', None):
+                        print(f"Processing faces of {card['name']}")
+                        faces = card['card_faces']
+                        for face in faces:
+                            obj_face = Face(
+                                    card=obj_card,
+                                    cmc=face.get('cmc', 0.0),
+                                    colors=''.join(face.get('colors', '')),
+                                    defense=face.get('defense', ''),
+                                    loyalty=face.get('loyalty', ''),
+                                    mana_cost=face.get('mana_cost'),
+                                    name=face.get('name', ''),
+                                    oracle_text=face.get('oracle_text', ''),
+                                    power=face.get('power', ''),
+                                    toughness=face.get('toughness', ''),
+                                    type_line=face.get('type_line', ''))
+                            obj_faces.append(obj_face)
         Card.objects.bulk_create(obj_cards, batch_size=100)
         Face.objects.bulk_create(obj_faces, batch_size=100)
         print(f'Scyfall JSON file parsed and added.')
