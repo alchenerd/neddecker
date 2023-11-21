@@ -130,10 +130,10 @@ class Command(BaseCommand):
                                         toughness=face.get('toughness', ''),
                                         type_line=face.get('type_line', ''))
                                 obj_faces.append(obj_face)
-        Card.objects.bulk_create(obj_cards)
-        Face.objects.bulk_create(obj_faces)
+        Card.objects.bulk_create(obj_cards, batch_size=100)
+        Face.objects.bulk_create(obj_faces, batch_size=100)
         print(f'Scyfall JSON file parsed and added.')
-        with open(fname + '.done', 'a'):
+        with open(fpath + '.done', 'a'):
             try:
                 utime(fname, None)
             except OSError:
