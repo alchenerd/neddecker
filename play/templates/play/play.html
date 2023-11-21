@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block content %}
+You are playing: {{ user_deck.name }}
+<br></br>
+<p>Your main deck:</p>
+{% for card, count in user_main.items %}
+<li>{{ card }} x{{ count }}</li>
+{% endfor %}
+<br></br>
+<p>Your sideboard:</p>
+{% for card, count in user_side.items %}
+<li>{{ card }} x{{ count }}</li>
+{% endfor %}
+<br></br>
+Ned is playing: {{ neds_deck.name }}
+<br></br>
+<p>Ned's main deck:</p>
+{% for card, count in neds_main.items %}
+<li>{{ card }} x{{ count }}</li>
+{% endfor %}
+<br></br>
+<p>Ned's sideboard:</p>
+{% for card, count in neds_side.items %}
+<li>{{ card }} x{{ count }}</li>
+{% endfor %}
+<br></br>
+Your cards' oracle:
+<br></br>
+{{user_cards}}
+<br></br>
+{{user_faces}}
+<br></br>
+Ned's cards oracle:
+<br></br>
+{{neds_cards}}
+<br></br>
+{{user_faces}}
+{% endblock %}
