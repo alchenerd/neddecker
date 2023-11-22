@@ -1,6 +1,8 @@
 import os
 import json
-import openai
+from openai import OpenAI
+
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 import goldfish
 import dotenv
 
@@ -26,10 +28,9 @@ class Assistant():
         self.load_every_function_description()
         self.goldfish = goldfish.Goldfish()
         [self.current_deck] = self.goldfish.random_meta_deck().values()
-    
+
     def load_api_key(self):
         dotenv.load_dotenv()
-        openai.api_key = os.getenv("OPENAI_API_KEY")
 
     def load_model(self):
         self.model = GPT_MODEL
@@ -75,7 +76,7 @@ if __name__ == '__main__':
     user_content = input('User: ')
     ned.history.append({"role": "user", "content": user_content})
     while chatting:
-        response = openai.ChatCompletion.create(model=ned.model, messages=ned.history, functions=ned.function_descriptions, temperature=0.8, max_tokens=512)
+        response = client.chat.completions.create(model=ned.model, messages=ned.history, functions=ned.function_descriptions, temperature=0.8, max_tokens=512)
         assistant_message = response['choices'][0]['message']
         ned.history.append(assistant_message)
         content = assistant_message['content']
