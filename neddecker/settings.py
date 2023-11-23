@@ -37,6 +37,8 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     'play.apps.PlayConfig',
+    'daphne',
+    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -74,7 +76,17 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'neddecker.wsgi.application'
+ASGI_APPLICATION = 'neddecker.asgi.application'
 
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [('127.0.0.1', 6379)],
+        }
+    }
+}
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases

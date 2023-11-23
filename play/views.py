@@ -113,3 +113,7 @@ def play(request, deck_name='Custom Deck'):
                'neds_faces': neds_faces,
                'gpt': gpt or '',}
     return render(request, 'play/play.html', context)
+
+def chat(request, deck_name: str):
+    context = {'deck_name': deck_name}
+    return render(request, 'play/chat.html', context)
