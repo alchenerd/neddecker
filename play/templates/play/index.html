@@ -2,35 +2,35 @@
 {% block content %}
 <script>
 function saveNameAndPlay(elem) {
-    var name = (elem.textContent || elem.innerText).trim();
+    var name = (elem.textContent || elem.innerText).trim().replace(' ', '_');
     console.log(name);
     window.location.href = 'play/'.concat(name);
 }
 </script>
-    <div class="container text-center">
-        <div class="row">
-            <div class="col">
-                Challenge Ned Decker with:
+<div class="row h-50 align-items-center">
+    <div class="col text-center">
+        (Placeholder: Ned Decker image)
+    </div>
+</div>
+<div class="row h-50">
+{% for row in decks %}
+    <div class="row h-50">
+        {% for deck in row %}
+            <div class="col-md-4 justify-items-left align-items-end">
+                <button type="button" class="btn" onClick="saveNameAndPlay(this);">
+                    {% if deck %}
+                        {{ deck.name }}
+                    {% else %}
+                        Custom Deck
+                    {% endif %}
+                </button>
             </div>
-        </div>
-        {% for row in decks %}
-            <div class="row">
-                {% for deck in row %}
-                    <div class="col">
-                        <button type="button" class="btn" onClick="saveNameAndPlay(this);">
-                            {% if deck %}
-                                {{ deck.name }}
-                            {% else %}
-                                Custom Deck
-                            {% endif %}
-                        </button>
-                    </div>
-                {% empty %}
-                    <p>No decks are available.</p>
-                {% endfor %}
-            </div>
-            {% empty %}
-                <p>No decks are available.</p>
+        {% empty %}
+            <p>No decks are available.</p>
         {% endfor %}
     </div>
+    {% empty %}
+        <p>No decks are available.</p>
+{% endfor %}
+</div>
 {% endblock %}
