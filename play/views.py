@@ -91,7 +91,8 @@ def get_cards_and_faces(maindeck, sideboard) -> Tuple[List[Card], List[Face]]:
         faces.extend(_faces)
     return cards, faces
 
-def play(request, deck_name='Custom Deck'):
+def play(request, deck_name='Custom_Deck'):
+    deck_name = deck_name.replace('_', ' ')
     neds_deck = get_random_deck()
     neds_main, neds_side = parse_decklist(neds_deck.decklist)
     neds_cards, neds_faces = get_cards_and_faces(neds_main, neds_side)
