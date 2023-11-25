@@ -3,6 +3,7 @@ from typing import List, Dict, Tuple
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.db.models import Sum
+from django.db.models.functions import Length
 from django.contrib.postgres.search import TrigramSimilarity
 from .models import Deck, Card, Face
 from langchain.chat_models import ChatOpenAI
@@ -52,8 +53,15 @@ def ned_talks_about(name, main, side, cards, faces):
 
 def index(request):
     top_5_decks = Deck.objects.order_by('-meta')[:5]
-    matrix = [top_5_decks[:3],[*top_5_decks[3:5], None]]
-    context = {'decks': matrix}
+    cover_images = [deck.art for deck in top_5_decks]
+    deck_matrix = [top_5_decks[:3],[*top_5_decks[3:5], None]]
+    art_matrix = [cover_images[:3],[*cover_images[3:5], None]]
+    for i, rows in enumerate(deck_matrix):
+        for j, deck in enumerate(rows):
+            deck_matrix[i][j] = (deck, art_matrix[i][j])
+    context = {
+            'decks': deck_matrix,
+    }
     return render(request, 'play/index.html', context)
 
 def parse_decklist(decklist) -> List[Dict[str, int]]:
@@ -66,7 +74,7 @@ def parse_decklist(decklist) -> List[Dict[str, int]]:
             continue
         parsed = line.split()
         count = int(parsed[0])
-        # The replace() converts mtggoldfish to scryfall
+        # The replace() converts mtggoldfish name to scryfall name
         card = ' '.join(parsed[1:]).replace('/', ' // ')
         tofill[card] = count
     return maindeck, sideboard
@@ -81,11 +89,11 @@ def get_cards_and_faces(maindeck, sideboard) -> Tuple[List[Card], List[Face]]:
     for name in maindeck | sideboard:
         card = None
         try:
-            card = Card.objects.filter(name__icontains=name).first()
+            card = Card.objects.filter(name__icontains=name).order_by(Length('oracle_text').desc()).first()
             if not card:
                 card = Card.objects.annotate(similarity=TrigramSimilarity('name', name),).filter(similarity__gt=0.3).order_by('-similarity').first()
         except Card.DoesNotExist:
-            pass
+            card = Card.objects.annotate(similarity=TrigramSimilarity('name', name),).filter(similarity__gt=0.3).order_by('-similarity').first()
         _faces = Face.objects.filter(card=card) if card else []
         cards.append(card)
         faces.extend(_faces)
