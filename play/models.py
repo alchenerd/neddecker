@@ -9,6 +9,7 @@ class Deck(models.Model):
     url = models.URLField(max_length=255)
     decklist = models.TextField()
     date = models.DateField(auto_now_add=True)
+    art = models.URLField(max_length=255, blank=True)
     def __str__(self):
         return self.name
 
@@ -27,6 +28,7 @@ class Card(models.Model):
     produced_mana = models.CharField(max_length=255, blank=True)# see colors
     toughness = models.CharField(max_length=255, blank=True) # e.g. "6"
     type_line = models.CharField(max_length=255, blank=True) # e.g. "Creature - Dinosaur"
+    card_image = models.URLField(max_length=255, blank=True)
     def __str__(self):
         return self.name + '::' + self.oracle_text
 
@@ -45,6 +47,7 @@ class Face(models.Model):
     power = models.CharField(max_length=255, blank=True)
     toughness = models.CharField(max_length=255, blank=True)
     type_line = models.CharField(max_length=255, blank=True)
+    card_image = models.URLField(max_length=255, blank=True)
     def __str__(self):
         return self.name + '::' + self.oracle_text
     

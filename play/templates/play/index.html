@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block content %}
+{% block head %}
 <script>
 function saveNameAndPlay(elem) {
     var name = (elem.textContent || elem.innerText).trim().replace(' ', '_');
@@ -7,24 +7,53 @@ function saveNameAndPlay(elem) {
     window.location.href = 'play/'.concat(name);
 }
 </script>
+<style>
+.deck-name {
+    text-shadow: 3px 3px 2px #000;
+}
+.deck-cover-image {
+    width: 90%;
+    height: 90%;
+    margin: auto;
+    background-size: 130%;
+    background-position: 50% 20%;
+}
+.deck-overlay {
+    width: 100%;
+    height: 100%;
+    background-image:
+        linear-gradient(to bottom, black, rgba(0,0,0,0));
+}
+</style>
+{% endblock %}
+
+{% block content %}
 <div class="row h-50 align-items-center">
     <div class="col text-center">
-        (Placeholder: Ned Decker image)
+        (Placeholder: image of Ned Decker)
     </div>
 </div>
 <div class="row h-50">
 {% for row in decks %}
     <div class="row h-50">
         {% for deck in row %}
-            <div class="col-md-4 justify-items-left align-items-end">
-                <button type="button" class="btn" onClick="saveNameAndPlay(this);">
-                    {% if deck %}
-                        {{ deck.name }}
-                    {% else %}
-                        Custom Deck
-                    {% endif %}
-                </button>
-            </div>
+            {% if deck.0.name %}
+                <div class="col-md-4">
+                    <div class="card deck-cover-image" onClick="saveNameAndPlay(this)" style="background-image: url('{{deck.1}}');">
+                        <div class="card-img-overlay deck-overlay">
+                            <h3 class="card-title deck-name">{{deck.0.name}}</h5>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="col-md-4">
+                    <div class="card deck-cover-image" onClick="saveNameAndPlay(this)">
+                        <div class="card-img-overlay deck-overlay">
+                            <h3 class="card-title deck-name">Custom Deck</h5>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
         {% empty %}
             <p>No decks are available.</p>
         {% endfor %}

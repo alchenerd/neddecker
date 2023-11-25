@@ -41,7 +41,8 @@ class Command(BaseCommand):
             name = title.text
             meta = float(deck.find('div', class_='archetype-tile-statistics').find('div', class_='archetype-tile-statistic-value').find_next(string=True).strip('% \t\n\r'))
             url = 'https://www.mtggoldfish.com' + title['href']
-            decks.append({'name': name, 'meta': meta, 'url': url})
+            art = deck.find('div', class_='card-image-tile')['style'].split("('")[1].split("')")[0]
+            decks.append({'name': name, 'meta': meta, 'url': url, 'art': art})
             print(f'Fetched metadata of {name}')
         # fetch decklist with url
         for deck in decks:
@@ -52,7 +53,7 @@ class Command(BaseCommand):
             deck['decklist'] = response.content.decode('utf-8')
             print(f"Fetched decklist of {deck['name']}")
         # bulk create and save
-        deck_objs = [Deck(name=d.get('name', ''), meta=d.get('meta', 0), url=d.get('url', ''), decklist=d.get('decklist', '')) for d in decks]
+        deck_objs = [Deck(name=d.get('name', ''), meta=d.get('meta', 0), url=d.get('url', ''), decklist=d.get('decklist', ''), art=d.get('art', ''),) for d in decks]
         reply = Deck.objects.bulk_create(deck_objs)
         print(f'Bulk objects inserted: {reply}')
 
@@ -112,7 +113,9 @@ class Command(BaseCommand):
                             power=card.get('power', ''),
                             produced_mana=card.get('produced_mana', ''),
                             toughness=card.get('toughness', ''),
-                            type_line=card.get('type_line', ''))
+                            type_line=card.get('type_line', ''),
+                            card_image=card.get('image_uris', {}).get('normal', ''),
+                            )
                     obj_cards.append(obj_card)
                     if card.get('card_faces', None):
                         print(f"Processing faces of {card['name']}")
@@ -129,7 +132,9 @@ class Command(BaseCommand):
                                     oracle_text=face.get('oracle_text', ''),
                                     power=face.get('power', ''),
                                     toughness=face.get('toughness', ''),
-                                    type_line=face.get('type_line', ''))
+                                    type_line=face.get('type_line', ''),
+                                    card_image=face.get('image_uris', {}).get('normal', ''),
+                            )
                             obj_faces.append(obj_face)
         Card.objects.bulk_create(obj_cards, batch_size=100)
         Face.objects.bulk_create(obj_faces, batch_size=100)
