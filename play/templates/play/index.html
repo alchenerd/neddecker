@@ -6,6 +6,19 @@ function saveNameAndPlay(elem) {
     console.log(name);
     window.location.href = 'play/'.concat(name);
 }
+function openModal(elem) {
+    let name = (elem.textContent || elem.innerText).trim();
+    let decklists = {{ decklists | safe }};
+    $("#confirmationModal .modal-title").text("Challenge Ned Decker with " + name);
+    let decklist_box = $("#confirmationModal .decklist-box");
+    decklist_box.val(decklists[name]);
+    if (name !== "Custom Deck") {
+        decklist_box.attr("readonly", "true");
+    } else {
+        decklist_box.removeAttr("readonly");
+    }
+    $("#confirmationModal").modal("show");
+}
 </script>
 <style>
 .deck-name {
@@ -39,15 +52,15 @@ function saveNameAndPlay(elem) {
         {% for deck in row %}
             {% if deck.0.name %}
                 <div class="col-md-4">
-                    <div class="card deck-cover-image" onClick="saveNameAndPlay(this)" style="background-image: url('{{deck.1}}');">
+                    <div class="card deck-cover-image" onClick="openModal(this)" style="background-image: url('{{deck.1}}');">
                         <div class="card-img-overlay deck-overlay">
-                            <h3 class="card-title deck-name">{{deck.0.name}}</h5>
+                            <h3 class="card-title deck-name">{{deck.0.name}}</h3>
                         </div>
                     </div>
                 </div>
             {% else %}
                 <div class="col-md-4">
-                    <div class="card deck-cover-image" onClick="saveNameAndPlay(this)">
+                    <div class="card deck-cover-image" onClick="openModal(this)">
                         <div class="card-img-overlay deck-overlay">
                             <h3 class="card-title deck-name">Custom Deck</h5>
                         </div>
@@ -62,4 +75,26 @@ function saveNameAndPlay(elem) {
         <p>No decks are available.</p>
 {% endfor %}
 </div>
+
+<!-- Modal -->
+<div class="modal fade" id="confirmationModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLongTitle">Modal title</h5>
+      </div>
+      <form method="POST" id="form" action="{% url 'play:play' %}">
+          {% csrf_token %}
+          <div class="modal-body d-flex justify-content-center align-items-center form-group">
+              {{ form.as_p }}
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-primary">Challenge Ned Decker</button>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 {% endblock %}

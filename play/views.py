@@ -5,7 +5,9 @@ from django.http import HttpResponse
 from django.db.models import Sum
 from django.db.models.functions import Length
 from django.contrib.postgres.search import TrigramSimilarity
+from django.views.decorators.http import require_POST
 from .models import Deck, Card, Face
+from .forms import DecklistForm
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts.chat import ChatPromptTemplate
 from langchain.schema.messages import SystemMessage
@@ -56,11 +58,15 @@ def index(request):
     cover_images = [deck.art for deck in top_5_decks]
     deck_matrix = [top_5_decks[:3],[*top_5_decks[3:5], None]]
     art_matrix = [cover_images[:3],[*cover_images[3:5], None]]
+    decklists = {deck.name: deck.decklist for deck in top_5_decks}
     for i, rows in enumerate(deck_matrix):
         for j, deck in enumerate(rows):
             deck_matrix[i][j] = (deck, art_matrix[i][j])
+    decklist_form = DecklistForm
     context = {
             'decks': deck_matrix,
+            'decklists': decklists,
+            'form': decklist_form,
     }
     return render(request, 'play/index.html', context)
 
@@ -99,23 +105,20 @@ def get_cards_and_faces(maindeck, sideboard) -> Tuple[List[Card], List[Face]]:
         faces.extend(_faces)
     return cards, faces
 
-def play(request, deck_name='Custom_Deck'):
-    deck_name = deck_name.replace('_', ' ')
+@require_POST
+def play(request):
     neds_deck = get_random_deck()
     neds_main, neds_side = parse_decklist(neds_deck.decklist)
     neds_cards, neds_faces = get_cards_and_faces(neds_main, neds_side)
-    user_deck = Deck.objects.get(name=deck_name)
-    user_main, user_side = parse_decklist(user_deck.decklist)
+    user_main, user_side = parse_decklist(request.POST.get('decklist', ''))
     user_cards, user_faces = get_cards_and_faces(user_main, user_side)
     gpt = None
     # uncomment if you want to be billed
     #gpt = ned_talks_about(neds_deck.name, neds_main, neds_side, neds_cards, neds_faces)
-    context = {'user_deck': user_deck,
-               'user_main': user_main,
+    context = {'user_main': user_main,
                'user_side': user_side,
                'user_cards': user_cards,
                'user_faces': user_faces,
-               'neds_deck': neds_deck,
                'neds_main': neds_main,
                'neds_side': neds_side,
                'neds_cards': neds_cards,

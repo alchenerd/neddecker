@@ -1,40 +1,79 @@
 {% extends 'base.html' %}
+{% block head %}
+<style>
+.battlefield {
+    height: 40%;
+}
+.users-hand {
+    height: 20%;
+}
+.chat-history {
+    overflow-y: scroll;
+}
+/*
+.users-hand {
+    background: magenta;
+}
+.neds-battlefield {
+    background: red;
+}
+.users-battlefield {
+    background: green;
+}
+.chat-room {
+    background: blue;
+}
+.info-box {
+    background: cyan;
+}
+*/
+</style>
+<script>
+    const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
+    const wsPath = `${wsProtocol}://${window.location.host}/ws/play/`;
+    const ws = new WebSocket(wsPath);
+    let neds_main = {{ neds_main | safe }};
+    let user_main = {{ user_main | safe }};
+    let neds_side = {{ neds_side | safe }};
+    let user_side = {{ user_side | safe }};
+    if (neds_main) {console.log("ned has deck"); console.log(neds_main)};
+    if (neds_side) {console.log("ned has side"); console.log(neds_side)};
+    if (user_main) {console.log("user has deck"); console.log(user_main)};
+    if (user_side) {console.log("user has side"); console.log(user_side)};
+    ws.onmessage = (event) => {
+        const response = JSON.parse(event.data);
+        if (typeof response.log !== "undefined") {
+            console.log(response.log);
+        }
+    }
+</script>
+{% endblock %}
 {% block content %}
-GPT:
-{{ gpt | linebreaks }}
-You are playing: {{ user_deck.name }}
-<br></br>
-<p>Your main deck:</p>
-{% for card, count in user_main.items %}
-<li>{{ card }} x{{ count }}</li>
-{% endfor %}
-<br></br>
-<p>Your sideboard:</p>
-{% for card, count in user_side.items %}
-<li>{{ card }} x{{ count }}</li>
-{% endfor %}
-<br></br>
-Ned is playing: {{ neds_deck.name }}
-<br></br>
-<p>Ned's main deck:</p>
-{% for card, count in neds_main.items %}
-<li>{{ card }} x{{ count }}</li>
-{% endfor %}
-<br></br>
-<p>Ned's sideboard:</p>
-{% for card, count in neds_side.items %}
-<li>{{ card }} x{{ count }}</li>
-{% endfor %}
-<br></br>
-Your cards' oracle:
-<br></br>
-{{user_cards}}
-<br></br>
-{{user_faces}}
-<br></br>
-Ned's cards oracle:
-<br></br>
-{{neds_cards}}
-<br></br>
-{{user_faces}}
+<div class="row vh-100">
+    <div class="col-lg-8 whole-battlefield">
+        <div class="row battlefield neds-battlefield">
+            (ned's battlefield)
+        </div>
+        <div class="row battlefield users-battlefield">
+            (user's battlefield)
+        </div>
+        <div class="row users-hand">
+            (user's hand)
+        </div>
+    </div>
+    <div class="col-lg-4 vh-100">
+        <div class="row info-box w-100 h-25">
+            (stack and stuff)
+        </div>
+        <div class="row chat-room w-100 h-75 d-flex flex-column align-items-center">
+            <div class="row w-100 flex-grow-1">
+                <textarea id:"chat-box" class="h-100 chat-history" cols="41" readonly></textarea>
+            </div>
+            <div class="row w-100 input-row">
+                <input type="text" class="form-control w-75" id="message-input" placeholder="Chat with Ned Decker...">
+                <button class="form-control w-25 btn">Send</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
