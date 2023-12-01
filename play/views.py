@@ -90,40 +90,54 @@ def get_random_deck() -> Deck:
     weighted_meta = [deck.meta / total_meta for deck in Deck.objects.all()]
     return random.choices(Deck.objects.all(), weights=weighted_meta)[0]
 
-def get_cards_and_faces(maindeck, sideboard) -> Tuple[List[Card], List[Face]]:
-    cards, faces = [], []
-    for name in maindeck | sideboard:
-        card = None
-        try:
-            card = Card.objects.filter(name__icontains=name).order_by(Length('oracle_text').desc()).first()
-            if not card:
-                card = Card.objects.annotate(similarity=TrigramSimilarity('name', name),).filter(similarity__gt=0.3).order_by('-similarity').first()
-        except Card.DoesNotExist:
-            card = Card.objects.annotate(similarity=TrigramSimilarity('name', name),).filter(similarity__gt=0.3).order_by('-similarity').first()
+def get_card_by_name(name) -> Card:
+    card = Card.objects.annotate(similarity=TrigramSimilarity('name', name),).filter(similarity__gt=0.3).order_by('-similarity', Length('card_image').desc()).first()
+    return card
+
+def get_cards_and_faces(maindeck, sideboard) -> Tuple[List[Card], List[Face], List[Card], List[Face], Dict[str, int], Dict[str, int]]:
+    main_cards, main_faces, side_cards, side_faces = [], [], [], []
+    dup_m, dup_s = maindeck.copy(), sideboard.copy()
+    for name in maindeck:
+        card = get_card_by_name(name)
         _faces = Face.objects.filter(card=card) if card else []
-        cards.append(card)
-        faces.extend(_faces)
-    return cards, faces
+        if card.name not in dup_m:
+            dup_m[card.name] = dup_m.get(name)
+            dup_m.pop(name)
+        main_cards.append(card)
+        main_faces.extend(_faces)
+    for name in sideboard:
+        card = get_card_by_name(name)
+        _faces = Face.objects.filter(card=card) if card else []
+        if card.name not in dup_s:
+            dup_s[card.name] = dup_s.get(name)
+            dup_s.pop(name)
+        side_cards.append(card)
+        side_faces.extend(_faces)
+    return main_cards, main_faces, side_cards, side_faces, dup_m, dup_s
+
+def get_card_image_map(*args):
+    card_image_map = {}
+    for arg in args:
+        for item in arg:
+            if hasattr(item, 'card_image') and item.card_image:
+                card_image_map[item.name] = item.card_image
+    return card_image_map
 
 @require_POST
 def play(request):
     neds_deck = get_random_deck()
     neds_main, neds_side = parse_decklist(neds_deck.decklist)
-    neds_cards, neds_faces = get_cards_and_faces(neds_main, neds_side)
+    neds_main_cards, neds_main_faces, neds_side_cards, neds_side_faces, neds_main, neds_side = get_cards_and_faces(neds_main, neds_side)
     user_main, user_side = parse_decklist(request.POST.get('decklist', ''))
-    user_cards, user_faces = get_cards_and_faces(user_main, user_side)
-    gpt = None
-    # uncomment if you want to be billed
-    #gpt = ned_talks_about(neds_deck.name, neds_main, neds_side, neds_cards, neds_faces)
-    context = {'user_main': user_main,
+    user_main_cards, user_main_faces, user_side_cards, user_side_faces, user_main, user_side = get_cards_and_faces(user_main, user_side)
+    card_image_map = get_card_image_map(user_main_cards, user_main_faces, user_side_cards, user_side_faces, neds_main_cards, neds_main_faces, neds_side_cards, neds_side_faces)
+    #print(card_image_map)
+    context = {
+               'user_main': user_main,
                'user_side': user_side,
-               'user_cards': user_cards,
-               'user_faces': user_faces,
                'neds_main': neds_main,
                'neds_side': neds_side,
-               'neds_cards': neds_cards,
-               'neds_faces': neds_faces,
-               'gpt': gpt or '',}
+               'card_image_map': card_image_map,}
     return render(request, 'play/play.html', context)
 
 def chat(request, deck_name: str):
