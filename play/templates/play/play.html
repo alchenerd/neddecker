@@ -1,7 +1,9 @@
 {% extends 'base.html' %}
+
 {% block head %}
 <style>
 .battlefield {
+    position: relative;
     height: 40%;
 }
 .users-hand {
@@ -10,7 +12,6 @@
 .chat-history {
     overflow-y: scroll;
 }
-/*
 .users-hand {
     background: magenta;
 }
@@ -26,40 +27,187 @@
 .info-box {
     background: cyan;
 }
-*/
+.card-shaped {
+    border-radius: 5px;
+    width: 0.9in;
+    height: 1.26in;
+}
+.deck {
+    background: yellow;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    overflow: hidden;
+}
+.deck_context_menu {
+    list-style-type: none;
+    background: white;
+    position: absolute;
+    display: none;
+    margin: 3px;
+    padding: 3px;
+}
+.deck_context_menu_item {
+    margin: 5px;
+    padding: 5px;
+}
+.deck_context_menu_item:hover {
+    background: #cccccc;
+}
 </style>
 <script>
-    const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
-    const wsPath = `${wsProtocol}://${window.location.host}/ws/play/`;
-    const ws = new WebSocket(wsPath);
-    let neds_main = {{ neds_main | safe }};
-    let user_main = {{ user_main | safe }};
-    let neds_side = {{ neds_side | safe }};
-    let user_side = {{ user_side | safe }};
-    if (neds_main) {console.log("ned has deck"); console.log(neds_main)};
-    if (neds_side) {console.log("ned has side"); console.log(neds_side)};
-    if (user_main) {console.log("user has deck"); console.log(user_main)};
-    if (user_side) {console.log("user has side"); console.log(user_side)};
-    ws.onmessage = (event) => {
-        const response = JSON.parse(event.data);
-        if (typeof response.log !== "undefined") {
-            console.log(response.log);
+    let cardImageMap = new Map;
+    let usersDeck = new Array;
+    let nedsDeck = new Array;
+    let targetDeck = null;
+
+    window.onload = function(){
+        console.log('Load done!')
+        initializeWebsocket();
+        loadCardImageMap();
+        loadDecks();
+        initCustomContextmenu();
+    };
+
+    function initializeWebsocket() {
+        const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
+        const wsPath = `${wsProtocol}://${window.location.host}/ws/play/`;
+        const ws = new WebSocket(wsPath);
+        ws.onmessage = (event) => {
+            const response = JSON.parse(event.data);
+            if (typeof response.log !== "undefined") {
+                console.log(response.log);
+            }
         }
-    }
+    };
+
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            let j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        console.log(array);
+    };
+
+    function loadCardImageMap() {
+        {% for name, image in card_image_map.items %}
+        cardImageMap.set("{{name}}", "{{image}}");
+        {% endfor %}
+    };
+
+    function loadDecks() {
+        {% for name, count in user_main.items %}
+        for (let i = 0; i < {{count}}; i++) {
+            usersDeck.push("{{name}}");
+        }
+        if (!cardImageMap.get("{{name}}")) {
+            console.log("{{name}} not found!");
+            faces = "{{name}}".split(" // ");
+            if(!cardImageMap.get(faces[0])) {
+                console.log(faces[0] + " not found!");
+            }
+            if(!cardImageMap.get(faces[1])) {
+                console.log(faces[1] + " not found!");
+            }
+        }
+        {% endfor %}
+        shuffle(usersDeck);
+
+        {% for name, count in neds_main.items %}
+        for (let i = 0; i < {{count}}; i++) {
+            nedsDeck.push("{{name}}");
+        }
+        if (!cardImageMap.get("{{name}}")) {
+            console.log("{{name}} not found!");
+            faces = "{{name}}".split(" // ");
+            if(!cardImageMap.get(faces[0])) {
+                console.log(faces[0] + " not found!");
+            }
+            if(!cardImageMap.get(faces[1])) {
+                console.log(faces[1] + " not found!");
+            }
+        }
+        {% endfor %}
+        shuffle(nedsDeck);
+    };
+
+    function initCustomContextmenu() {
+        let nedsDeckDiv = document.getElementById("neds_deck");
+        let userDeckDiv = document.getElementById("user_deck");
+        let listElement = document.getElementById("deck_context_menu"); 
+
+        function loseContextMenu(event) {
+            listElement.style.display = "none";
+            document.removeEventListener("click", loseContextMenu);
+        };
+
+        listElement.addEventListener("contextmenu", (event) => {
+            event.stopPropagation();
+        });
+
+        listElement.addEventListener("mouseup", (event) => {
+            event.stopPropagation();
+        });
+
+        listElement.addEventListener("click", (event) => {
+            event.stopPropagation();
+        });
+
+        [nedsDeckDiv, userDeckDiv].forEach(function (element) {
+            element.addEventListener("mouseup", (event) => {
+                event.stopPropagation();
+                if (event.button === 2) {
+                    return;
+                }
+            });
+            element.addEventListener("contextmenu", (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                document.addEventListener("click", loseContextMenu);
+                listElement.style.display = "block";
+                listElement.style.left = event.pageX + "px";
+                listElement.style.top = event.pageY + "px";
+                targetDeck = element;
+            });
+        });
+
+        function shuffleAndCloseContextmenu(event) {
+            loseContextMenu();
+            if (targetDeck.id === "neds_deck") {
+                shuffle(nedsDeck);
+            } else if (targetDeck.id === "user_deck") {
+                shuffle(usersDeck);
+            }
+        }
+
+        document.getElementById("deck_shuffle").addEventListener("click", shuffleAndCloseContextmenu);
+    };
 </script>
 {% endblock %}
+
 {% block content %}
 <div class="row vh-100">
     <div class="col-lg-8 whole-battlefield">
         <div class="row battlefield neds-battlefield">
             (ned's battlefield)
+            <div class="deck card-shaped" id="neds_deck">
+                (ned's deck)
+            </div>
         </div>
         <div class="row battlefield users-battlefield">
             (user's battlefield)
+            <div class="deck card-shaped" id="user_deck">
+                (user's deck)
+            </div>
         </div>
         <div class="row users-hand">
             (user's hand)
         </div>
+        <ul class="deck_context_menu" id="deck_context_menu">
+            <li class="deck_context_menu_item" id="deck_shuffle"><a>Shuffle</a></li>
+            <li class="deck_context_menu_item" id="deck_draw"><a>Draw</a></li>
+            <li class="deck_context_menu_item" id="deck_search"><a>Search</a></li>
+        </ul>
     </div>
     <div class="col-lg-4 vh-100">
         <div class="row info-box w-100 h-25">
@@ -67,7 +215,7 @@
         </div>
         <div class="row chat-room w-100 h-75 d-flex flex-column align-items-center">
             <div class="row w-100 flex-grow-1">
-                <textarea id:"chat-box" class="h-100 chat-history" cols="41" readonly></textarea>
+                <textarea id:"chat-box" class="h-100 chat-history" cols="40" readonly></textarea>
             </div>
             <div class="row w-100 input-row">
                 <input type="text" class="form-control w-75" id="message-input" placeholder="Chat with Ned Decker...">
