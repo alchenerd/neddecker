@@ -86,23 +86,23 @@
             let j = Math.floor(Math.random() * (i + 1));
             [array[i], array[j]] = [array[j], array[i]];
         }
-        console.log(array);
+        console.log("Shuffled: " + array);
     };
 
     function loadCardImageMap() {
         {% for name, image in card_image_map.items %}
-        cardImageMap.set("{{name}}", "{{image}}");
+        cardImageMap.set("{{ name | safe }}", "{{ image | safe }}");
         {% endfor %}
     };
 
     function loadDecks() {
         {% for name, count in user_main.items %}
-        for (let i = 0; i < {{count}}; i++) {
-            usersDeck.push("{{name}}");
+        for (let i = 0; i < {{ count }}; i++) {
+            usersDeck.push("{{ name | safe }}");
         }
-        if (!cardImageMap.get("{{name}}")) {
-            console.log("{{name}} not found!");
-            faces = "{{name}}".split(" // ");
+        if (!cardImageMap.get("{{ name | safe }}")) {
+            console.log("{{ name | safe }} not found!");
+            faces = "{{ name | safe }}".split(" // ");
             if(!cardImageMap.get(faces[0])) {
                 console.log(faces[0] + " not found!");
             }
@@ -114,12 +114,12 @@
         shuffle(usersDeck);
 
         {% for name, count in neds_main.items %}
-        for (let i = 0; i < {{count}}; i++) {
-            nedsDeck.push("{{name}}");
+        for (let i = 0; i < {{ count }}; i++) {
+            nedsDeck.push("{{ name | safe }}");
         }
-        if (!cardImageMap.get("{{name}}")) {
-            console.log("{{name}} not found!");
-            faces = "{{name}}".split(" // ");
+        if (!cardImageMap.get("{{ name | safe }}")) {
+            console.log("{{ name | safe }} not found!");
+            faces = "{{ name | safe }}".split(" // ");
             if(!cardImageMap.get(faces[0])) {
                 console.log(faces[0] + " not found!");
             }
@@ -171,8 +171,27 @@
             });
         });
 
+        function arrToUlDecklist(id, arr) {
+            var div = document.getElementById(id);
+            let oldUl = document.getElementById("ulDecklist");
+            var ul = document.createElement("ul");
+            ul.setAttribute("id", "ulDecklist");
+            div.replaceChild(ul, oldUl);
+
+            for (var i = 0; i < arr.length; i++) {
+                var li = document.createElement("li");
+                li.appendChild(document.createTextNode(arr[i]));
+                ul.appendChild(li);
+            }
+            div.appendChild(ul);
+        }
+
         function shuffleAndCloseContextmenu(event) {
             loseContextMenu();
+            shuffleTargetDeck();
+        }
+
+        function shuffleTargetDeck(event) {
             if (targetDeck.id === "neds_deck") {
                 shuffle(nedsDeck);
             } else if (targetDeck.id === "user_deck") {
@@ -180,7 +199,19 @@
             }
         }
 
+        function searchAndCloseContextmenu(event) {
+            loseContextMenu();
+            if (targetDeck.id === "neds_deck") {
+                arrToUlDecklist("deckContent", nedsDeck);
+            } else if (targetDeck.id === "user_deck") {
+                arrToUlDecklist("deckContent", usersDeck);
+            }
+            $("#deckSearchModal").modal("show");
+        }
+
         document.getElementById("deck_shuffle").addEventListener("click", shuffleAndCloseContextmenu);
+        document.getElementById("deck_search").addEventListener("click", searchAndCloseContextmenu);
+        document.getElementById("closeAndShuffleBtn").addEventListener("click", shuffleTargetDeck);
     };
 </script>
 {% endblock %}
@@ -224,4 +255,24 @@
         </div>
     </div>
 </div>
+
+<!-- Modal -->
+<div class="modal fade deck_search" id="deckSearchModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLongTitle">Search Deck</h5>
+            </div>
+            <div class="modal-body deck-content" id="deckContent">
+                <ul id="ulDecklist">
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="closeAndShuffleBtn" data-bs-dismiss="modal">Close and shuffle</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
