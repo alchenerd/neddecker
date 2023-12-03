@@ -4,15 +4,15 @@
 <style>
 .battlefield {
     position: relative;
-    height: 40%;
+    height: 30%;
 }
-.users-hand {
+.hand {
     height: 20%;
 }
 .chat-history {
     overflow-y: scroll;
 }
-.users-hand {
+.hand {
     background: magenta;
 }
 .neds-battlefield {
@@ -32,8 +32,20 @@
     width: 0.9in;
     height: 1.26in;
 }
+.fill {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    padding: 0;
+}
+.fill img {
+    min-width: 100%;
+    min-height: 100%;
+    object-fit: cover;
+}
 .deck {
-    background: yellow;
+    background: darkgray;
     position: absolute;
     top: 10px;
     right: 10px;
@@ -89,6 +101,44 @@
         console.log("Shuffled: " + array);
     };
 
+    function drawCard() {
+        console.log("Draw card from: " + targetDeck.id);
+        let cardName = null;
+        let targetHand = null;
+        if (targetDeck.id === "usersDeck") {
+            cardName = usersDeck.shift();
+            if (!usersDeck.length) {
+                document.getElementById("usersDeck").style.display = "none";
+            }
+            targetHand = document.getElementById("usersHand");
+        } else if (targetDeck.id === "nedsDeck") {
+            cardName = nedsDeck.shift();
+            if (!nedsDeck.length) {
+                document.getElementById("nedsDeck").style.display = "none";
+            }
+            targetHand = document.getElementById("nedsHand");
+        };
+        let card = document.createElement("div");
+        card.classList.add("card-shaped");
+        card.classList.add("fill");
+        let parsedName = "";
+        if (cardName.includes("//")) {
+            parsedName = cardName.split(" // ")[0];
+            if (!cardImageMap.has(parsedName)) {
+                parsedName = cardName;
+            }
+        } else {
+            parsedName = cardName;
+        }
+        let cardImage = document.createElement("img");
+        cardImage.classList.add("card-image");
+        cardImage.alt = cardName;
+        cardImage.src = cardImageMap.get(parsedName);
+        card.appendChild(cardImage);
+        targetHand.appendChild(card);
+        console.log("Drew " + cardName);
+    };
+
     function loadCardImageMap() {
         {% for name, image in card_image_map.items %}
         cardImageMap.set("{{ name | safe }}", "{{ image | safe }}");
@@ -129,11 +179,37 @@
         }
         {% endfor %}
         shuffle(nedsDeck);
+
+        function selectAndDrawCard(event) {
+            targetDeck = event.currentTarget;
+            drawCard();
+        };
+
+        usersDeckDiv = document.createElement("div");
+        usersDeckDiv.id = "usersDeck";
+        usersDeckDiv.classList.add("deck");
+        usersDeckDiv.classList.add("card-shaped");
+        if (!usersDeck.length) {
+            usersDeckDiv.style.display = "none";
+        }
+        document.getElementById("usersBattlefield").appendChild(usersDeckDiv);
+
+        nedsDeckDiv = document.createElement("div");
+        nedsDeckDiv.id = "nedsDeck";
+        nedsDeckDiv.classList.add("deck");
+        nedsDeckDiv.classList.add("card-shaped");
+        if (!nedsDeck.length) {
+            nedsDeckDiv.style.display = "none";
+        }
+        document.getElementById("nedsBattlefield").appendChild(nedsDeckDiv);
+
+        document.getElementById("usersDeck").addEventListener("dblclick", selectAndDrawCard);
+        document.getElementById("nedsDeck").addEventListener("dblclick", selectAndDrawCard);
     };
 
     function initCustomContextmenu() {
-        let nedsDeckDiv = document.getElementById("neds_deck");
-        let userDeckDiv = document.getElementById("user_deck");
+        let nedsDeckDiv = document.getElementById("nedsDeck");
+        let userDeckDiv = document.getElementById("usersDeck");
         let listElement = document.getElementById("deck_context_menu"); 
 
         function loseContextMenu(event) {
@@ -192,26 +268,32 @@
         }
 
         function shuffleTargetDeck(event) {
-            if (targetDeck.id === "neds_deck") {
+            if (targetDeck.id === "nedsDeck") {
                 shuffle(nedsDeck);
-            } else if (targetDeck.id === "user_deck") {
+            } else if (targetDeck.id === "usersDeck") {
                 shuffle(usersDeck);
             }
         }
 
         function searchAndCloseContextmenu(event) {
             loseContextMenu();
-            if (targetDeck.id === "neds_deck") {
+            if (targetDeck.id === "nedsDeck") {
                 arrToUlDecklist("deckContent", nedsDeck);
-            } else if (targetDeck.id === "user_deck") {
+            } else if (targetDeck.id === "usersDeck") {
                 arrToUlDecklist("deckContent", usersDeck);
             }
             $("#deckSearchModal").modal("show");
-        }
+        };
+
+        function drawCardAndCloseContextmenu(event) {
+            loseContextMenu();
+            drawCard();
+        };
 
         document.getElementById("deck_shuffle").addEventListener("click", shuffleAndCloseContextmenu);
         document.getElementById("deck_search").addEventListener("click", searchAndCloseContextmenu);
         document.getElementById("closeAndShuffleBtn").addEventListener("click", shuffleTargetDeck);
+        document.getElementById("deck_draw").addEventListener("click", drawCardAndCloseContextmenu);
     };
 </script>
 {% endblock %}
@@ -219,19 +301,16 @@
 {% block content %}
 <div class="row vh-100">
     <div class="col-lg-8 whole-battlefield">
-        <div class="row battlefield neds-battlefield">
+        <div class="row hand" id="nedsHand">
+            (ned's hand)
+        </div>
+        <div class="row battlefield neds-battlefield" id="nedsBattlefield">
             (ned's battlefield)
-            <div class="deck card-shaped" id="neds_deck">
-                (ned's deck)
-            </div>
         </div>
-        <div class="row battlefield users-battlefield">
+        <div class="row battlefield users-battlefield" id="usersBattlefield">
             (user's battlefield)
-            <div class="deck card-shaped" id="user_deck">
-                (user's deck)
-            </div>
         </div>
-        <div class="row users-hand">
+        <div class="row hand" id="usersHand">
             (user's hand)
         </div>
         <ul class="deck_context_menu" id="deck_context_menu">
