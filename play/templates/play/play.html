@@ -8,6 +8,10 @@
 }
 .hand {
     height: 20%;
+    display: flex;
+    overflow-x: scroll;
+    overflow-x: hide;
+    position: relative;
 }
 .chat-history {
     overflow-y: scroll;
@@ -31,6 +35,9 @@
     border-radius: 5px;
     width: 0.9in;
     height: 1.26in;
+}
+.card-object {
+    position: absolute;
 }
 .fill {
     display: flex;
@@ -120,6 +127,7 @@
         };
         let card = document.createElement("div");
         card.classList.add("card-shaped");
+        card.classList.add("card-object");
         card.classList.add("fill");
         let parsedName = "";
         if (cardName.includes("//")) {
@@ -136,6 +144,11 @@
         cardImage.src = cardImageMap.get(parsedName);
         card.appendChild(cardImage);
         targetHand.appendChild(card);
+        const cards = document.querySelectorAll("#" + targetHand.id + " > " + ".card-object");
+        const delta = Math.min((targetHand.clientWidth - card.clientWidth) / (cards.length + 1), card.clientWidth);
+        for (let i = 0; i < cards.length; i++) {
+            cards[i].style.left = delta * i + "px";
+        }
         console.log("Drew " + cardName);
     };
 
@@ -301,7 +314,7 @@
 {% block content %}
 <div class="row vh-100">
     <div class="col-lg-8 whole-battlefield">
-        <div class="row hand" id="nedsHand">
+        <div class="row hand d-flex flex-row" id="nedsHand">
             (ned's hand)
         </div>
         <div class="row battlefield neds-battlefield" id="nedsBattlefield">
@@ -310,7 +323,7 @@
         <div class="row battlefield users-battlefield" id="usersBattlefield">
             (user's battlefield)
         </div>
-        <div class="row hand" id="usersHand">
+        <div class="row hand d-flex flex-row" id="usersHand">
             (user's hand)
         </div>
         <ul class="deck_context_menu" id="deck_context_menu">
