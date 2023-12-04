@@ -2,12 +2,15 @@
 
 {% block head %}
 <style>
+:root {
+    --card-width: 0.9in;
+    --card-height: 1.26in;
+}
 .battlefield {
     position: relative;
-    height: 30%;
 }
 .hand {
-    height: 20%;
+    height: var(--card-height);
     display: flex;
     overflow-x: scroll;
     overflow-x: hide;
@@ -33,8 +36,8 @@
 }
 .card-shaped {
     border-radius: 5px;
-    width: 0.9in;
-    height: 1.26in;
+    width: var(--card-width);
+    height: var(--card-height);
 }
 .card-object {
     position: absolute;
@@ -67,11 +70,19 @@
     padding: 3px;
 }
 .deck_context_menu_item {
-    margin: 5px;
-    padding: 5px;
+    margin: 3px;
+    padding: 3px;
 }
 .deck_context_menu_item:hover {
     background: #cccccc;
+}
+.row.no-pad {
+  margin-right:0;
+  margin-left:0;
+}
+.row.no-pad > [class*='col-'] {
+  padding-right:0;
+  padding-left:0;
 }
 </style>
 <script>
@@ -145,7 +156,10 @@
         card.appendChild(cardImage);
         targetHand.appendChild(card);
         const cards = document.querySelectorAll("#" + targetHand.id + " > " + ".card-object");
-        const delta = Math.min((targetHand.clientWidth - card.clientWidth) / (cards.length + 1), card.clientWidth);
+        let delta = card.clientWidth;
+        if (delta * cards.length > targetHand.clientWidth) {
+            delta = (targetHand.clientWidth - card.clientWidth) / (cards.length - 1);
+        }
         for (let i = 0; i < cards.length; i++) {
             cards[i].style.left = delta * i + "px";
         }
@@ -312,18 +326,18 @@
 {% endblock %}
 
 {% block content %}
-<div class="row vh-100">
-    <div class="col-lg-8 whole-battlefield">
-        <div class="row hand d-flex flex-row" id="nedsHand">
+<div class="row vh-100 no-pad">
+    <div class="col-lg-8 playfield d-flex flex-column">
+        <div class="hand d-flex flex-row" id="nedsHand">
             (ned's hand)
         </div>
-        <div class="row battlefield neds-battlefield" id="nedsBattlefield">
+        <div class="battlefield neds-battlefield d-flex flex-column flex-grow-1" id="nedsBattlefield">
             (ned's battlefield)
         </div>
-        <div class="row battlefield users-battlefield" id="usersBattlefield">
+        <div class="battlefield users-battlefield d-flex flex-column flex-grow-1" id="usersBattlefield">
             (user's battlefield)
         </div>
-        <div class="row hand d-flex flex-row" id="usersHand">
+        <div class="hand d-flex flex-row align-self-end w-100" id="usersHand">
             (user's hand)
         </div>
         <ul class="deck_context_menu" id="deck_context_menu">
@@ -332,11 +346,11 @@
             <li class="deck_context_menu_item" id="deck_search"><a>Search</a></li>
         </ul>
     </div>
-    <div class="col-lg-4 vh-100">
-        <div class="row info-box w-100 h-25">
+    <div class="col-lg-4 d-flex flex-column">
+        <div class="info-box w-100 h-50">
             (stack and stuff)
         </div>
-        <div class="row chat-room w-100 h-75 d-flex flex-column align-items-center">
+        <div class="chat-room w-100 d-flex flex-column flex-fill align-items-center">
             <div class="row w-100 flex-grow-1">
                 <textarea id:"chat-box" class="h-100 chat-history" cols="40" readonly></textarea>
             </div>
