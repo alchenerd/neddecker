@@ -31,16 +31,31 @@
 .chat-room {
     background: blue;
 }
-.info-box {
+.left-container-card-display {
     background: cyan;
+}
+.right-container-card-stack {
+    background: yellow;
 }
 .card-shaped {
     border-radius: 5px;
     width: var(--card-width);
     height: var(--card-height);
 }
+.card-shaped-lg {
+    border-radius: 20px;
+    width: calc(var(--card-width) * 2.2);
+    height: calc(var(--card-height) * 2.2);
+}
 .card-object {
     position: absolute;
+    transition: 0s:
+}
+.card-object:hover {
+    border: 2px solid cyan;
+}
+.card-placeholder {
+    border: 3px solid gray;
 }
 .fill {
     display: flex;
@@ -74,6 +89,12 @@
     padding: 3px;
 }
 .deck_context_menu_item:hover {
+    background: #cccccc;
+}
+.ul-decklist {
+    list-style-type: none;
+}
+.ul-decklist-item:hover {
     background: #cccccc;
 }
 .row.no-pad {
@@ -155,6 +176,13 @@
         cardImage.src = cardImageMap.get(parsedName);
         card.appendChild(cardImage);
         targetHand.appendChild(card);
+        card.addEventListener("click", (event) => {
+            placeholder = document.getElementById("cardPlaceholder");
+            while (placeholder.firstChild) {
+                placeholder.removeChild(placeholder.lastChild);
+            }
+            placeholder.appendChild(cardImage.cloneNode(true));
+        });
         const cards = document.querySelectorAll("#" + targetHand.id + " > " + ".card-object");
         let delta = card.clientWidth;
         if (delta * cards.length > targetHand.clientWidth) {
@@ -279,10 +307,12 @@
             let oldUl = document.getElementById("ulDecklist");
             var ul = document.createElement("ul");
             ul.setAttribute("id", "ulDecklist");
+            ul.classList.add("ul-decklist")
             div.replaceChild(ul, oldUl);
 
             for (var i = 0; i < arr.length; i++) {
                 var li = document.createElement("li");
+                li.classList.add("ul-decklist-item");
                 li.appendChild(document.createTextNode(arr[i]));
                 ul.appendChild(li);
             }
@@ -347,8 +377,22 @@
         </ul>
     </div>
     <div class="col-lg-4 d-flex flex-column">
-        <div class="info-box w-100 h-50">
-            (stack and stuff)
+        <div class="info-box w-100 h-50 d-flex flex-row align-items-center justify-content-between">
+            <div class="col left-container-card-display h-100 d-flex flex-column align-items-center justify-content-center">
+                <div class="mt-auto"></div>
+                <div class="card-placeholder card-shaped-lg fill" id="cardPlaceholder"></div>
+                <div class="mb-auto"></div>
+                <button class="btn btn-primary w-100">Play Card</button>
+                <button class="btn btn-primary w-100">Activate Card</button>
+            </div>
+            <div class="col right-container-card-stack h-100 d-flex flex-column flex-grow-1 align-items-center justify-content-center">
+                <h5 class="">Stack</h5>
+                <div class="card-stack d-flex flex-column flex-grow-1" id="stack">put stack here</div>
+                <div class="d-flex flex-column w-100">
+                    <button class="btn btn-primary w-100">Pass Priority</button>
+                    <button class="btn btn-danger w-100">End Turn</button>
+                </div>
+            </div>
         </div>
         <div class="chat-room w-100 d-flex flex-column flex-fill align-items-center">
             <div class="row w-100 flex-grow-1">
@@ -356,7 +400,7 @@
             </div>
             <div class="row w-100 input-row">
                 <input type="text" class="form-control w-75" id="message-input" placeholder="Chat with Ned Decker...">
-                <button class="form-control w-25 btn">Send</button>
+                <button class="form-control btn-primary w-25 btn">Send</button>
             </div>
         </div>
     </div>
@@ -370,7 +414,7 @@
                 <h5 class="modal-title" id="exampleModalLongTitle">Search Deck</h5>
             </div>
             <div class="modal-body deck-content" id="deckContent">
-                <ul id="ulDecklist">
+                <ul class="ul-decklist" id="ulDecklist">
                 </ul>
             </div>
             <div class="modal-footer">
