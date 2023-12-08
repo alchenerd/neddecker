@@ -101,6 +101,8 @@ class Command(BaseCommand):
         with open(fpath, 'r', encoding='utf-8') as f:
             for cards in ijson.items(f, ''):
                 for card in cards:
+                    if card['booster'] == False or card['textless'] == True:
+                        continue
                     print(f"Processing {card['name']}")
                     obj_card = Card(
                             cmc=card.get('cmc', 0.0),
