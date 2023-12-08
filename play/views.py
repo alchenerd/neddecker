@@ -80,8 +80,7 @@ def parse_decklist(decklist) -> List[Dict[str, int]]:
             continue
         parsed = line.split()
         count = int(parsed[0])
-        # The replace() converts mtggoldfish name to scryfall name
-        card = ' '.join(parsed[1:]).replace('/', ' // ')
+        card = ' '.join(parsed[1:])
         tofill[card] = count
     return maindeck, sideboard
 
@@ -91,29 +90,21 @@ def get_random_deck() -> Deck:
     return random.choices(Deck.objects.all(), weights=weighted_meta)[0]
 
 def get_card_by_name(name) -> Card:
-    card = Card.objects.annotate(similarity=TrigramSimilarity('name', name),).filter(similarity__gt=0.3).order_by('-similarity', Length('card_image').desc()).first()
-    return card
+    return Card.objects.filter(name=name).order_by().first()
 
-def get_cards_and_faces(maindeck, sideboard) -> Tuple[List[Card], List[Face], List[Card], List[Face], Dict[str, int], Dict[str, int]]:
+def get_cards_and_faces(maindeck, sideboard) -> Tuple[List[Card], List[Face], List[Card], List[Face]]:
     main_cards, main_faces, side_cards, side_faces = [], [], [], []
-    dup_m, dup_s = maindeck.copy(), sideboard.copy()
     for name in maindeck:
         card = get_card_by_name(name)
         _faces = Face.objects.filter(card=card) if card else []
-        if card.name not in dup_m:
-            dup_m[card.name] = dup_m.get(name)
-            dup_m.pop(name)
         main_cards.append(card)
         main_faces.extend(_faces)
     for name in sideboard:
         card = get_card_by_name(name)
         _faces = Face.objects.filter(card=card) if card else []
-        if card.name not in dup_s:
-            dup_s[card.name] = dup_s.get(name)
-            dup_s.pop(name)
         side_cards.append(card)
         side_faces.extend(_faces)
-    return main_cards, main_faces, side_cards, side_faces, dup_m, dup_s
+    return main_cards, main_faces, side_cards, side_faces
 
 def get_card_image_map(*args):
     card_image_map = {}
@@ -123,21 +114,31 @@ def get_card_image_map(*args):
                 card_image_map[item.name] = item.card_image
     return card_image_map
 
+def get_type_line_map(*args):
+    type_line_map = {}
+    for arg in args:
+        for item in arg:
+            if hasattr(item, 'type_line') and item.type_line:
+                type_line_map[item.name] = item.type_line
+    return type_line_map
+
 @require_POST
 def play(request):
     neds_deck = get_random_deck()
     neds_main, neds_side = parse_decklist(neds_deck.decklist)
-    neds_main_cards, neds_main_faces, neds_side_cards, neds_side_faces, neds_main, neds_side = get_cards_and_faces(neds_main, neds_side)
-    user_main, user_side = parse_decklist(request.POST.get('decklist', ''))
-    user_main_cards, user_main_faces, user_side_cards, user_side_faces, user_main, user_side = get_cards_and_faces(user_main, user_side)
-    card_image_map = get_card_image_map(user_main_cards, user_main_faces, user_side_cards, user_side_faces, neds_main_cards, neds_main_faces, neds_side_cards, neds_side_faces)
-    #print(card_image_map)
+    neds_main_cards, neds_main_faces, neds_side_cards, neds_side_faces = get_cards_and_faces(neds_main, neds_side)
+    users_main, users_side = parse_decklist(request.POST['decklist'])
+    users_main_cards, users_main_faces, users_side_cards, users_side_faces = get_cards_and_faces(users_main, users_side)
+    to_process = neds_main_cards + neds_side_faces + neds_main_cards + neds_side_faces + users_main_cards + users_main_faces + users_side_cards + users_side_faces
+    card_image_map = get_card_image_map(to_process)
+    type_line_map = get_type_line_map(to_process)
     context = {
-               'user_main': user_main,
-               'user_side': user_side,
+               'users_main': users_main,
+               'users_side': users_side,
                'neds_main': neds_main,
                'neds_side': neds_side,
-               'card_image_map': card_image_map,}
+               'card_image_map': card_image_map,
+               'type_line_map': type_line_map,}
     return render(request, 'play/play.html', context)
 
 def chat(request, deck_name: str):
