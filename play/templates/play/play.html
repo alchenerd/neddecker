@@ -43,7 +43,7 @@
     height: var(--card-height);
 }
 .card-shaped-lg {
-    border-radius: 20px;
+    border-radius: 9px;
     width: calc(var(--card-width) * 2.2);
     height: calc(var(--card-height) * 2.2);
 }
@@ -105,20 +105,28 @@
   padding-right:0;
   padding-left:0;
 }
+.game-stack {
+    display: flex;
+    position: relative;
+}
 </style>
 <script>
     let cardImageMap = new Map;
+    let typeLineMap = new Map;
     let usersDeck = new Array;
     let nedsDeck = new Array;
     let targetDeck = null;
+    let targetCardId = null;
+    let chatBox = document.getElementById("chatBox");
 
-    window.onload = function(){
-        console.log('Load done!')
+    document.addEventListener("DOMContentLoaded", function() {
+        console.log("Load done!");
         initializeWebsocket();
         loadCardImageMap();
+        loadTypeLineMap();
         loadDecks();
         initCustomContextmenu();
-    };
+    });
 
     function initializeWebsocket() {
         const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
@@ -127,10 +135,14 @@
         ws.onmessage = (event) => {
             const response = JSON.parse(event.data);
             if (typeof response.log !== "undefined") {
-                console.log(response.log);
+                sendToChat(response.log);
             }
         }
     };
+
+    function sendToChat(message) {
+        chatBox.value += message + '\n';
+    }
 
     function shuffle(array) {
         for (let i = array.length - 1; i > 0; i--) {
@@ -158,17 +170,19 @@
             targetHand = document.getElementById("nedsHand");
         };
         let card = document.createElement("div");
+        card.id = cardName;
+        card.classList.add(typeLineMap.get(cardName.split("@")[0].split(" // ")[0]));
         card.classList.add("card-shaped");
         card.classList.add("card-object");
         card.classList.add("fill");
         let parsedName = "";
-        if (cardName.includes("//")) {
+        if (cardName.includes(" // ")) {
             parsedName = cardName.split(" // ")[0];
             if (!cardImageMap.has(parsedName)) {
                 parsedName = cardName;
             }
         } else {
-            parsedName = cardName;
+            parsedName = cardName.split("@")[0];
         }
         let cardImage = document.createElement("img");
         cardImage.classList.add("card-image");
@@ -177,6 +191,7 @@
         card.appendChild(cardImage);
         targetHand.appendChild(card);
         card.addEventListener("click", (event) => {
+            targetCardId = cardName;
             placeholder = document.getElementById("cardPlaceholder");
             while (placeholder.firstChild) {
                 placeholder.removeChild(placeholder.lastChild);
@@ -200,19 +215,35 @@
         {% endfor %}
     };
 
+    function loadTypeLineMap() {
+        {% for name, typeLine in type_line_map.items %}
+        typeLineMap.set("{{ name | safe }}", "{{ typeLine | safe }}".replaceAll(" ", "-"));
+        {% endfor %}
+    };
+
     function loadDecks() {
-        {% for name, count in user_main.items %}
+        {% for name, count in users_main.items %}
         for (let i = 0; i < {{ count }}; i++) {
-            usersDeck.push("{{ name | safe }}");
+            usersDeck.push("{{ name | safe }}" + "@u" + (i + 1));
         }
         if (!cardImageMap.get("{{ name | safe }}")) {
-            console.log("{{ name | safe }} not found!");
+            console.log("Image of {{ name | safe }} not found!");
             faces = "{{ name | safe }}".split(" // ");
             if(!cardImageMap.get(faces[0])) {
-                console.log(faces[0] + " not found!");
+                console.log("Image of " + faces[0] + " not found!");
             }
             if(!cardImageMap.get(faces[1])) {
-                console.log(faces[1] + " not found!");
+                console.log("Image of" + faces[1] + " not found!");
+            }
+        }
+        if (!typeLineMap.get("{{ name | safe }}")) {
+            console.log("Type line of {{ name | safe }} not found!");
+            faces = "{{ name | safe }}".split(" // ");
+            if(!typeLineMap.get(faces[0])) {
+                console.log("Type line of " + faces[0] + " not found!");
+            }
+            if(!typeLineMap.get(faces[1])) {
+                console.log("Type line of" + faces[1] + " not found!");
             }
         }
         {% endfor %}
@@ -220,7 +251,7 @@
 
         {% for name, count in neds_main.items %}
         for (let i = 0; i < {{ count }}; i++) {
-            nedsDeck.push("{{ name | safe }}");
+            nedsDeck.push("{{ name | safe }}" + "@n" + (i + 1));
         }
         if (!cardImageMap.get("{{ name | safe }}")) {
             console.log("{{ name | safe }} not found!");
@@ -352,6 +383,33 @@
         document.getElementById("closeAndShuffleBtn").addEventListener("click", shuffleTargetDeck);
         document.getElementById("deck_draw").addEventListener("click", drawCardAndCloseContextmenu);
     };
+
+    function playCard(event) {
+        targetCard = document.getElementById(targetCardId);
+        if (targetCard === null) {
+            return
+        }
+        targetCard.parentNode.removeChild(targetCard);
+        parsedCardName = targetCardId.split("@")[0].split(" // ")[0];
+        owner = targetCardId.split("@")[1][0];
+        let destination = null;
+        if (typeLineMap.get(parsedCardName).includes("Land")) {
+            if (owner === 'u') {
+                destination = document.getElementById("usersBattlefield");
+            } else if (owner === 'n') {
+                destination = document.getElementById("nedsBattlefield");
+            }
+        } else {
+            destination = document.getElementById("gameStack");
+        }
+        destination.appendChild(targetCard);
+        placeholder = document.getElementById("cardPlaceholder");
+        while (placeholder.firstChild) {
+            placeholder.removeChild(placeholder.lastChild);
+        }
+        console.log('Played:' + targetCardId);
+        targetCardId = null;
+    }
 </script>
 {% endblock %}
 
@@ -382,12 +440,12 @@
                 <div class="mt-auto"></div>
                 <div class="card-placeholder card-shaped-lg fill" id="cardPlaceholder"></div>
                 <div class="mb-auto"></div>
-                <button class="btn btn-primary w-100">Play Card</button>
+                <button class="btn btn-primary w-100" onclick="playCard()">Play Card</button>
                 <button class="btn btn-primary w-100">Activate Card</button>
             </div>
             <div class="col right-container-card-stack h-100 d-flex flex-column flex-grow-1 align-items-center justify-content-center">
                 <h5 class="">Stack</h5>
-                <div class="card-stack d-flex flex-column flex-grow-1" id="stack">put stack here</div>
+                <div class="game-stack d-flex flex-column flex-grow-1 w-100" id="gameStack"></div>
                 <div class="d-flex flex-column w-100">
                     <button class="btn btn-primary w-100">Pass Priority</button>
                     <button class="btn btn-danger w-100">End Turn</button>
@@ -396,7 +454,7 @@
         </div>
         <div class="chat-room w-100 d-flex flex-column flex-fill align-items-center">
             <div class="row w-100 flex-grow-1">
-                <textarea id:"chat-box" class="h-100 chat-history" cols="40" readonly></textarea>
+                <textarea id="chatBox" class="h-100 chat-history" cols="40" readonly></textarea>
             </div>
             <div class="row w-100 input-row">
                 <input type="text" class="form-control w-75" id="message-input" placeholder="Chat with Ned Decker...">

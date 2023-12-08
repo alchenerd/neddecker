@@ -6,6 +6,8 @@ from datetime import date
 from os import path, listdir, unlink, utime
 from bs4 import BeautifulSoup
 from django.core.management.base import BaseCommand, CommandError
+from django.db.models.functions import Length
+from django.contrib.postgres.search import TrigramSimilarity
 from play.models import Deck, Card, Face
 
 class Command(BaseCommand):
@@ -145,6 +147,26 @@ class Command(BaseCommand):
             except OSError:
                 pass
 
+    def mtggoldfish_align_card_name(self):
+        for deck in Deck.objects.all():
+            new_decklist = ''
+            for line in deck.decklist.split('\r\n'):
+                if line == '':
+                    new_decklist += '\r\n'
+                    continue
+                splitted = line.split(' ')
+                count = splitted[0]
+                name = ' '.join(splitted[1:])
+                searched_card = Card.objects.filter(name=name).first()
+                if not searched_card:
+                    print(f'Before: {name}')
+                    trig_card = Card.objects.annotate(similarity=TrigramSimilarity('name', name),).filter(similarity__gt=0.3).order_by('-similarity', Length('card_image').desc()).first()
+                    name = trig_card.name
+                    print(f'After: {name}')
+                new_decklist += ' '.join((count, name)) + '\r\n'
+            deck.decklist = new_decklist
+            deck.save()
+
     def handle(self, *args, **kwargs):
         try:
             if self.goldfish_outdated():
@@ -159,5 +181,6 @@ class Command(BaseCommand):
                 Face.objects.all().delete()
                 print('Updating scryfall...')
                 self.update_scryfall()
+            self.mtggoldfish_align_card_name()
         except Exception as e:
             raise CommandError('syncdb failed:', e)
