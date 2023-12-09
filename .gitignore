@@ -1,7 +1,7 @@
 .env
 *.old
 TODO
-*-env
+*-venv
 __pycache__
 *.json
 *.done
