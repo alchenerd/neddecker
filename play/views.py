@@ -155,7 +155,7 @@ class AllowAnyUserPermission(BasePermission):
         return True
 
 class TopFiveMetaDecksViewSet(viewsets.ModelViewSet):
-    queryset = Deck.objects.all().order_by('date')[:5]
+    queryset = Deck.objects.all().order_by('-meta')[:5]
     serializer_class = DeckSerializer
     permission_classes = [AllowAnyUserPermission]
     
