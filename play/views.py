@@ -12,6 +12,9 @@ from langchain.chat_models import ChatOpenAI
 from langchain.prompts.chat import ChatPromptTemplate
 from langchain.schema.messages import SystemMessage
 from langchain.agents import load_tools, initialize_agent, AgentType
+from rest_framework import viewsets
+from rest_framework.permissions import BasePermission
+from .serializers import DeckSerializer
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -144,3 +147,15 @@ def play(request):
 def chat(request, deck_name: str):
     context = {'deck_name': deck_name}
     return render(request, 'play/chat.html', context)
+
+class AllowAnyUserPermission(BasePermission):
+    def has_permission(self, request, view):
+        return True
+    def has_object_permission(self, request, view, obj):
+        return True
+
+class TopFiveMetaDecksViewSet(viewsets.ModelViewSet):
+    queryset = Deck.objects.all().order_by('date')[:5]
+    serializer_class = DeckSerializer
+    permission_classes = [AllowAnyUserPermission]
+    

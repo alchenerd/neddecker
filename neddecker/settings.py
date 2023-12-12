@@ -82,7 +82,7 @@ WSGI_APPLICATION = 'neddecker.wsgi.application'
 ASGI_APPLICATION = 'neddecker.asgi.application'
 
 CORS_ORIGIN_WHITELIST = [
-     'http://localhost:3000'
+     'http://localhost:5173'
 ]
 
 CHANNEL_LAYERS = {
@@ -92,6 +92,11 @@ CHANNEL_LAYERS = {
             'hosts': [('127.0.0.1', 6379)],
         }
     }
+}
+
+REST_FRAMEWORK = {
+        'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+        'PAGE_SIZE': 5,
 }
 
 # Database
