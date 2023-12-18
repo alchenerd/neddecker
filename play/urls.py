@@ -7,9 +7,10 @@ router.register(r'api/index', views.TopFiveMetaDecksViewSet)
 
 app_name = 'play'
 urlpatterns = [
-        path("", views.index, name="index"),
-        path("play/", views.play, name="play"),
-        path("chat/<str:deck_name>", views.chat, name="chat"),
+        #path("", views.index, name="index"),
+        #path("play/", views.play, name="play"),
+        #path("chat/<str:deck_name>", views.chat, name="chat"),
         path("api/", include(router.urls)),
+        path("api/play/", views.play, name="play api"),
 ]
 urlpatterns += router.urls

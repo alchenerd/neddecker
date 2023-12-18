@@ -1,20 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import Container from '@mui/material/Container';
-import Grid from '@mui/material/Grid';
-import Card from '@mui/material/Card';
-import CardMedia from '@mui/material/CardMedia';
-import CardContent from '@mui/material/CardContent';
-import CardActionArea from '@mui/material/CardActionArea';
-import Typography from '@mui/material/Typography';
-import TextField from '@mui/material/TextField';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
-import DialogTitle from '@mui/material/DialogTitle';
-import Button from '@mui/material/Button';
-import './index.css';
+import React, { useState, useEffect } from 'react'
+import axios from 'axios'
+import Container from '@mui/material/Container'
+import Grid from '@mui/material/Grid'
+import Card from '@mui/material/Card'
+import CardMedia from '@mui/material/CardMedia'
+import CardContent from '@mui/material/CardContent'
+import CardActionArea from '@mui/material/CardActionArea'
+import Typography from '@mui/material/Typography'
+import TextField from '@mui/material/TextField'
+import Dialog from '@mui/material/Dialog'
+import DialogActions from '@mui/material/DialogActions'
+import DialogContent from '@mui/material/DialogContent'
+import DialogContentText from '@mui/material/DialogContentText'
+import DialogTitle from '@mui/material/DialogTitle'
+import Button from '@mui/material/Button'
+import './index.css'
 
 function TopFiveMetaDecks() {
   const [open, setOpen] = useState(false);
@@ -22,6 +22,7 @@ function TopFiveMetaDecks() {
   const [targetDeckName, setTargetDeckName] = useState('');
   const [targetDecklist, setTargetDecklist] = useState('');
   const [results, setResults] = useState([]);
+  const [dialogErrorString, setDialogErrorString] = useState('');
   const customDeck = {
     "name": "Custom Deck",
     "meta": "???",
@@ -42,6 +43,7 @@ function TopFiveMetaDecks() {
 
   const handleClose = () => {
     setOpen(false);
+    setDialogErrorString('');
   };
 
   const handleSubmit = async (e) => {
@@ -52,8 +54,9 @@ function TopFiveMetaDecks() {
     };
 
     try {
-      const response = await axios.post('http:/localhost:8000/api/play', data);
-      setOpen(false);
+      const response = await axios.post('http://localhost:8000/api/play/', data);
+      handleClose();
+      sessionStorage.setItem('playData', JSON.stringify(response.data));
       window.location.href = 'play/';
     } catch (error) {
       if (error.response) {
@@ -62,6 +65,7 @@ function TopFiveMetaDecks() {
         switch (statusCode) {
           case 400:
             console.error('Server-side validation errors:', errorMessage);
+            setDialogErrorString(errorMessage);
           default:
             console.error('HTTP error:', statusCode, errorMessage);
         }
@@ -127,6 +131,9 @@ function TopFiveMetaDecks() {
             }}
             helperText='Example: "4 Colossal Dreadmaw"'
           />
+          <Typography variant="body2" color="red">
+            {dialogErrorString}
+          </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Cancel</Button>
@@ -137,4 +144,24 @@ function TopFiveMetaDecks() {
   );
 };
 
-export default TopFiveMetaDecks
+export default function IndexPage() {
+  return (
+    <>
+      <Grid 
+        container
+        direction='column'
+        alignItems='center'
+        justifyContent='center'
+        style={{
+          minWidth: '100vw'
+        }}
+      >
+        <Grid xs={12}>
+        </Grid>
+        <Grid xs={12}>
+          <TopFiveMetaDecks />
+        </Grid>
+      </Grid>
+    </>
+  )
+}
