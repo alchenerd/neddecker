@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 import Container from '@mui/material/Container'
 import Grid from '@mui/material/Grid'
@@ -23,6 +23,7 @@ function TopFiveMetaDecks() {
   const [targetDecklist, setTargetDecklist] = useState('');
   const [results, setResults] = useState([]);
   const [dialogErrorString, setDialogErrorString] = useState('');
+  const textFieldRef = useRef('');
   const customDeck = {
     "name": "Custom Deck",
     "meta": "???",
@@ -48,9 +49,8 @@ function TopFiveMetaDecks() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const data = {
-      decklist: targetDecklist,
+      decklist: textFieldRef.current.value,
     };
 
     try {
@@ -126,6 +126,7 @@ function TopFiveMetaDecks() {
             defaultValue={targetDecklist}
             variant="standard"
             multiline
+            inputRef={textFieldRef}
             InputProps={{
               readOnly: readonly,
             }}
@@ -156,9 +157,9 @@ export default function IndexPage() {
           minWidth: '100vw'
         }}
       >
-        <Grid xs={12}>
+        <Grid item xs={12}>
         </Grid>
-        <Grid xs={12}>
+        <Grid item xs={12}>
           <TopFiveMetaDecks />
         </Grid>
       </Grid>

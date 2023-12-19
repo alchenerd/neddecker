@@ -1,6 +1,7 @@
 import json
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import WebsocketConsumer
+from .game import Game
 import datetime
 
 class PlayConsumer(WebsocketConsumer):
@@ -10,7 +11,8 @@ class PlayConsumer(WebsocketConsumer):
                 self.channel_name
         )
         self.accept()
-        self.send(text_data=json.dumps({'log': 'hello world from consumer'}))
+        self.game = Game()
+        self.send(text_data=json.dumps({'type': 'log', 'message': 'hello world from consumer'}))
 
     def disconnect(self, close_code):
         async_to_sync(self.channel_layer.group_discard)(
@@ -20,7 +22,7 @@ class PlayConsumer(WebsocketConsumer):
 
     def receive(self, text_data):
         text_data_json = json.loads(text_data)
-        type_ = text_data_json['type']
+
 
 class ChatConsumer(WebsocketConsumer):
     def connect(self):

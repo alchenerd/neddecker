@@ -75,7 +75,7 @@ def index(request):
     return render(request, 'play/index.html', context)
 
 def parse_decklist(decklist) -> List[Dict[str, int]]:
-    lines = decklist.split('\r\n')
+    lines = [entry.strip('\r') for entry in decklist.split('\n')]
     maindeck, sideboard = {}, {}
     tofill = maindeck
     for line in lines:
@@ -101,12 +101,12 @@ def get_cards_and_faces(maindeck, sideboard) -> Tuple[List[Card], List[Face], Li
     bad_lines = []
     main_cards, main_faces, side_cards, side_faces = [], [], [], []
     for name, count in maindeck.items():
+        maindeck_count += count
         try:
             card = get_card_by_name(name)
         except:
             bad_lines.append(name)
             continue
-        maindeck_count += count
         _faces = Face.objects.filter(card=card) if card else []
         main_cards.append(card)
         main_faces.extend(_faces)
@@ -155,6 +155,7 @@ class TopFiveMetaDecksViewSet(viewsets.ReadOnlyModelViewSet):
 @api_view(['POST'])
 def play(request):
     users_decklist = JSONParser().parse(request).get('decklist')
+    print(users_decklist)
     users_main, users_side = parse_decklist(users_decklist)
     try:
         users_main_cards, users_main_faces, users_side_cards, users_side_faces = get_cards_and_faces(users_main, users_side)
