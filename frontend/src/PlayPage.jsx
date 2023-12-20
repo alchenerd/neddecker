@@ -1,6 +1,7 @@
-import Grid from '@mui/material/Grid'
+import Grid from '@mui/material/Grid';
+import {Card as MtgCard} from './mtg/card';
 
-import './play.css'
+import './play.css';
 
 export default function PlayPage() {
   const playData = JSON.parse(sessionStorage.getItem('playData'));
@@ -16,6 +17,10 @@ export default function PlayPage() {
     console.log("Message from server ", event.data);
   });
 
+  const testId = 'helowrld';
+  const testName = Object.keys(playData.users_main)[0];
+  const testImg = playData.card_image_map[testName];
+
   return (
     <>
       <Grid 
@@ -29,6 +34,11 @@ export default function PlayPage() {
       >
         <Grid item xs={12}>
           <h1>Play</h1>
+            <MtgCard
+              id={testId}
+              name={testName}
+              imageUrl={testImg}
+            />
         </Grid>
       </Grid>
     </>
