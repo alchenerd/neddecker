@@ -20,6 +20,9 @@ class PlayConsumer(WebsocketConsumer):
 
     def receive(self, text_data):
         data = json.loads(text_data)
+        self.multiplexer_handle(data)
+
+    def multiplexer_handle(self, data):
         msg_type = data['type']
         match(msg_type):
             case 'register_match':
@@ -27,7 +30,7 @@ class PlayConsumer(WebsocketConsumer):
             case 'register_player':
                 self.register_player(data)
             case 'mulligan':
-                self.mulligan()
+                self.mulligan(data)
             case 'keep_hand':
                 self.player_keep_hand(data)
 
@@ -67,16 +70,29 @@ class PlayConsumer(WebsocketConsumer):
                     'type': 'game_start',
                     'game': _match.games_played + 1,
                     'of': _match.max_games,
-                    'who_goes_first': game.players[0].player_name,
+                    'who_goes_first': str(game.players[0]),
             }
             self.send(text_data=json.dumps(payload))
+            self.mulligan()
 
-    def mulligan(self):
+    def next_mulligan_player(self, i):
         players = self.mtg_match.game.players
-        for player in players:
-            if hasattr(player, 'mulligan_done') and player.mulligan_done:
-                continue
-            self.mulligan_helper(player)
+        i = (i + 1) % len(players)
+        count = len(players) + 1
+        while hasattr(players[i], 'mulligan_done'):
+            i = (i + 1) % len(players)
+            count -= 1
+            if count <= 0:
+                raise ValueError('Expected at least on player needs mulligan but no')
+        return players[i]
+
+    def mulligan(self, data=None):
+        players = self.mtg_match.game.players
+        next_player = players[0]
+        if data:
+            [i] = [i for i, p in enumerate(players) if p.player_name == data['who']]
+            next_player = self.next_mulligan_player(i)
+        self.mulligan_helper(next_player)
 
     def mulligan_helper(self, player):
         if not hasattr(player, 'to_bottom'):
@@ -86,7 +102,7 @@ class PlayConsumer(WebsocketConsumer):
                 player.library.append(player.hand.pop())
             player.mulligan_done = True
             return
-        if player.player_type == 'human' and player.to_bottom > 0:
+        if player.to_bottom > 0:
             self.send(json.dumps({
                     'type': 'log',
                     'message': f'{player.player_name} mulligans to {7 - player.to_bottom}'
@@ -99,49 +115,47 @@ class PlayConsumer(WebsocketConsumer):
         game = self.mtg_match.game
         payload = {
                 'type': 'mulligan',
-                'hand': game.cids_to_cards(player.hand),
+                'hand': player.hand,
                 'to_bottom': player.to_bottom,
         }
-        choice = self.send_to_player(player=player, text_data=json.dumps(payload))
         player.to_bottom += 1
-        if player.player_type == 'ai':
-            if choice == 'mulligan':
-                self.send(json.dumps({
-                        'type': 'log',
-                        'message': f'{player.player_name} mulligans to {7 - player.to_bottom}'
-                }))
-            elif choice == 'keep_hand':
-                self.send(json.dumps({
-                        'type': 'log',
-                        'message': f'{player.player_name} keeps their hand of {7 - player.to_bottom + 1}'
-                }))
-                player.mulligan_done = True
+        self.send_to_player(player=player, text_data=json.dumps(payload))
 
     def player_keep_hand(self, data):
         players = self.mtg_match.game.players
-        [player] = [x for x in players if x.player_name == data['player_name']]
+        [i] = [i for i, p in enumerate(players) if p.player_name == data['who']]
+        player = players[i]
         for card in reversed(data['bottom']):
-            _id = card['id']
-            player.hand.remove(_id)
-            player.library.append(_id)
+            player.hand.remove(card)
+            player.library.append(card)
         player.mulligan_done = True
         self.send(json.dumps({
                 'type': 'log',
                 'message': f'{player.player_name} keeps their hand of {7 - player.to_bottom + 1}'
         }))
-        if all([ player.mulligan_done for player in players ]):
-            self.send(json.dumps({
+        if all([ hasattr(player, 'mulligan_done') for player in players ]):
+            for player in players:
+                delattr(player, 'to_bottom')
+                delattr(player, 'mulligan_done')
+            payload = {
                     'type': 'log',
-                    'message': f'All players have kept their hand'
-            }))
+                    'message': 'All players have kept their hand',
+            }
+            self.send(json.dumps(payload))
+            self.start_first_turn()
+        else:
+            next_player = self.next_mulligan_player(i)
+            self.mulligan_helper(next_player)
+
+    def start_first_turn(self):
+        pass
 
     def send_to_player(self, player, text_data):
         match player.player_type:
             case 'ai':
-                return player.ai.receive(text_data=text_data)
+                self.multiplexer_handle(player.ai.receive(text_data=text_data))
             case 'human':
                 self.send(text_data=text_data)
-                return ''
 
 class ChatConsumer(WebsocketConsumer):
     def connect(self):

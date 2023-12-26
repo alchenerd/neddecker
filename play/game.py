@@ -1,4 +1,5 @@
 from random import shuffle
+import json
 from .models import Card, Face
 from .ned import Ned
 
@@ -12,6 +13,10 @@ class Player:
         self.hand = []
         self.graveyard = []
         self.exile = []
+        self.seen_opponent_cards = {
+                'this_game': [],
+                'this_match': [],
+        }
         self.hitpoints = 20
 
     def set_player_name(self, name):
@@ -25,12 +30,26 @@ class Player:
     def shuffle(self):
         shuffle(self.library)
 
+    def toJSON(self):
+        return json.dumps(self, default=lambda x: x.__dict__, sort_keys=True)
+
+    def __str__(self):
+        return self.player_name
+
+    def __repr__(self):
+        return self.player_name
+
 class Game:
     def __init__(self, max_players=2):
+        self.has_ended = False
         self.max_players = max_players
         self.card_map = {} # {id: cardname}
         self.players = []
         self.stack = []
+        self.turn_count = 0
+        self.whose_turn = 0
+        self.phase = 0
+        self.whose_priority = 0
 
     def add_player(self, data):
         player = Player()
@@ -52,28 +71,29 @@ class Game:
 
     def load_cards(self, player, main, side):
         rev_map = { value: key for key, value in self.card_map.items() }
-        for card, count in main.items():
+        for name, count in main.items():
+            card = {}
             for i in range(1, count + 1):
-                player.library.append(rev_map[card] + '#' + str(i))
-        for card, count in side.items():
+                _id = rev_map[name] + '#' + str(i)
+                card['id'] = _id
+                card['name'] = name
+                player.library.append(card)
+        for name, count in side.items():
+            card = {}
             for i in range(1, count + 1):
-                player.sideboard.append(rev_map[card] + '#' + str(i))
+                _id = rev_map[name] + '#' + str(i)
+                card['id'] = _id
+                card['name'] = name
+                player.sideboard.append(card)
 
     def start(self):
+        self.has_ended = False
         shuffle(self.players)
         for player in self.players:
             shuffle(player.library)
 
-    def cids_to_cards(self, ids):
-        cards = []
-        for _id in ids:
-            t_id = _id.split('#')[0]
-            name = self.card_map[t_id]
-            cards.append({
-                'id': _id,
-                'name': name,
-            })
-        return cards
+    def toJSON(self):
+        return json.dumps(self, default=lambda x: x.__dict__, sort_keys=True)
 
 class Match:
     def __init__(self, **kwargs):

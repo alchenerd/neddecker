@@ -6,11 +6,11 @@ class Ned():
         match json_data['type']:
             case 'mulligan':
                 choice = self.mulligan_to_four(json_data)
-                print(choice)
                 return choice
 
     def mulligan_to_four(self, data):
-        if (7 - data['to_bottom']) > 4:
-            return 'mulligan'
+        to_bottom = data['to_bottom']
+        if (7 - to_bottom) > 4:
+            return {'type': 'mulligan', 'who': 'ned'}
         else:
-            return 'keep_hand'
+            return {'type': 'keep_hand', 'who': 'ned', 'bottom': data['hand'][-to_bottom:]}

@@ -32,7 +32,7 @@ function sendRegisterPlayer(socket, playData) {
 }
 
 function sendRequestMulligan(socket) {
-  socket.send('{"type": "mulligan"}');
+  socket.send('{"type": "mulligan", "who": "user"}');
 }
 
 function mulliganToTwo(socket, data) {
@@ -42,7 +42,7 @@ function mulliganToTwo(socket, data) {
     const to_bottom = data.hand.slice(-5);
     const payload = {
       type: 'keep_hand',
-      player_name: 'user',
+      who: 'user',
       bottom: to_bottom,
     };
     socket.send(JSON.stringify(payload));
@@ -60,7 +60,7 @@ export default function PlayPage() {
 
   // Listen for messages
   socket.addEventListener("message", event => {
-    console.log("Data from server:", event.data);
+    console.debug("Data from server:", event.data);
     let data = JSON.parse(event.data);
     switch(data.type) {
       case 'log':
@@ -74,7 +74,6 @@ export default function PlayPage() {
         break;
       case 'game_start':
         console.log("Game", data.game, "of", data.of, "has started.", data.who_goes_first, "goes first.");
-        sendRequestMulligan(socket);
         break;
       case 'mulligan':
         mulliganToTwo(socket, data);
