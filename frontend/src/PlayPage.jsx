@@ -68,10 +68,13 @@ export default function PlayPage() {
   function handleMulliganMessage(data) {
     console.log(data);
     const processed = data.hand.map(card => {
+      const imageUrl = playData.card_image_map[card.name] || playData.card_image_map[card.name.split(" // ")[0]];
+      const backImageUrl= playData.card_image_map[card.name.split(" // ")[1]] || "";
       return {
         id: card.id,
         name: card.name,
-        imageUrl: playData.card_image_map[card.name],
+        imageUrl: imageUrl,
+        backImageUrl: backImageUrl,
       };
     });
     setUsersHand([...processed]);
