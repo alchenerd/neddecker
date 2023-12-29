@@ -1,43 +1,43 @@
+import { useState, useEffect } from 'react';
 import Grid from '@mui/material/Grid';
-import {Card as MtgCard} from './mtg/card';
+import useWebSocket, { ReadyState } from 'react-use-websocket';
+import { Card as MtgCard } from './mtg/card';
+import { Board as MtgBoard } from './mtg/board';
+import { MulliganDialog } from './mtg/mulligan-dialog';
 
 import './play.css';
 
-function sendRegisterMatch(socket) {
-  const payload = {
-    type: 'register_match',
-    format: 'modern',
-    games: 3,
-  };
-  socket.send(JSON.stringify(payload));
-}
+const registerMatchPayload = JSON.stringify({
+  type: 'register_match',
+  format: 'modern',
+  games: 3,
+})
 
-function sendRegisterPlayer(socket, playData) {
+const registerPlayerPayload = (who, main, side) => {
   const payload_ned = {
     type: 'register_player',
     player_name: 'ned',
     player_type: 'ai',
-    main: playData.neds_main,
-    side: playData.neds_side,
+    main: main,
+    side: side,
   };
   const payload_user = {
     type: 'register_player',
     player_name: 'user',
     player_type: 'human',
-    main: playData.users_main,
-    side: playData.users_side,
+    main: main,
+    side: side,
   };
-  socket.send(JSON.stringify(payload_ned));
-  socket.send(JSON.stringify(payload_user));
+  if (who === 'ned') {
+    return JSON.stringify(payload_ned);
+  } else if (who === 'user') {
+    return JSON.stringify(payload_user);
+  }
 }
 
-function sendRequestMulligan(socket) {
-  socket.send('{"type": "mulligan", "who": "user"}');
-}
-
-function mulliganToTwo(socket, data) {
+function mulliganToTwo(send, data) {
   if ((7 - data.to_bottom) > 2) {
-    sendRequestMulligan(socket);
+    send(JSON.stringify({type: "mulligan", who: "user"}));
   } else {
     const to_bottom = data.hand.slice(-5);
     const payload = {
@@ -45,44 +45,65 @@ function mulliganToTwo(socket, data) {
       who: 'user',
       bottom: to_bottom,
     };
-    socket.send(JSON.stringify(payload));
+    send(JSON.stringify(payload));
   }
 }
 
 export default function PlayPage() {
   const playData = JSON.parse(sessionStorage.getItem('playData'));
-  const socket = new WebSocket('ws://localhost:8000/ws/play/');
+  const wsUrl = 'ws://localhost:8000/ws/play/';
+  const { sendMessage, lastMessage, readyState } = useWebSocket(wsUrl);
+  const [ openMulligan, setOpenMulligan ] = useState(false);
+  const [ nedsHand, setNedsHand ] = useState([]);
+  const [ usersHand, setUsersHand ] = useState([]);
+  const [ toBottom, setToBottom ] = useState(0);
 
-  // Connection opened
-  socket.addEventListener("open", event => {
-    sendRegisterMatch(socket);
-  });
-
-  // Listen for messages
-  socket.addEventListener("message", event => {
-    console.debug("Data from server:", event.data);
-    let data = JSON.parse(event.data);
-    switch(data.type) {
-      case 'log':
-        console.log("Message from server:", data.message);
-        break;
-      case 'match_initialized':
-        sendRegisterPlayer(socket, playData)
-        break;
-      case 'player_registered':
-        console.log(data.message);
-        break;
-      case 'game_start':
-        console.log("Game", data.game, "of", data.of, "has started.", data.who_goes_first, "goes first.");
-        break;
-      case 'mulligan':
-        mulliganToTwo(socket, data);
+  useEffect(() => {
+    console.log("Connection state changed");
+    if (readyState === ReadyState.OPEN) {
+      sendMessage(registerMatchPayload);
     }
-  });
+  }, [readyState]);
 
-  const testId = 'helowrld';
-  const testName = Object.keys(playData.users_main)[0];
-  const testImg = playData.card_image_map[testName];
+  function handleMulliganMessage(data) {
+    console.log(data);
+    const processed = data.hand.map(card => {
+      return {
+        id: card.id,
+        name: card.name,
+        imageUrl: playData.card_image_map[card.name],
+      };
+    });
+    setUsersHand([...processed]);
+    setToBottom(data.to_bottom);
+    setOpenMulligan(true);
+  }
+
+  useEffect(() => {
+    console.debug(lastMessage);
+    if (lastMessage) {
+      const data = JSON.parse(lastMessage.data);
+      switch(data.type) {
+        case 'log':
+          console.log("Message from server:", data.message);
+          break;
+        case 'match_initialized':
+          sendMessage(registerPlayerPayload('ned', playData.neds_main, playData.neds_side));
+          sendMessage(registerPlayerPayload('user', playData.users_main, playData.users_side));
+          break;
+        case 'player_registered':
+          console.log(data.message);
+          break;
+        case 'game_start':
+          console.log("Game", data.game, "of", data.of, "has started.", data.who_goes_first, "goes first.");
+          break;
+        case 'mulligan':
+          //mulliganToTwo(sendMessage, data);
+          handleMulliganMessage(data);
+          break;
+      }
+    }
+  }, [lastMessage]);
 
   return (
     <>
@@ -91,19 +112,22 @@ export default function PlayPage() {
         direction='column'
         alignItems='center'
         justifyContent='center'
+        spacing={0}
         style={{
           minWidth: '100vw'
         }}
       >
-        <Grid item xs={12}>
-          <h1>Play</h1>
-            <MtgCard
-              id={testId}
-              name={testName}
-              imageUrl={testImg}
-            />
+        <Grid item minWidth='100%' xs={12}>
+          <MtgBoard />
         </Grid>
       </Grid>
+      <MulliganDialog
+        open={openMulligan}
+        setOpen={setOpenMulligan}
+        hand={usersHand}
+        setHand={setUsersHand}
+        toBottom={toBottom}
+      />
     </>
   );
 }

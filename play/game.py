@@ -71,17 +71,24 @@ class Game:
 
     def load_cards(self, player, main, side):
         rev_map = { value: key for key, value in self.card_map.items() }
+        visited = {}
+        for name in main.keys():
+            visited[name] = 1
+        for name in side.keys():
+            visited[name] = 1
         for name, count in main.items():
-            card = {}
-            for i in range(1, count + 1):
-                _id = rev_map[name] + '#' + str(i)
+            for i in range(count):
+                card = dict()
+                _id = rev_map[name] + '#' + str(visited[name])
+                visited[name] += 1
                 card['id'] = _id
                 card['name'] = name
                 player.library.append(card)
         for name, count in side.items():
-            card = {}
-            for i in range(1, count + 1):
-                _id = rev_map[name] + '#' + str(i)
+            for i in range(count):
+                card = dict()
+                _id = rev_map[name] + '#' + str(visited[name])
+                visited[name] += 1
                 card['id'] = _id
                 card['name'] = name
                 player.sideboard.append(card)

@@ -73,7 +73,7 @@ class PlayConsumer(WebsocketConsumer):
                     'who_goes_first': str(game.players[0]),
             }
             self.send(text_data=json.dumps(payload))
-            self.mulligan()
+            self.start_mulligan()
 
     def next_mulligan_player(self, i):
         players = self.mtg_match.game.players
@@ -86,33 +86,39 @@ class PlayConsumer(WebsocketConsumer):
                 raise ValueError('Expected at least on player needs mulligan but no')
         return players[i]
 
-    def mulligan(self, data=None):
+    def start_mulligan(self):
+        players = self.mtg_match.game.players
+        for player in players:
+            player.to_bottom = 0
+        self.mulligan_helper(players[0])
+
+    def mulligan(self, data):
         players = self.mtg_match.game.players
         next_player = players[0]
         if data:
-            [i] = [i for i, p in enumerate(players) if p.player_name == data['who']]
+            [(i, p)] = [(i, p) for i, p in enumerate(players) if p.player_name == data['who']]
+            self.send(json.dumps({
+                    'type': 'log',
+                    'message': f'{p.player_name} mulligans to {7 - p.to_bottom}'
+            }))
             next_player = self.next_mulligan_player(i)
         self.mulligan_helper(next_player)
 
     def mulligan_helper(self, player):
-        if not hasattr(player, 'to_bottom'):
-            player.to_bottom = 0
         if player.to_bottom >= 7:
             while player.hand:
                 player.library.append(player.hand.pop())
             player.mulligan_done = True
-            return
-        if player.to_bottom > 0:
             self.send(json.dumps({
-                    'type': 'log',
-                    'message': f'{player.player_name} mulligans to {7 - player.to_bottom}'
+                'type': 'log',
+                'message': f'{player.player_name} mulligans to 0'
             }))
+            return
         while player.hand:
             player.library.append(player.hand.pop())
         player.shuffle()
         for _ in range(7):
             player.hand.append(player.library.pop(0))
-        game = self.mtg_match.game
         payload = {
                 'type': 'mulligan',
                 'hand': player.hand,

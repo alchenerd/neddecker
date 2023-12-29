@@ -155,7 +155,6 @@ class TopFiveMetaDecksViewSet(viewsets.ReadOnlyModelViewSet):
 @api_view(['POST'])
 def play(request):
     users_decklist = JSONParser().parse(request).get('decklist')
-    print(users_decklist)
     users_main, users_side = parse_decklist(users_decklist)
     try:
         users_main_cards, users_main_faces, users_side_cards, users_side_faces = get_cards_and_faces(users_main, users_side)
