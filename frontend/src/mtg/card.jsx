@@ -1,5 +1,7 @@
-import {useState} from 'react'
+import { useState } from 'react'
 import Paper from '@mui/material/Paper'
+import { useDrag } from 'react-dnd'
+import { ItemTypes } from './constants'
 
 export function Card(props) {
   const id = props.id;
@@ -9,7 +11,16 @@ export function Card(props) {
   const backgroundColor = props.backgroundColor;
   const [isFlipped, setIsFlipped] = useState(false);
   const imageSource = isFlipped ? backImageUrl : imageUrl;
+  const [{ isDragging }, drag] = useDrag(() => ({
+    type: ItemTypes.MTG_CARD,
+    item: {id: id},
+    collect: (monitor) => ({
+      isDragging: !!monitor.isDragging()
+    })
+  }))
+
   return (
+    <div ref={drag}>
     <Paper
       sx={{
         width: '0.96in',
@@ -21,11 +32,13 @@ export function Card(props) {
       id={id}
     >
       <img
-        src={imageSource}
+        src={isFlipped? backImageUrl : imageUrl}
         alt={name}
         height='100%'
         width='100%'
+        style={{opacity: isDragging? 0.5 : 1,}}
       />
     </Paper>
+    </div>
   );
 }

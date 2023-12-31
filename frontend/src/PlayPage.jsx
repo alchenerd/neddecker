@@ -53,10 +53,13 @@ export default function PlayPage() {
   const playData = JSON.parse(sessionStorage.getItem('playData'));
   const wsUrl = 'ws://localhost:8000/ws/play/';
   const { sendMessage, lastMessage, readyState } = useWebSocket(wsUrl);
-  const [ openMulligan, setOpenMulligan ] = useState(false);
   const [ nedsHand, setNedsHand ] = useState([]);
   const [ usersHand, setUsersHand ] = useState([]);
-  const [ toBottom, setToBottom ] = useState(0);
+  // For mulligan
+  const [ openMulligan, setOpenMulligan ] = useState(false);
+  const [ mulliganData, setMulliganData ] = useState({});
+  const [ toBottom, setToBottom ] = useState([]);
+  const [ requestMulligan, setRequestMulligan ] = useState(false);
 
   useEffect(() => {
     console.log("Connection state changed");
@@ -66,21 +69,35 @@ export default function PlayPage() {
   }, [readyState]);
 
   function handleMulliganMessage(data) {
-    console.log(data);
-    const processed = data.hand.map(card => {
-      const imageUrl = playData.card_image_map[card.name] || playData.card_image_map[card.name.split(" // ")[0]];
-      const backImageUrl= playData.card_image_map[card.name.split(" // ")[1]] || "";
-      return {
-        id: card.id,
-        name: card.name,
-        imageUrl: imageUrl,
-        backImageUrl: backImageUrl,
-      };
-    });
-    setUsersHand([...processed]);
-    setToBottom(data.to_bottom);
-    setOpenMulligan(true);
+    setMulliganData(data);
   }
+
+  useEffect(() => {
+    setOpenMulligan(true);
+  }, [mulliganData]);
+
+  useEffect(() => {
+    if (openMulligan === false && requestMulligan === true) {
+      sendMessage(JSON.stringify({
+        type: "mulligan",
+        who: "user",
+      }));
+      setRequestMulligan(false);
+    }
+  }, [openMulligan]);
+
+  useEffect(() => {
+    if (toBottom && toBottom.length > 0) {
+      sendMessage(JSON.stringify({
+        type: "keep_hand",
+        who: "user",
+        bottom: toBottom.map(card => ({
+          id: card.id,
+          name: card.name,
+        })),
+      }));
+    }
+  }, [toBottom]);
 
   useEffect(() => {
     console.debug(lastMessage);
@@ -101,7 +118,6 @@ export default function PlayPage() {
           console.log("Game", data.game, "of", data.of, "has started.", data.who_goes_first, "goes first.");
           break;
         case 'mulligan':
-          //mulliganToTwo(sendMessage, data);
           handleMulliganMessage(data);
           break;
       }
@@ -127,9 +143,10 @@ export default function PlayPage() {
       <MulliganDialog
         open={openMulligan}
         setOpen={setOpenMulligan}
-        hand={usersHand}
-        setHand={setUsersHand}
-        toBottom={toBottom}
+        data={mulliganData}
+        cardImageMap={playData.card_image_map}
+        setToBottom={setToBottom}
+        setRequestMulligan={setRequestMulligan}
       />
     </>
   );

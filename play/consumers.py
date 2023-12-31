@@ -154,7 +154,10 @@ class PlayConsumer(WebsocketConsumer):
             self.mulligan_helper(next_player)
 
     def start_first_turn(self):
-        pass
+        print(self.mtg_match.game.players[0].player_name + "'s first turn")
+        for player in self.mtg_match.game.players:
+            print(player.player_name)
+            print(player.hand)
 
     def send_to_player(self, player, text_data):
         match player.player_type:
