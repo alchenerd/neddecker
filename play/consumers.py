@@ -128,7 +128,6 @@ class PlayConsumer(WebsocketConsumer):
         self.send_to_player(player=player, text_data=json.dumps(payload))
 
     def player_keep_hand(self, data):
-        print('checkpoint')
         players = self.mtg_match.game.players
         [i] = [i for i, p in enumerate(players) if p.player_name == data['who']]
         player = players[i]
@@ -160,10 +159,18 @@ class PlayConsumer(WebsocketConsumer):
             print(player.player_name)
             print(player.hand)
 
+    def send_log(self, to_log):
+        self.send(json.dumps({
+                'type': 'log',
+                'message': f'{str(to_log)}',
+        }))
+
     def send_to_player(self, player, text_data):
         match player.player_type:
             case 'ai':
-                self.multiplexer_handle(player.ai.receive(text_data=text_data))
+                thoughts, choice = player.ai.receive(text_data=text_data)
+                self.send_log(thoughts)
+                self.multiplexer_handle(choice)
             case 'human':
                 self.send(text_data=text_data)
 

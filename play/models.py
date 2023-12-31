@@ -1,4 +1,6 @@
 from django.db import models
+from django.core import serializers
+import json
 
 class Deck(models.Model):
     """
@@ -11,7 +13,7 @@ class Deck(models.Model):
     date = models.DateField(auto_now_add=True)
     art = models.URLField(max_length=255, blank=True)
     def __str__(self):
-        return self.name
+        return serializers.serialize('json', [self,])
 
 class Card(models.Model):
     """
@@ -30,7 +32,18 @@ class Card(models.Model):
     type_line = models.CharField(max_length=255, blank=True) # e.g. "Creature - Dinosaur"
     card_image = models.URLField(max_length=255, blank=True)
     def __str__(self):
-        return self.name + '::' + self.oracle_text
+        fields = (
+                'name',
+                'mana_cost',
+                'type_line',
+                'oracle_text',
+                'power',
+                'toughness',
+                'produced_mana',
+                'loyalty',
+                'defense',
+        )
+        return json.dumps(json.loads(serializers.serialize('json', (self,), fields=fields))[-1]['fields'])
 
 class Face(models.Model):
     """
@@ -49,5 +62,15 @@ class Face(models.Model):
     type_line = models.CharField(max_length=255, blank=True)
     card_image = models.URLField(max_length=255, blank=True)
     def __str__(self):
-        return self.name + '::' + self.oracle_text
-    
+        fields = (
+                'name',
+                'mana_cost',
+                'type_line',
+                'oracle_text',
+                'power',
+                'toughness',
+                'produced_mana',
+                'loyalty',
+                'defense',
+                )
+        return json.dumps(json.loads(serializers.serialize('json', (self,), fields=fields))[-1]['fields'])

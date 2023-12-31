@@ -58,6 +58,7 @@ jsonschema==4.19.2
 jsonschema-specifications==2023.7.1
 kubernetes==28.1.0
 langchain==0.0.339
+langchain-core==0.1.4
 langsmith==0.0.65
 marshmallow==3.20.1
 monotonic==1.6

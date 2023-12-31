@@ -71,11 +71,8 @@ export default function PlayPage() {
 
   function handleMulliganMessage(data) {
     setMulliganData(data);
-  }
-
-  useEffect(() => {
     setOpenMulligan(true);
-  }, [mulliganData]);
+  }
 
   useEffect(() => {
     if (openMulligan === false && requestMulligan === true) {
