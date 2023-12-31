@@ -55,7 +55,14 @@ const Placeholder = ({id, hand, content, setMoveMessage, ...props}) => {
   );
 }
 
-export function MulliganDialog({open, setOpen, data, cardImageMap, setToBottom, setRequestMulligan, ...props}) {
+export function MulliganDialog({
+    open, setOpen,
+    data,
+    cardImageMap,
+    setToBottom,
+    setRequestMulligan,
+    setRequestKeepHand,
+    ...props}) {
   const toBottom = data.to_bottom;
   const [mulliganHand, setMulliganHand] = useState([]);
   const [mulliganBottom, setMulliganBottom] = useState([]);
@@ -71,13 +78,17 @@ export function MulliganDialog({open, setOpen, data, cardImageMap, setToBottom, 
 
   function handleKeep() {
     setOpen(false);
+    setRequestKeepHand(true);
     setToBottom(mulliganBottom);
     setMulliganBottom([]);
   }
 
   useEffect(() => {
-    console.log("Mulligan Dialog:", data);
-    console.log("Mulligan Dialog:", cardImageMap);
+    setRequestKeepHand(false);
+    setRequestMulligan(false);
+  }, []);
+
+  useEffect(() => {
     if (data.hand) {
       setMulliganHand(data.hand.map((card) => ({
         id: card.id,
@@ -89,14 +100,12 @@ export function MulliganDialog({open, setOpen, data, cardImageMap, setToBottom, 
   }, [data]);
 
   useEffect(() => {
-    console.log("Mulligan hand has changed.");
     setHandSizeOK(mulliganHand.length + toBottom === 7);
   }, [mulliganHand]);
 
   useEffect(() => {
     const tid = moveMessage.id || "";
     const tdest = moveMessage.to || "";
-    console.log("Message: move", tid, "to", tdest);
     let t = mulliganHand.find(card => card.id === tid);
     if (!t) {
       t = mulliganBottom.find(card => card.id === tid);
@@ -115,7 +124,6 @@ export function MulliganDialog({open, setOpen, data, cardImageMap, setToBottom, 
       <Dialog
         open={open}
         maxWidth='md'
-        width='md'
       >
         <DialogTitle>Mulligan</DialogTitle>
           <DialogContent sx={{overflow: "hidden"}}>

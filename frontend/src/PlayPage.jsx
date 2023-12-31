@@ -60,6 +60,7 @@ export default function PlayPage() {
   const [ mulliganData, setMulliganData ] = useState({});
   const [ toBottom, setToBottom ] = useState([]);
   const [ requestMulligan, setRequestMulligan ] = useState(false);
+  const [ requestKeepHand, setRequestKeepHand ] = useState(false);
 
   useEffect(() => {
     console.log("Connection state changed");
@@ -82,12 +83,11 @@ export default function PlayPage() {
         type: "mulligan",
         who: "user",
       }));
-      setRequestMulligan(false);
     }
-  }, [openMulligan]);
+  }, [requestMulligan]);
 
   useEffect(() => {
-    if (toBottom && toBottom.length > 0) {
+    if (requestKeepHand && toBottom) {
       sendMessage(JSON.stringify({
         type: "keep_hand",
         who: "user",
@@ -97,7 +97,8 @@ export default function PlayPage() {
         })),
       }));
     }
-  }, [toBottom]);
+    setToBottom([]);
+  }, [requestKeepHand]);
 
   useEffect(() => {
     console.debug(lastMessage);
@@ -147,6 +148,7 @@ export default function PlayPage() {
         cardImageMap={playData.card_image_map}
         setToBottom={setToBottom}
         setRequestMulligan={setRequestMulligan}
+        setRequestKeepHand={setRequestKeepHand}
       />
     </>
   );

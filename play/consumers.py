@@ -83,13 +83,17 @@ class PlayConsumer(WebsocketConsumer):
             i = (i + 1) % len(players)
             count -= 1
             if count <= 0:
-                raise ValueError('Expected at least on player needs mulligan but no')
+                raise ValueError('Expected at least one player needs mulligan but no')
         return players[i]
 
     def start_mulligan(self):
         players = self.mtg_match.game.players
         for player in players:
             player.to_bottom = 0
+            while player.hand:
+                player.library.append(player.hand.pop())
+            for _ in range(7):
+                player.hand.append(player.library.pop(0))
         self.mulligan_helper(players[0])
 
     def mulligan(self, data):
@@ -109,10 +113,6 @@ class PlayConsumer(WebsocketConsumer):
             while player.hand:
                 player.library.append(player.hand.pop())
             player.mulligan_done = True
-            self.send(json.dumps({
-                'type': 'log',
-                'message': f'{player.player_name} mulligans to 0'
-            }))
             return
         while player.hand:
             player.library.append(player.hand.pop())
@@ -128,6 +128,7 @@ class PlayConsumer(WebsocketConsumer):
         self.send_to_player(player=player, text_data=json.dumps(payload))
 
     def player_keep_hand(self, data):
+        print('checkpoint')
         players = self.mtg_match.game.players
         [i] = [i for i, p in enumerate(players) if p.player_name == data['who']]
         player = players[i]
