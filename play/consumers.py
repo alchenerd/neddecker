@@ -65,7 +65,8 @@ class PlayConsumer(WebsocketConsumer):
         }
         self.send(text_data=json.dumps(payload))
         if len(game.players) == game.max_players:
-            game.start()
+            game.clear()
+            game.shuffle_players()
             payload = {
                     'type': 'game_start',
                     'game': _match.games_played + 1,
@@ -154,10 +155,32 @@ class PlayConsumer(WebsocketConsumer):
             self.mulligan_helper(next_player)
 
     def start_first_turn(self):
-        print(self.mtg_match.game.players[0].player_name + "'s first turn")
-        for player in self.mtg_match.game.players:
+        _match = self.mtg_match
+        game = _match.game
+        players = game.players
+        first_player = players[0]
+        print(first_player.player_name + "'s first turn")
+        for player in players:
             print(player.player_name)
             print(player.hand)
+        whose_priority, has_priority = game.next_step()
+        print(first_player.player_name)
+        print(game.turn_phase_tracker.turn_ring)
+        print(whose_priority, has_priority)
+        print(game.turn_count, game.whose_turn, game.phase, has_priority)
+        assert(first_player.player_name == whose_priority)
+        if has_priority:
+            payload = game.get_priority_payload()
+        else:
+            payload = {
+                'type': 'log',
+                'message': f"Turn {game.turn_count}: {game.whose_turn}'s {game.phase}"
+            }
+        player = [p for p in players if p.player_name == whose_priority][-1]
+        self.send_to_player(player, json.dumps(payload))
+
+    def advance(self, data = {}):
+        pass
 
     def send_log(self, to_log):
         self.send(json.dumps({

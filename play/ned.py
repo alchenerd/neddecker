@@ -63,10 +63,18 @@ class Ned():
     def receive(self, text_data):
         print(text_data)
         json_data = json.loads(text_data)
-        payload, user_request = self.generate_contexts(json_data)
-        tools = [SubmitMulliganDescision()]
-        thoughts, choice = self.ask_ned_decker(payload, user_request, tools=tools)
-        return thoughts, choice
+        match json_data['type']:
+            case 'log':
+                print(json_data['message'])
+                return 'Ned received: ' + json_data['message'], json_data
+            case 'mulligan':
+                return 'Beep boop I mull to 4', self.mulligan_to_four(json_data)
+                payload, user_request = self.generate_contexts(json_data)
+                tools = [SubmitMulliganDescision()]
+                thoughts, choice = self.ask_ned_decker(payload, user_request, tools=tools)
+                return thoughts, choice
+            case _:
+                return '...What?', {'type': 'log', 'message': 'Error'}
 
     def get_card_by_name(self, name) -> Card:
         return Card.objects.filter(name=name).order_by().first()
