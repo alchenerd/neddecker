@@ -16,7 +16,7 @@ class Players():
 
 class MtgTurnsAndPhases():
     PHASES_AND_STEPS = [
-        # (name, playersGetsPriority)
+        # (name, playerGetsPriority)
         ('beginning phase', False),
         ('untap step', False),
         ('upkeep step', True),
@@ -31,7 +31,7 @@ class MtgTurnsAndPhases():
         ('postcombat main phase', True),
         ('ending phase', False),
         ('end step', True),
-        ('cleanup step', False),
+        ('cleanup step', False), # but can be broken by madness
     ]
 
     def __init__(self, players):
@@ -55,7 +55,7 @@ class MtgTurnsAndPhases():
         return self
 
     def __next__(self):
-        turn, cycle, whose, phase = None, None, None, None
+        turn, whose, phase = None, None, None
         turn_ended = False
         if len(self.phase_queue) == 0:
             self.phase_queue.extend(MtgTurnsAndPhases.PHASES_AND_STEPS)
@@ -68,8 +68,7 @@ class MtgTurnsAndPhases():
         if not whose and turn_ended:
             self.turn_index = ((self.turn_index + 1) % self.turn_ring_length)
         whose = self.turn_ring[self.turn_index]
-        cycle = turn // self.turn_ring_length + (1 if (turn % self.turn_ring_length) else 0)
-        return turn, cycle, whose, phase
+        return turn, whose, phase
 
     def add_extra_turn(self, player):
         assert(isinstance(player, str) and player in turn_ring)

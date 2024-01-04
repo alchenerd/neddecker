@@ -5,14 +5,14 @@ from .iterables import MtgTurnsAndPhases as MTGTNPS
 
 class Player:
     def __init__(self):
-        self.player_name = ''
-        self.player_type = ''
-        self.sideboard = []
-        self.library = []
-        self.battlefield = []
-        self.hand = []
-        self.graveyard = []
-        self.exile = []
+        self.player_name = '' # 'ned' or 'user'
+        self.player_type = '' # 'human' or 'ai'
+        self.sideboard = [] # {id, name}
+        self.library = [] # {id, name}
+        self.battlefield = [] # {id, name, tapped, flipped, counters, annotations}
+        self.hand = [] # {id, name, typeline, mana}
+        self.graveyard = [] # {id, name}
+        self.exile = [] # {id, name}
         self.hp = 20
         self.infect = 0
 
@@ -26,6 +26,23 @@ class Player:
 
     def shuffle(self):
         shuffle(self.library)
+
+    def untap(self):
+        for card in self.battlefield:
+            if card.get('tapped', None) == True:
+                card['tapped'] = False
+
+    def draw(self):
+        try:
+            self.hand.append(self.library.pop(0))
+        except IndexError:
+            return -1
+        return 0
+
+    def cleanup(self):
+        for card in self.battlefield:
+            if card.get('annotations', {}).get('damage', None):
+                card['annotations']['damage'] = 0
 
     def move_card(self, item, _from, to):
         assert(item[id][0] == self.player_name[0])
@@ -46,8 +63,17 @@ class Player:
             for card in zone:
                 self.move_card(card, _from=zone, to='library')
 
-    def toJSON(self):
-        return json.dumps(self, default=lambda x: x.__dict__, sort_keys=True)
+    def get_board_state(self):
+        board_state = {}
+        board_state['player_name'] = self.player_name
+        board_state['library'] = self.library
+        board_state['battlefield'] = self.battlefield
+        board_state['hand'] = self.hand
+        board_state['graveyard'] = self.graveyard
+        board_state['exile'] = self.exile
+        board_state['hp'] = self.hp
+        board_state['infect'] = self.infect
+        return board_state
 
     def __str__(self):
         return self.player_name
@@ -63,10 +89,10 @@ class Game:
         self.players = []
         self.stack = []
         self.turn_count = 1
-        self.whose_turn = None
+        self.whose_turn = ''
         self.phase = 0
-        self.whose_priority = None
-        self.priority_waitlist = []
+        self.whose_priority = ''
+        self.player_has_priority = False
         self.turn_phase_tracker = None
 
     def add_player(self, data):
@@ -115,32 +141,44 @@ class Game:
                 card['name'] = name
                 player.sideboard.append(card)
 
-    def phase_to_str(self, i):
-        return Game.PHASES_AND_STEPS[i]
+    def start(self):
+        self.next_step()
 
     def next_step(self):
-        if len(self.priority_waitlist) > 0:
-            return self.priority_waitlist.pop(0), True
-        player_has_priority = False
-        self.turn_count, _, self.whose_turn, (self.phase, player_has_priority) = next(self.turn_phase_tracker)
-        if player_has_priority:
-            i = 0
-            while (self.players[i].player_name != self.whose_turn):
-                i += 1
-            self.priority_waitlist = []
-            while i < len(self.players):
-                self.priority_waitlist.append(self.players[i].player_name)
-            for player in self.players:
-                if player.player_name == self.whose_turn:
-                    break
-                else:
-                    self.priority_waitlist.append(player.player_name)
-            return self.priority_waitlist[0], True
-        else:
-            return self.whose_turn, False
+        self.turn_count, self.whose_turn, (self.phase, self.player_has_priority) = next(self.turn_phase_tracker)
+        self.apply_turn_based_actions()
 
-    def get_priority_payload(self):
-        return {}
+    def apply_turn_based_actions(self):
+        player = self.whose_turn
+        player = [p for p in self.players if p.player_name == player][0]
+        match self.phase:
+            case 'untap step':
+                player.untap()
+            case 'draw step':
+                player.draw()
+            case 'cleanup step':
+                player.cleanup()
+
+    def apply(self, action):
+        pass
+
+    def get_payload(self):
+        payload = {}
+        if self.player_has_priority:
+            payload = {
+                'type': 'receive_priority',
+                'turn_count': self.turn_count,
+                'whose_turn': self.whose_turn,
+                'phase': self.phase,
+                'whose_priority': self.whose_priority,
+                'board_state': self.get_board_state(),
+            }
+        else:
+            payload = {
+                'type': 'log',
+                'message': f"Turn {self.turn_count}: {self.whose_turn}'s turn\n{self.phase}",
+            }
+        return payload
 
     def move_to_owner(self, item, _from, to):
         owner = [p for p in self.players if p.player_name[0] == item['id'][0]][-1]
@@ -172,8 +210,11 @@ class Game:
         self.priority_waitlist = []
         self.has_ended = False
 
-    def toJSON(self):
-        return json.dumps(self, default=lambda x: x.__dict__, sort_keys=True)
+    def get_board_state(self):
+        board_state = {}
+        board_state['stack'] = self.stack
+        board_state['players'] = [p.get_board_state() for p in self.players]
+        return board_state
 
 class Match:
     def __init__(self, **kwargs):

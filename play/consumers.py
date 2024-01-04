@@ -155,32 +155,25 @@ class PlayConsumer(WebsocketConsumer):
             self.mulligan_helper(next_player)
 
     def start_first_turn(self):
-        _match = self.mtg_match
-        game = _match.game
-        players = game.players
-        first_player = players[0]
-        print(first_player.player_name + "'s first turn")
-        for player in players:
-            print(player.player_name)
-            print(player.hand)
-        whose_priority, has_priority = game.next_step()
-        print(first_player.player_name)
-        print(game.turn_phase_tracker.turn_ring)
-        print(whose_priority, has_priority)
-        print(game.turn_count, game.whose_turn, game.phase, has_priority)
-        assert(first_player.player_name == whose_priority)
-        if has_priority:
-            payload = game.get_priority_payload()
-        else:
-            payload = {
-                'type': 'log',
-                'message': f"Turn {game.turn_count}: {game.whose_turn}'s {game.phase}"
-            }
-        player = [p for p in players if p.player_name == whose_priority][-1]
+        self.mtg_match.game.start()
+        player = self.mtg_match.game.whose_priority
+        player = [p for p in self.mtg_match.game.players if p.player_name == player][0]
+        payload = self.mtg_match.game.get_payload()
         self.send_to_player(player, json.dumps(payload))
+        if not self.mtg_match.game.player_has_priority:
+            self.advance()
 
     def advance(self, data = {}):
-        pass
+        actions = data.get('actions', [])
+        for action in actions:
+            self.mtg_match.game.apply(action)
+        self.mtg_match.game.next_step()
+        player = self.mtg_match.game.whose_priority
+        player = [p for p in self.mtg_match.game.players if p.player_name == player][0]
+        payload = self.mtg_match.game.get_payload()
+        self.send_to_player(player, json.dumps(payload))
+        if not self.mtg_match.game.player_has_priority:
+            self.advance()
 
     def send_log(self, to_log):
         self.send(json.dumps({
@@ -189,6 +182,7 @@ class PlayConsumer(WebsocketConsumer):
         }))
 
     def send_to_player(self, player, text_data):
+        assert(isinstance(player, Player))
         match player.player_type:
             case 'ai':
                 thoughts, choice = player.ai.receive(text_data=text_data)
