@@ -7,7 +7,6 @@ import Button from '@mui/material/Button'
 import Box from '@mui/material/Box'
 import { DndProvider, useDrop } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
-import { Hand } from './hand'
 import { Card } from './card'
 import { ItemTypes } from './constants'
 
@@ -120,45 +119,43 @@ export function MulliganDialog({
   }, [moveMessage]);
 
   return (
-    <DndProvider backend={HTML5Backend}>
-      <Dialog
-        open={open}
-        maxWidth='md'
-      >
-        <DialogTitle>Mulligan</DialogTitle>
-          <DialogContent sx={{overflow: "hidden"}}>
-            <Placeholder
-              id="to_bottom"
-              dir="row-reverse"
-              content={mulliganBottom}
-              setMoveMessage={setMoveMessage}
-              rightmost={library}
-            />
-          </DialogContent>
-          <DialogContent sx={{overflow: "hidden"}}>
-            <Placeholder
-              id="hand"
-              dir="row"
-              content={mulliganHand}
-              setMoveMessage={setMoveMessage}
-            />
-          </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={handleMulligan}
-            variant="contained"
-          >
-            Mulligan to {7 - toBottom - 1}
-          </Button>
-          <Button
-            onClick={handleKeep}
-            variant="contained"
-            disabled={!handSizeOK}
-          >
-            Keep {7 - toBottom}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </DndProvider>
+    <Dialog
+      open={open}
+      maxWidth='md'
+    >
+      <DialogTitle>Mulligan</DialogTitle>
+        <DialogContent sx={{overflow: "hidden"}}>
+          <Placeholder
+            id="to_bottom"
+            dir="row-reverse"
+            content={mulliganBottom}
+            setMoveMessage={setMoveMessage}
+            rightmost={library}
+          />
+        </DialogContent>
+        <DialogContent sx={{overflow: "hidden"}}>
+          <Placeholder
+            id="hand"
+            dir="row"
+            content={mulliganHand}
+            setMoveMessage={setMoveMessage}
+          />
+        </DialogContent>
+      <DialogActions>
+        <Button
+          onClick={handleMulligan}
+          variant="contained"
+        >
+          Mulligan to {7 - toBottom - 1}
+        </Button>
+        <Button
+          onClick={handleKeep}
+          variant="contained"
+          disabled={!handSizeOK}
+        >
+          Keep {7 - toBottom}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }

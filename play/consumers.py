@@ -84,7 +84,7 @@ class PlayConsumer(WebsocketConsumer):
             i = (i + 1) % len(players)
             count -= 1
             if count <= 0:
-                raise ValueError('Expected at least one player needs mulligan but no')
+                return None
         return players[i]
 
     def start_mulligan(self):
@@ -95,7 +95,7 @@ class PlayConsumer(WebsocketConsumer):
                 player.library.append(player.hand.pop())
             for _ in range(7):
                 player.hand.append(player.library.pop(0))
-        self.mulligan_helper(players[0])
+        self.mulligan_helper(players[0], 0)
 
     def mulligan(self, data):
         players = self.mtg_match.game.players
@@ -107,16 +107,15 @@ class PlayConsumer(WebsocketConsumer):
                     'message': f'{p.player_name} mulligans to {7 - p.to_bottom}'
             }))
             next_player = self.next_mulligan_player(i)
-        self.mulligan_helper(next_player)
+        [i] = [(i, p) for i, p in enumerate(players) if p.player_name == next_player.player_name]
+        self.mulligan_helper(next_player, i)
 
-    def mulligan_helper(self, player):
-        if player.to_bottom >= 7:
-            while player.hand:
-                player.library.append(player.hand.pop())
-            player.mulligan_done = True
-            return
+    def mulligan_helper(self, player, i):
         while player.hand:
             player.library.append(player.hand.pop())
+        if player.to_bottom >= 7:
+            player.mulligan_done = True
+            return self.check_all_mulligan_done(i)
         player.shuffle()
         for _ in range(7):
             player.hand.append(player.library.pop(0))
@@ -140,6 +139,10 @@ class PlayConsumer(WebsocketConsumer):
                 'type': 'log',
                 'message': f'{player.player_name} keeps their hand of {7 - player.to_bottom + 1}'
         }))
+        self.check_all_mulligan_done(i)
+
+    def check_all_mulligan_done(self, i):
+        players = self.mtg_match.game.players
         if all([ hasattr(player, 'mulligan_done') for player in players ]):
             for player in players:
                 delattr(player, 'to_bottom')
@@ -152,7 +155,7 @@ class PlayConsumer(WebsocketConsumer):
             self.start_first_turn()
         else:
             next_player = self.next_mulligan_player(i)
-            self.mulligan_helper(next_player)
+            self.mulligan_helper(next_player, i)
 
     def start_first_turn(self):
         self.mtg_match.game.start()

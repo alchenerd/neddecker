@@ -53,14 +53,16 @@ export default function PlayPage() {
   const playData = JSON.parse(sessionStorage.getItem('playData'));
   const wsUrl = 'ws://localhost:8000/ws/play/';
   const { sendMessage, lastMessage, readyState } = useWebSocket(wsUrl);
-  const [ nedsHand, setNedsHand ] = useState([]);
-  const [ usersHand, setUsersHand ] = useState([]);
   // For mulligan
   const [ openMulligan, setOpenMulligan ] = useState(false);
   const [ mulliganData, setMulliganData ] = useState({});
   const [ toBottom, setToBottom ] = useState([]);
   const [ requestMulligan, setRequestMulligan ] = useState(false);
   const [ requestKeepHand, setRequestKeepHand ] = useState(false);
+  // For board rendering
+  const [ boardData, setBoardData ] = useState({});
+  const [ ned, setNed ] = useState({});
+  const [ user, setUser ] = useState({});
 
   useEffect(() => {
     console.log("Connection state changed");
@@ -74,17 +76,22 @@ export default function PlayPage() {
     setOpenMulligan(true);
   }
 
+  function handleReceivePriority(data) {
+    setBoardData(data);
+  }
+
   useEffect(() => {
     if (openMulligan === false && requestMulligan === true) {
       sendMessage(JSON.stringify({
         type: "mulligan",
         who: "user",
       }));
+      setRequestMulligan(false);
     }
   }, [requestMulligan]);
 
   useEffect(() => {
-    if (requestKeepHand && toBottom) {
+    if (requestKeepHand === true && toBottom) {
       sendMessage(JSON.stringify({
         type: "keep_hand",
         who: "user",
@@ -94,6 +101,7 @@ export default function PlayPage() {
         })),
       }));
     }
+    setRequestKeepHand(false);
     setToBottom([]);
   }, [requestKeepHand]);
 
@@ -118,6 +126,9 @@ export default function PlayPage() {
         case 'mulligan':
           handleMulliganMessage(data);
           break;
+        case 'receive_priority':
+          handleReceivePriority(data);
+          break;
       }
     }
   }, [lastMessage]);
@@ -135,7 +146,14 @@ export default function PlayPage() {
         }}
       >
         <Grid item minWidth='100%' xs={12}>
-          <MtgBoard />
+          <MtgBoard
+            boardData={boardData}
+            ned={ned}
+            setNed={setNed}
+            user={user}
+            setUser={setUser}
+            cardImageMap={playData.card_image_map}
+          />
         </Grid>
       </Grid>
       <MulliganDialog

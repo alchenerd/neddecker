@@ -32,6 +32,10 @@ class Player:
             if card.get('tapped', None) == True:
                 card['tapped'] = False
 
+    def first_draw(self, turn_count):
+        if (turn_count > 1):
+            self.draw()
+
     def draw(self):
         try:
             self.hand.append(self.library.pop(0))
@@ -155,7 +159,7 @@ class Game:
             case 'untap step':
                 player.untap()
             case 'draw step':
-                player.draw()
+                player.first_draw(self.turn_count)
             case 'cleanup step':
                 player.cleanup()
 
