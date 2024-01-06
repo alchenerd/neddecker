@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { PlayerInformation } from './player-information'
 import { Hand } from './hand'
-import Battlefield from './battlefield'
+import { Battlefield } from './battlefield'
 import Box from '@mui/material/Box'
 import Grid from '@mui/material/Grid'
 
@@ -40,10 +40,10 @@ export function Board({boardData, ned, setNed, user, setUser, cardImageMap, ...p
           <Hand content={ned.hand} map={cardImageMap} />
         </Grid>
         <Grid item xs={12} sx={{backgroundColor: "Magenta", height: "33vh"}}>
-          <Battlefield content={ned.battlefield} map={cardImageMap} />
+          <Battlefield content={ned.battlefield} library={ned.library} map={cardImageMap} />
         </Grid>
         <Grid item xs={12} sx={{backgroundColor: "Magenta", height: "33vh"}}>
-          <Battlefield content={user.battlefield} map={cardImageMap} />
+          <Battlefield content={user.battlefield} library={user.library} map={cardImageMap} />
         </Grid>
         <Grid item xs={2} sx={{backgroundColor: "Magenta", height: "17vh"}} alignSelf="end">
           <PlayerInformation

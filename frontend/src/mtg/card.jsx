@@ -11,29 +11,31 @@ export function Card({id, name, imageUrl, backImageUrl, backgroundColor, ...prop
     item: {id: id},
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging()
-    })
+    }),
+      canDrag: props.canDrag === undefined ? true : false,
   }))
 
   return (
     <div ref={drag}>
-    <Paper
-      sx={{
-        width: '0.96in',
-        height: '1.26in',
-        borderRadius: '5px',
-        overflow: 'hidden',
-        backgroundColor: backgroundColor,
-      }}
-      id={id}
-    >
-      <img
-        src={isFlipped? backImageUrl : imageUrl}
-        alt={name}
-        height='100%'
-        width='100%'
-        style={{opacity: isDragging? 0.5 : 1,}}
-      />
-    </Paper>
+      <Paper
+        sx={{
+          width: '0.96in',
+          height: '1.26in',
+          borderRadius: '5px',
+          overflow: 'hidden',
+          backgroundColor: backgroundColor,
+          ...props.sx,
+        }}
+        id={id}
+      >
+        <img
+          src={isFlipped? backImageUrl : imageUrl}
+          alt={name}
+          height='100%'
+          width='100%'
+          style={{opacity: isDragging? 0.5 : 1,}}
+        />
+      </Paper>
     </div>
   );
 }

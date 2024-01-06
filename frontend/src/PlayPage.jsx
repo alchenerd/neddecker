@@ -68,6 +68,7 @@ export default function PlayPage() {
     console.log("Connection state changed");
     if (readyState === ReadyState.OPEN) {
       sendMessage(registerMatchPayload);
+      console.log(playData.card_image_map)
     }
   }, [readyState]);
 

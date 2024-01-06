@@ -47,6 +47,7 @@ const Placeholder = ({id, hand, content, setMoveMessage, ...props}) => {
             name={card.name}
             imageUrl={card.imageUrl}
             backgroundColor={card.backgroundColor}
+            canDrag={card.canDrag}
           />
         )
       })}
@@ -67,7 +68,7 @@ export function MulliganDialog({
   const [mulliganBottom, setMulliganBottom] = useState([]);
   const [moveMessage, setMoveMessage] = useState({});
   const [handSizeOK, setHandSizeOK] = useState(false);
-  const library = [{id: "library", name: "library", imageUrl: "", backgroundColor: "#dddddd"},];
+  const library = [{id: "library", name: "library", imageUrl: "", backgroundColor: "#dddddd", canDrag: "false"},];
 
   function handleMulligan() {
     setOpen(false);
