@@ -39,8 +39,17 @@ export function Hand({content, map, ...props}) {
           height: '100%',
           background: "green",
           overflow: "auto",
+          alignItems: "center",
+          justifyContent: "begin",
         }}>
-        {toShow.map(card => {return <Card key={card.id} id={card.id} imageUrl={card.imageUrl} backImageUrl={card.backImageUrl} />})}
+        {toShow.map(card => {return (
+          <Card
+            key={card.id}
+            id={card.id}
+            imageUrl={card.imageUrl}
+            backImageUrl={card.backImageUrl}
+          />
+        )})}
       </Box>
     </>
   );

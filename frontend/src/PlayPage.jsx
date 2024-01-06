@@ -4,6 +4,8 @@ import useWebSocket, { ReadyState } from 'react-use-websocket';
 import { Card as MtgCard } from './mtg/card';
 import { Board as MtgBoard } from './mtg/board';
 import { MulliganDialog } from './mtg/mulligan-dialog';
+import { GameInformation } from './mtg/game-information';
+import { ChatRoom } from './mtg/chat-room';
 
 import './play.css';
 
@@ -138,15 +140,18 @@ export default function PlayPage() {
     <>
       <Grid 
         container
-        direction='column'
+        direction='row'
         alignItems='center'
         justifyContent='center'
         spacing={0}
         style={{
-          minWidth: '100vw'
+          minWidth: '100vw',
+          maxWidth: '100vw',
+          minHeight: '100vh',
+          maxHeight: '100vh',
         }}
       >
-        <Grid item minWidth='100%' xs={12}>
+        <Grid item xs={8}>
           <MtgBoard
             boardData={boardData}
             ned={ned}
@@ -155,6 +160,23 @@ export default function PlayPage() {
             setUser={setUser}
             cardImageMap={playData.card_image_map}
           />
+        </Grid>
+        <Grid item xs={4}>
+          <Grid container
+            direction='column'
+            alignItems='center'
+            justifyContent='center'
+            spacing={0}
+            width='100%'
+            height='100vh'
+          >
+            <Grid item xs={4} width='100%'>
+              <GameInformation />
+            </Grid>
+            <Grid item xs={8} width='100%'>
+              <ChatRoom />
+            </Grid>
+          </Grid>
         </Grid>
       </Grid>
       <MulliganDialog

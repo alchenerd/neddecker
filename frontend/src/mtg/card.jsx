@@ -21,7 +21,7 @@ export function Card({id, name, imageUrl, backImageUrl, backgroundColor, ...prop
         sx={{
           width: '0.96in',
           height: '1.26in',
-          borderRadius: '5px',
+          borderRadius: '4px',
           overflow: 'hidden',
           backgroundColor: backgroundColor,
           ...props.sx,
