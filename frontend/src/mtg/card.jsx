@@ -1,10 +1,11 @@
-import { useState } from 'react'
-import Paper from '@mui/material/Paper'
+import { useState, useEffect } from 'react'
+import Box from '@mui/material/Box'
 import { useDrag } from 'react-dnd'
 import { ItemTypes } from './constants'
 
-export function Card({id, name, imageUrl, backImageUrl, backgroundColor, ...props}) {
+export function Card({id, name, imageUrl, backImageUrl, backgroundColor, setSelectedCard, ...props}) {
   const [isFlipped, setIsFlipped] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const imageSource = isFlipped ? backImageUrl : imageUrl;
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.MTG_CARD,
@@ -15,27 +16,40 @@ export function Card({id, name, imageUrl, backImageUrl, backgroundColor, ...prop
       canDrag: props.canDrag === undefined ? true : false,
   }))
 
+  const registerFocus = () => {
+    setIsFocused(true);
+  }
+
+  useEffect(() => {
+    if (isFocused) {
+      setSelectedCard?.(imageSource);
+    }
+    setIsFocused(false);
+  }, [isFocused]);
+
   return (
-    <div ref={drag}>
-      <Paper
-        sx={{
-          width: '0.96in',
-          height: '1.26in',
-          borderRadius: '4px',
-          overflow: 'hidden',
-          backgroundColor: backgroundColor,
-          ...props.sx,
+    <Box
+      sx={{
+        height: '100%',
+        display: "inline-block",
+        aspectRatio: 2.5 / 3.5,
+        overflow: 'hidden',
+        backgroundColor: backgroundColor || 'transparent',
+        ...props.sx,
+      }}
+      id={id}
+      ref={drag}
+      onMouseOver={registerFocus}
+    >
+      <img
+        src={isFlipped? backImageUrl : imageUrl}
+        alt={name}
+        height='100%'
+        style={{
+          opacity: isDragging? 0.5 : 1,
+          aspectRatio: 2.5 / 3.5,
         }}
-        id={id}
-      >
-        <img
-          src={isFlipped? backImageUrl : imageUrl}
-          alt={name}
-          height='100%'
-          width='100%'
-          style={{opacity: isDragging? 0.5 : 1,}}
-        />
-      </Paper>
-    </div>
+      />
+    </Box>
   );
 }

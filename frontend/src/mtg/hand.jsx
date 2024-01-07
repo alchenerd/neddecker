@@ -5,7 +5,7 @@ import { HTML5Backend } from 'react-dnd-html5-backend'
 import { ItemTypes } from './constants'
 import { Card } from './card'
 
-export function Hand({content, map, ...props}) {
+export function Hand({content, map, setSelectedCard, ...props}) {
   const [toShow, setToShow] = useState([]);
 
   useEffect(() => {
@@ -40,14 +40,17 @@ export function Hand({content, map, ...props}) {
           background: "green",
           overflow: "auto",
           alignItems: "center",
-          justifyContent: "begin",
-        }}>
+          justifyContent: "start",
+        }}
+      >
         {toShow.map(card => {return (
           <Card
             key={card.id}
             id={card.id}
+            name={card.name}
             imageUrl={card.imageUrl}
             backImageUrl={card.backImageUrl}
+            setSelectedCard={setSelectedCard}
           />
         )})}
       </Box>

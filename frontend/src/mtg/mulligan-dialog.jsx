@@ -10,10 +10,11 @@ import { HTML5Backend } from 'react-dnd-html5-backend'
 import { Card } from './card'
 import { ItemTypes } from './constants'
 
-const Placeholder = ({id, hand, content, setMoveMessage, ...props}) => {
+const Placeholder = ({id, hand, content, setMoveMessage, rightmost, ...props}) => {
   let toShow = content;
-  if (props.rightmost) {
-    toShow = [...content, ...props.rightmost];
+
+  if (rightmost) {
+    toShow = [...toShow, ...rightmost];
   }
 
   const [, drop] = useDrop(
@@ -33,10 +34,11 @@ const Placeholder = ({id, hand, content, setMoveMessage, ...props}) => {
       ref={drop}
       sx={{
         display: "flex",
-        width: "100%",
-        height: "100%",
+        justifyContent: "start",
+        width: "50vw",
+        height: "20vh",
         flexDirection: props.dir || "row",
-        overflow: "hidden",
+        overflow: "auto",
       }}
     >
       {toShow.map((card, index) => {
@@ -68,7 +70,7 @@ export function MulliganDialog({
   const [mulliganBottom, setMulliganBottom] = useState([]);
   const [moveMessage, setMoveMessage] = useState({});
   const [handSizeOK, setHandSizeOK] = useState(false);
-  const library = [{id: "library", name: "library", imageUrl: "", backgroundColor: "#dddddd", canDrag: "false"},];
+  const library = [{id: "library", name: "Library", imageUrl: "", backgroundColor: "#dddddd", canDrag: "false"},];
 
   function handleMulligan() {
     setOpen(false);
@@ -128,7 +130,7 @@ export function MulliganDialog({
         <DialogContent sx={{overflow: "hidden"}}>
           <Placeholder
             id="to_bottom"
-            dir="row-reverse"
+            dir="row"
             content={mulliganBottom}
             setMoveMessage={setMoveMessage}
             rightmost={library}

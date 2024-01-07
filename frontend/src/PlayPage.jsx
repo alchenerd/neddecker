@@ -65,6 +65,7 @@ export default function PlayPage() {
   const [ boardData, setBoardData ] = useState({});
   const [ ned, setNed ] = useState({});
   const [ user, setUser ] = useState({});
+  const [ selectedCard, setSelectedCard ] = useState("");
 
   useEffect(() => {
     console.log("Connection state changed");
@@ -159,9 +160,10 @@ export default function PlayPage() {
             user={user}
             setUser={setUser}
             cardImageMap={playData.card_image_map}
+            setSelectedCard={setSelectedCard}
           />
         </Grid>
-        <Grid item xs={4}>
+        <Grid item xs={4} width='100%'>
           <Grid container
             direction='column'
             alignItems='center'
@@ -169,11 +171,16 @@ export default function PlayPage() {
             spacing={0}
             width='100%'
             height='100vh'
+            wrap='nowrap'
           >
-            <Grid item xs={4} width='100%'>
-              <GameInformation />
+            <Grid item width='100%' height='40vh'>
+              <GameInformation
+                selectedCard={selectedCard}
+                setSelectedCard={setSelectedCard}
+                whoseTurn={boardData.whose_turn}
+              />
             </Grid>
-            <Grid item xs={8} width='100%'>
+            <Grid item width='100%' height='60vh'>
               <ChatRoom />
             </Grid>
           </Grid>

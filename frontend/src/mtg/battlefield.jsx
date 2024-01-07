@@ -5,7 +5,7 @@ import { HTML5Backend } from 'react-dnd-html5-backend'
 import { ItemTypes } from './constants'
 import { Card } from './card'
 
-export function Battlefield({content, library, map, ...props}) {
+export function Battlefield({content, library, map, setSelectedCard, ...props}) {
   const [toShow, setToShow] = useState([]);
 
   useEffect(() => {
@@ -32,7 +32,17 @@ export function Battlefield({content, library, map, ...props}) {
   const renderLibrary = (cond) => {
     if (cond) {
       return (
-        <Card canDrag="false" sx={{position: "absolute", top: 0, right: 0, margin:"10px"}} backgroundColor="#c0ffee"/>
+        <Card
+          canDrag="false"
+          sx={{
+            position: "absolute",
+            top: 0,
+            right: 0,
+            margin:"10px",
+            height: "50%"
+          }}
+          backgroundColor="#c0ffee"
+        />
       )
     }
   }
@@ -42,7 +52,17 @@ export function Battlefield({content, library, map, ...props}) {
       <Box sx={{display: "flex", width: "100%", height: "100%", background: "blue", position: "relative"}} ref={drop}>
         <p>Battlefield</p>
         {renderLibrary(library && library.length > 0)}
-        {toShow.map(card => {return <Card key={card.id} id={card.id} imageUrl={card.imageUrl} backImageUrl={card.backImageUrl} />})}
+        {toShow.map(card => {
+          return
+            <Card
+              key={card.id}
+              id={card.id}
+              name={card.name}
+              imageUrl={card.imageUrl}
+              backImageUrl={card.backImageUrl}
+              setSelectedCard={setSelectedCard}
+            />
+        })}
       </Box>
     </>
   )

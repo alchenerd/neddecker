@@ -6,7 +6,7 @@ import { Bedrunner } from './bedrunner'
 import Box from '@mui/material/Box'
 import Grid from '@mui/material/Grid'
 
-export function Board({boardData, ned, setNed, user, setUser, cardImageMap, ...props}) {
+export function Board({boardData, ned, setNed, user, setUser, cardImageMap, setSelectedCard, ...props}) {
   const [whoseTurn, setWhoseTurn] = useState("user");
   const [whosePriority, setWhosePriority] = useState("user");
   const [phase, setPhase] = useState("");
@@ -40,17 +40,31 @@ export function Board({boardData, ned, setNed, user, setUser, cardImageMap, ...p
           />
         </Grid>
         <Grid item xs={10} sx={{backgroundColor: "Magenta", height: "16vh"}}>
-          <Hand content={ned.hand} map={cardImageMap} />
+          <Hand
+            content={ned.hand}
+            map={cardImageMap}
+            setSelectedCard={setSelectedCard}
+          />
         </Grid>
         <Grid item xs={12} sx={{backgroundColor: "Magenta", height: "32vh"}}>
-          <Battlefield content={ned.battlefield} library={ned.library} map={cardImageMap} />
+          <Battlefield
+            content={ned.battlefield}
+            library={ned.library}
+            map={cardImageMap}
+            setSelectedCard={setSelectedCard}
+          />
         </Grid>
         <Grid item xs={12} sx={{backgroundColor: "Magenta", height: "4vh",
             display: "flex", alignItems: "center", justifyContent: "center"}}>
           <Bedrunner whoseTurn={whoseTurn} phase={phase}/>
         </Grid>
         <Grid item xs={12} sx={{backgroundColor: "Magenta", height: "32vh"}}>
-          <Battlefield content={user.battlefield} library={user.library} map={cardImageMap} />
+          <Battlefield
+            content={user.battlefield}
+            library={user.library}
+            map={cardImageMap}
+            setSelectedCard={setSelectedCard}
+          />
         </Grid>
         <Grid item xs={2} sx={{backgroundColor: "Magenta", height: "16vh"}} alignSelf="end">
           <PlayerInformation
@@ -62,7 +76,11 @@ export function Board({boardData, ned, setNed, user, setUser, cardImageMap, ...p
           />
         </Grid>
         <Grid item xs={10} sx={{backgroundColor: "Magenta", height: "16vh"}} alignSelf="end">
-          <Hand content={user.hand} map={cardImageMap} />
+          <Hand
+            content={user.hand}
+            map={cardImageMap}
+            setSelectedCard={setSelectedCard}
+          />
         </Grid>
       </Grid>
     </Box>
