@@ -5,4 +5,5 @@ TODO
 __pycache__
 *.json
 *.done
+node_modules
 play/migrations/*
