@@ -12,7 +12,7 @@ export function Preview({selectedCard, ...props}) {
         canDrag="false"
         imageUrl={selectedCard || ''}
         sx={{
-          height: "100%",
+          height: "95%",
           borderRadius: "12px",
           backgroundColor: "transparent",
         }}

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useImmer } from 'use-immer';
 import Grid from '@mui/material/Grid';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 import { Card as MtgCard } from './mtg/card';
@@ -66,6 +67,7 @@ export default function PlayPage() {
   const [ ned, setNed ] = useState({});
   const [ user, setUser ] = useState({});
   const [ selectedCard, setSelectedCard ] = useState("");
+  const [ chatroomBuffer, setChatroomBuffer ] = useState([]);
 
   useEffect(() => {
     console.log("Connection state changed");
@@ -113,9 +115,11 @@ export default function PlayPage() {
     console.debug(lastMessage);
     if (lastMessage) {
       const data = JSON.parse(lastMessage.data);
+      const chatroom = document.getElementById("chatroom");
       switch(data.type) {
         case 'log':
           console.log("Message from server:", data.message);
+          chatroom.value += "[Log]: " + data.message + "\n";
           break;
         case 'match_initialized':
           sendMessage(registerPlayerPayload('ned', playData.neds_main, playData.neds_side));
@@ -126,6 +130,7 @@ export default function PlayPage() {
           break;
         case 'game_start':
           console.log("Game", data.game, "of", data.of, "has started.", data.who_goes_first, "goes first.");
+          chatroom.value += "[Log]: Game " + data.game + " of " + data.of + " has started.\n" + data.who_goes_first + " goes first.\n";
           break;
         case 'mulligan':
           handleMulliganMessage(data);
@@ -181,7 +186,7 @@ export default function PlayPage() {
               />
             </Grid>
             <Grid item width='100%' height='60vh'>
-              <ChatRoom />
+              <ChatRoom chatroomBuffer={chatroomBuffer} />
             </Grid>
           </Grid>
         </Grid>

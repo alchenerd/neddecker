@@ -53,7 +53,7 @@ export function Battlefield({content, library, map, setSelectedCard, ...props}) 
         <p>Battlefield</p>
         {renderLibrary(library && library.length > 0)}
         {toShow.map(card => {
-          return
+          return (
             <Card
               key={card.id}
               id={card.id}
@@ -62,6 +62,7 @@ export function Battlefield({content, library, map, setSelectedCard, ...props}) 
               backImageUrl={card.backImageUrl}
               setSelectedCard={setSelectedCard}
             />
+          )
         })}
       </Box>
     </>
