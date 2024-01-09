@@ -45,7 +45,7 @@ export function ChatRoom({lastMessage, ...props}) {
     <Box sx={{display: "flex", height: "100%", width: "100%", alignItems: "center", justifyContent: "space-between", backgroundColor: "Yellow"}}>
       <Grid container sx={{height: "100%"}}>
         <Grid item xs={12} sx={{display: "flex"}}>
-          <Box ref={chatroomRef} sx={{width: "100%", height: "55vh", background: "white", overflow: "auto"}}>
+          <Box ref={chatroomRef} sx={{width: "100%", height: "55vh", background: "ghostwhite", overflow: "auto"}}>
             {chatHistory && chatHistory.map((message, index) => {
               if ("log" in message) {
                 return (

@@ -1,5 +1,6 @@
 from random import shuffle
 import json
+from bisect import bisect_left
 from .ned import Ned
 from .iterables import MtgTurnsAndPhases as MTGTNPS
 
@@ -98,6 +99,7 @@ class Game:
         self.whose_priority = ''
         self.player_has_priority = False
         self.turn_phase_tracker = None
+        self.priority_waitlist = []
 
     def add_player(self, data):
         player = Player()
@@ -151,6 +153,10 @@ class Game:
     def next_step(self):
         self.turn_count, self.whose_turn, (self.phase, self.player_has_priority) = next(self.turn_phase_tracker)
         self.apply_turn_based_actions()
+        self.whose_priority = self.whose_turn
+        self.priority_waitlist = [p.player_name for p in self.players]
+        i = bisect_left(self.priority_waitlist, self.whose_turn)
+        self.priority_waitlist = self.priority_waitlist[i:] + self.priority_waitlist[:i]
 
     def apply_turn_based_actions(self):
         player = self.whose_turn

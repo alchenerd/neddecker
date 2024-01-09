@@ -33,6 +33,8 @@ class PlayConsumer(WebsocketConsumer):
                 self.mulligan(data)
             case 'keep_hand':
                 self.player_keep_hand(data)
+            case 'pass_priority':
+                self.handle_pass_priority(data)
 
     def register_match(self, data):
         if hasattr(self, 'mtg_match'):
@@ -166,15 +168,40 @@ class PlayConsumer(WebsocketConsumer):
         if not self.mtg_match.game.player_has_priority:
             self.advance()
 
-    def advance(self, data = {}):
+    # Called when a player passes priority
+    def handle_pass_priority(self, data={}):
+        print(data)
+        whose_priority = self.mtg_match.game.whose_priority
+        if whose_priority != self.mtg_match.game.priority_waitlist[0]:
+            # not sender's priority
+            return
+        self.mtg_match.game.priority_waitlist.pop(0)
         actions = data.get('actions', [])
         for action in actions:
             self.mtg_match.game.apply(action)
+        if len(self.mtg_match.game.priority_waitlist) > 0:
+            # other player can respond
+            self.mtg_match.game.whose_priority = self.mtg_match.game.priority_waitlist[0]
+            whose_priority = self.mtg_match.game.whose_priority
+            player = [p for p in self.mtg_match.game.players if p.player_name == whose_priority][0]
+            payload = self.mtg_match.game.get_payload()
+            self.send_to_player(player, json.dumps(payload))
+        else:
+            # may resolve top of stack or move to next step
+            if len(self.mtg_match.game.stack) == 0:
+                self.advance()
+            else:
+                # TODO have controller resolve stack
+                pass
+
+    # Called when all players agree to move to the next step
+    def advance(self, data={}):
         self.mtg_match.game.next_step()
         player = self.mtg_match.game.whose_priority
         player = [p for p in self.mtg_match.game.players if p.player_name == player][0]
         payload = self.mtg_match.game.get_payload()
         self.send_to_player(player, json.dumps(payload))
+        # Untap and cleanup don't let player have priority
         if not self.mtg_match.game.player_has_priority:
             self.advance()
 

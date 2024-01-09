@@ -67,6 +67,10 @@ export default function PlayPage() {
   const [ ned, setNed ] = useState({});
   const [ user, setUser ] = useState({});
   const [ selectedCard, setSelectedCard ] = useState("");
+  // For communication
+  const [ hasPriority, setHasPriority] = useState(false);
+  const [ userIsDone, setUserIsDone] = useState(false);
+  const [ userEndTurn, setUserEndTurn] = useState(false);
 
   useEffect(() => {
     console.log("Connection state changed");
@@ -82,6 +86,7 @@ export default function PlayPage() {
   }
 
   function handleReceivePriority(data) {
+    setHasPriority(true);
     setBoardData(data);
   }
 
@@ -139,6 +144,22 @@ export default function PlayPage() {
     }
   }, [lastMessage]);
 
+  useEffect(() => {
+    const sendPayload = () => {
+      const payload = {
+        type: "pass_priority",
+        who: "user",
+        actions: [],
+      }
+      sendMessage(JSON.stringify(payload));
+    };
+    if (hasPriority && userIsDone) {
+      setHasPriority(false);
+      setUserIsDone(false);
+      sendPayload();
+    }
+  }, [hasPriority, userIsDone]);
+
   return (
     <>
       <Grid 
@@ -180,6 +201,8 @@ export default function PlayPage() {
                 selectedCard={selectedCard}
                 setSelectedCard={setSelectedCard}
                 whoseTurn={boardData.whose_turn}
+                setUserIsDone={setUserIsDone}
+                setUserEndTurn={setUserEndTurn}
               />
             </Grid>
             <Grid item width='100%' height='60vh'>
