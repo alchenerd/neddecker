@@ -170,7 +170,7 @@ class PlayConsumer(WebsocketConsumer):
 
     # Called when a player passes priority
     def handle_pass_priority(self, data={}):
-        print(data)
+        #print(data)
         whose_priority = self.mtg_match.game.whose_priority
         if whose_priority != self.mtg_match.game.priority_waitlist[0]:
             # not sender's priority

@@ -22,7 +22,7 @@ export function Bedrunner({whoseTurn, phase, ...props}) {
 
   return (
     <Typography variant="body2">
-      {whoseTurn.toUpperCase() + ": " + phaseMap[phase] || "Unknown"}
+      {(whoseTurn && phase) && whoseTurn.toUpperCase() + ": " + phaseMap[phase] || "Unknown"}
     </Typography>
   );
 }

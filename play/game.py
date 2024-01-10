@@ -1,6 +1,5 @@
 from random import shuffle
 import json
-from bisect import bisect_left
 from .ned import Ned
 from .iterables import MtgTurnsAndPhases as MTGTNPS
 
@@ -32,10 +31,6 @@ class Player:
         for card in self.battlefield:
             if card.get('tapped', None) == True:
                 card['tapped'] = False
-
-    def first_draw(self, turn_count):
-        if (turn_count > 1):
-            self.draw()
 
     def draw(self):
         try:
@@ -155,8 +150,13 @@ class Game:
         self.apply_turn_based_actions()
         self.whose_priority = self.whose_turn
         self.priority_waitlist = [p.player_name for p in self.players]
-        i = bisect_left(self.priority_waitlist, self.whose_turn)
-        self.priority_waitlist = self.priority_waitlist[i:] + self.priority_waitlist[:i]
+        while True:
+            if self.priority_waitlist[0] != self.whose_priority:
+                self.priority_waitlist.append(self.priority_waitlist.pop(0))
+            else:
+                break
+        assert(len(self.priority_waitlist) == 2)
+        assert(self.priority_waitlist[0] == self.whose_priority)
 
     def apply_turn_based_actions(self):
         player = self.whose_turn
@@ -165,7 +165,8 @@ class Game:
             case 'untap step':
                 player.untap()
             case 'draw step':
-                player.first_draw(self.turn_count)
+                if self.turn_count > 1:
+                    player.draw()
             case 'cleanup step':
                 player.cleanup()
 
@@ -185,8 +186,12 @@ class Game:
             }
         else:
             payload = {
-                'type': 'log',
-                'message': f"Turn {self.turn_count}: {self.whose_turn}'s turn\n{self.phase}",
+                'type': 'receive_step',
+                'turn_count': self.turn_count,
+                'whose_turn': self.whose_turn,
+                'phase': self.phase,
+                'whose_priority': None,
+                'board_state': self.get_board_state(),
             }
         return payload
 

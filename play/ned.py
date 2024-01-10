@@ -68,18 +68,21 @@ class Ned():
                 print(json_data['message'])
                 return 'Ned received: ' + json_data['message'], json_data
             case 'mulligan':
-                return 'Beep boop I mull to 4', self.mulligan_to_four(json_data)
+                return 'Beep boop Ned mulligans to 4', self.mulligan_to_four(json_data)
                 # ...or you may let GPT decide
                 payload, user_request = self.generate_contexts(json_data)
                 tools = [SubmitMulliganDescision()]
                 thoughts, choice = self.ask_ned_decker(payload, user_request, tools=tools)
                 return thoughts, choice
             case 'receive_priority':
-                return f'Beep boop I pass priority ({json_data["whose_turn"]}\'s {json_data["phase"]})', {'type': 'pass_priority', 'who': 'ned', 'actions': []}
+                return f'Beep boop Ned passes priority ({json_data["whose_turn"]}\'s {json_data["phase"]})', {'type': 'pass_priority', 'who': 'ned', 'actions': []}
+            case 'receive_step':
+                return 'Beep boop Ned does nothing', {'type': 'log', 'message': 'received step ' + json_data['phase']}
             case _:
-                print(json_data['message'])
+                print('[ERROR]')
+                print(json_data)
                 print('...What?')
-                return '...What?', {'type': 'log', 'message': 'Error'}
+                return '...What?', {'type': 'log', 'message': 'Error:\n' + text_data}
 
     def get_card_by_name(self, name) -> Card:
         return Card.objects.filter(name=name).order_by().first()

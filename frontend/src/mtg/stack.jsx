@@ -3,21 +3,21 @@ import { useDrop } from 'react-dnd'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import { ItemTypes } from './constants'
+import { Card } from './card'
 
-export function Stack({content, ...props}) {
+export function Stack({stack, setBoardData, map, setSelectedCard, ...props}) {
   const [toShow, setToShow] = useState([]);
 
   useEffect(() => {
-    if (content) {
-      console.log(content);
-      setToShow(content.map((card) => ({
+    if (stack) {
+      setToShow(stack.map((card) => ({
         id: card.id,
         name: card.name,
         imageUrl: map[card.name] || map[card.name.split(" // ")[0]],
         backImageUrl: map[card.name.split(" // ")[1]] || "",
       })));
     }
-  }, [content]);
+  }, [stack]);
 
   const [, drop] = useDrop(
     () => ({

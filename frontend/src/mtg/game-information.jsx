@@ -5,7 +5,7 @@ import Grid from '@mui/material/Grid'
 import { Preview } from './preview'
 import { Stack } from './stack'
 
-export function GameInformation({selectedCard, setSelectedCard, whoseTurn, setUserIsDone, setUserEndTurn, ...props}) {
+export function GameInformation({selectedCard, setSelectedCard, boardData, setBoardData, setUserIsDone, userEndTurn, setUserEndTurn, cardImageMap, stack, ...props}) {
   const [ isResolving, setIsResolving ] = useState(false);
   const handleClickDoneButton = () => {
     setUserIsDone(true);
@@ -20,7 +20,7 @@ export function GameInformation({selectedCard, setSelectedCard, whoseTurn, setUs
           <Preview selectedCard={selectedCard} />
         </Grid>
         <Grid item xs={6} sx={{height: "90%"}}>
-          <Stack />
+          <Stack stack={boardData ? boardData.stack : []} setBoardData={setBoardData} map={cardImageMap} setSelectedCard={setSelectedCard}/>
         </Grid>
         <Grid item xs={6} sx={{height: "10%"}}>
           <Button
@@ -37,7 +37,7 @@ export function GameInformation({selectedCard, setSelectedCard, whoseTurn, setUs
             variant="contained"
             color="error"
             sx={{width: "100%", height: "100%"}}
-            disabled={whoseTurn !== "user"}
+            disabled={userEndTurn || (boardData && boardData.whose_turn !== "user") || (boardData && boardData.board_state.stack.length > 0)}
             onClick={handleClickEndTurnButton}
           >
             End Turn

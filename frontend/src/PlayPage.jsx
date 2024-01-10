@@ -85,6 +85,10 @@ export default function PlayPage() {
     setOpenMulligan(true);
   }
 
+  function handleReceiveStep(data) {
+    setBoardData(data);
+  }
+
   function handleReceivePriority(data) {
     setHasPriority(true);
     setBoardData(data);
@@ -119,7 +123,6 @@ export default function PlayPage() {
     console.debug(lastMessage);
     if (lastMessage) {
       const data = JSON.parse(lastMessage.data);
-      const chatroom = document.getElementById("chatroom");
       switch(data.type) {
         case 'log':
           console.log("Message from server:", data.message);
@@ -137,28 +140,47 @@ export default function PlayPage() {
         case 'mulligan':
           handleMulliganMessage(data);
           break;
+        case 'receive_step':
+          handleReceiveStep(data);
+          break;
         case 'receive_priority':
+          console.log("Received priority", data.whose_turn, data.phase);
           handleReceivePriority(data);
           break;
       }
     }
   }, [lastMessage]);
 
+  const sendPassPriority = () => {
+    console.log("Passing", boardData.phase)
+    const payload = {
+      type: "pass_priority",
+      who: "user",
+      actions: [],
+    }
+    sendMessage(JSON.stringify(payload));
+  };
+
   useEffect(() => {
-    const sendPayload = () => {
-      const payload = {
-        type: "pass_priority",
-        who: "user",
-        actions: [],
-      }
-      sendMessage(JSON.stringify(payload));
-    };
     if (hasPriority && userIsDone) {
       setHasPriority(false);
       setUserIsDone(false);
-      sendPayload();
+      sendPassPriority();
     }
   }, [hasPriority, userIsDone]);
+
+  useEffect(() => {
+    if (hasPriority && userEndTurn && boardData.whose_turn === "user") {
+      setHasPriority(false);
+      sendPassPriority();
+    }
+  }, [hasPriority, userEndTurn]);
+
+  useEffect(() => {
+    if (boardData.whose_turn !== "user") {
+      setUserEndTurn(false);
+    }
+  }, [boardData.whose_turn]);
 
   return (
     <>
@@ -200,9 +222,13 @@ export default function PlayPage() {
               <GameInformation
                 selectedCard={selectedCard}
                 setSelectedCard={setSelectedCard}
-                whoseTurn={boardData.whose_turn}
+                boardData={boardData}
+                setBoardData={setBoardData}
                 setUserIsDone={setUserIsDone}
+                userEndTurn={userEndTurn}
                 setUserEndTurn={setUserEndTurn}
+                cardImageMap={playData.card_image_map}
+                stack={boardData.stack}
               />
             </Grid>
             <Grid item width='100%' height='60vh'>
