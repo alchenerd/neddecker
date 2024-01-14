@@ -3,13 +3,30 @@ import Box from '@mui/material/Box'
 import { useDrag } from 'react-dnd'
 import { ItemTypes } from './constants'
 
-export function Card({id, name, imageUrl, backImageUrl, backgroundColor, setSelectedCard, ...props}) {
+export function Card({id, name, imageUrl, backImageUrl, backgroundColor, setSelectedCard, typeLine, manaCost, ...props}) {
   const [isFlipped, setIsFlipped] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const imageSource = isFlipped ? backImageUrl : imageUrl;
+  const getItemTypeByTypeLine = () => {
+    if (!typeLine) {
+      return null;
+    }
+    if (typeLine.toLowerCase().indexOf("land") !== -1) {
+      return ItemTypes.MTG_LAND_CARD;
+    } else if (typeLine.toLowerCase().indexOf("sorcery") !== -1) {
+      return ItemTypes.MTG_SORCERY_CARD;
+    } else if (typeLine.toLowerCase().indexOf("instant") !== -1) {
+      return ItemTypes.MTG_INSTANT_CARD;
+    } else {
+      return ItemTypes.MTG_NONLAND_PERMANENT_CARD
+    }
+  }
   const [{ isDragging }, drag] = useDrag(() => ({
-    type: ItemTypes.MTG_CARD,
-    item: {id: id},
+    type: getItemTypeByTypeLine() || ItemTypes.MTG_CARD,
+    item: {
+      id: id,
+      typeLine: typeLine,
+    },
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging()
     }),

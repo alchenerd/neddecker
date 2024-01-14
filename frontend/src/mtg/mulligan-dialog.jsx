@@ -19,7 +19,9 @@ const Placeholder = ({id, hand, content, setMoveMessage, rightmost, ...props}) =
 
   const [, drop] = useDrop(
     () => ({
-      accept: ItemTypes.MTG_CARD,
+      accept: [
+        ItemTypes.MTG_CARD,
+      ],
       drop: (item) => {
         setMoveMessage({
           id: item.id,

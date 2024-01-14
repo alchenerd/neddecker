@@ -21,9 +21,15 @@ export function Stack({stack, setBoardData, map, setSelectedCard, ...props}) {
 
   const [, drop] = useDrop(
     () => ({
-      accept: ItemTypes.MTG_CARD,
+      accept: [
+        ItemTypes.MTG_NONLAND_PERMANENT_CARD,
+        ItemTypes.MTG_INSTANT_CARD,
+        ItemTypes.MTG_SORCERY_CARD,
+        ItemTypes.MTG_TRIGGER,
+      ],
       drop: (item) => {
         console.log(item);
+        console.log("moves to stack");
       },
     }), []
   );

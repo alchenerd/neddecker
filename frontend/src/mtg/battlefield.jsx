@@ -5,7 +5,7 @@ import { HTML5Backend } from 'react-dnd-html5-backend'
 import { ItemTypes } from './constants'
 import { Card } from './card'
 
-export function Battlefield({content, library, map, setSelectedCard, ...props}) {
+export function Battlefield({owner, content, library, map, setSelectedCard, ...props}) {
   const [toShow, setToShow] = useState([]);
 
   useEffect(() => {
@@ -22,9 +22,15 @@ export function Battlefield({content, library, map, setSelectedCard, ...props}) 
 
   const [, drop] = useDrop(
     () => ({
-      accept: ItemTypes.MTG_CARD,
+      accept: [
+        ItemTypes.MTG_LAND_CARD,
+        ItemTypes.MTG_NONLAND_PERMANENT_CARD,
+        ItemTypes.MTG_TOKEN,
+      ],
       drop: (item) => {
+        // TODO: get source zone and card
         console.log(item);
+        console.log("moves to", owner, "'s battlefield");
       },
     }), []
   );

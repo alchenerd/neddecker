@@ -16,13 +16,20 @@ export function Hand({content, map, setSelectedCard, ...props}) {
         name: card.name,
         imageUrl: map[card.name] || map[card.name.split(" // ")[0]],
         backImageUrl: map[card.name.split(" // ")[1]] || "",
+        typeLine: card.type_line,
+        manaCost: card.mana_cost,
       })));
     }
   }, [content]);
 
   const [, drop] = useDrop(
     () => ({
-      accept: ItemTypes.MTG_CARD,
+      accept: [
+        ItemTypes.MTG_LAND_CARD,
+        ItemTypes.MTG_NONLAND_PERMANENT_CARD,
+        ItemTypes.MTG_INSTANT_CARD,
+        ItemTypes.MTG_SORCERY_CARD,
+      ],
       drop: (item) => {
         console.log(item);
       },
@@ -42,16 +49,20 @@ export function Hand({content, map, setSelectedCard, ...props}) {
         justifyContent: "start",
       }}
     >
-      {toShow.map(card => {return (
-        <Card
-          key={card.id}
-          id={card.id}
-          name={card.name}
-          imageUrl={card.imageUrl}
-          backImageUrl={card.backImageUrl}
-          setSelectedCard={setSelectedCard}
-        />
-      )})}
+      {toShow.map(card => {
+        return (
+          <Card
+            key={card.id}
+            id={card.id}
+            name={card.name}
+            imageUrl={card.imageUrl}
+            backImageUrl={card.backImageUrl}
+            setSelectedCard={setSelectedCard}
+            typeLine={card.typeLine}
+            manaCost={card.manaCost}
+          />
+        )
+      })}
     </Box>
   );
 }

@@ -1,5 +1,6 @@
 from random import shuffle
 import json
+from .models import Card, Face, get_card_by_name, get_faces_by_name
 from .ned import Ned
 from .iterables import MtgTurnsAndPhases as MTGTNPS
 
@@ -68,7 +69,21 @@ class Player:
         board_state['player_name'] = self.player_name
         board_state['library'] = self.library
         board_state['battlefield'] = self.battlefield
-        board_state['hand'] = self.hand
+        board_state['hand'] = self.hand.copy()
+        for card in board_state['hand']:
+            card_orm = get_card_by_name(card['name'])
+            front_orm, back_orm = get_faces_by_name(card['name'])
+            if front_orm and back_orm:
+                card['faces'] = dict()
+                card['faces']['front'] = dict()
+                card['faces']['front']['type_line'] = front_orm.type_line
+                card['faces']['front']['mana_cost'] = front_orm.mana_cost
+                card['faces']['back'] = dict()
+                card['faces']['back']['type_line'] = back_orm.type_line
+                card['faces']['back']['mana_cost'] = back_orm.mana_cost
+            else:
+                card['type_line'] = card_orm.type_line
+                card['mana_cost'] = card_orm.mana_cost
         board_state['graveyard'] = self.graveyard
         board_state['exile'] = self.exile
         board_state['hp'] = self.hp

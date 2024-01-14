@@ -1,5 +1,6 @@
 from django.db import models
 from django.core import serializers
+from typing import Tuple
 import json
 
 class Deck(models.Model):
@@ -45,6 +46,9 @@ class Card(models.Model):
         )
         return json.dumps(json.loads(serializers.serialize('json', (self,), fields=fields))[-1]['fields'])
 
+def get_card_by_name(name) -> Card:
+    return Card.objects.filter(name=name).order_by().first()
+
 class Face(models.Model):
     """
     Faces for multiple-faced cards
@@ -74,3 +78,15 @@ class Face(models.Model):
                 'defense',
                 )
         return json.dumps(json.loads(serializers.serialize('json', (self,), fields=fields))[-1]['fields'])
+
+def get_faces_by_name(name) -> Tuple[Face, Face]:
+    if ' // ' not in name:
+        return None, None
+    f, b = name.split(' // ')
+    front, back = None, None
+    try:
+        front = Face.objects.filter(name=f).order_by().first()
+        back = Face.objects.filter(name=b).order_by().first()
+    except:
+        pass
+    return front, back

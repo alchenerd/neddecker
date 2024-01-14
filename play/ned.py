@@ -12,7 +12,7 @@ from langchain.tools.render import format_tool_to_openai_function
 from langchain.memory import ConversationBufferMemory
 from langchain.pydantic_v1 import BaseModel, Field
 from langchain_community.chat_models import ChatOpenAI
-from .models import Card, Face
+from .models import Card, Face, get_card_by_name, get_faces_by_name
 from .serializers import CardSerializer, FaceSerializer
 from dotenv import load_dotenv
 
@@ -83,21 +83,6 @@ class Ned():
                 print(json_data)
                 print('...What?')
                 return '...What?', {'type': 'log', 'message': 'Error:\n' + text_data}
-
-    def get_card_by_name(self, name) -> Card:
-        return Card.objects.filter(name=name).order_by().first()
-
-    def get_faces_by_name(self, name) -> Tuple[Face, Face]:
-        if ' // ' not in name:
-            return None, None
-        f, b = name.split(' // ')
-        front, back = None, None
-        try:
-            front = Face.objects.filter(name=f).order_by().first()
-            back = Face.objects.filter(name=b).order_by().first()
-        except:
-            pass
-        return front, back
 
     def hand_to_data(self, hand):
         cards = []

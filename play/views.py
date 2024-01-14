@@ -7,6 +7,7 @@ from django.db.models.functions import Length
 from django.contrib.postgres.search import TrigramSimilarity
 from django.views.decorators.http import require_POST
 from .models import Deck, Card, Face
+from .models import get_card_by_name
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts.chat import ChatPromptTemplate
 from langchain.schema.messages import SystemMessage
@@ -93,9 +94,6 @@ def get_random_deck() -> Deck:
     weighted_meta = [deck.meta / total_meta for deck in Deck.objects.all()]
     return random.choices(Deck.objects.all(), weights=weighted_meta)[0]
 
-def get_card_by_name(name) -> Card:
-    return Card.objects.filter(name=name).order_by().first()
-
 def get_cards_and_faces(maindeck, sideboard) -> Tuple[List[Card], List[Face], List[Card], List[Face]]:
     maindeck_count = 0
     bad_lines = []
@@ -164,7 +162,7 @@ def play(request):
     neds_deck = get_random_deck()
     neds_main, neds_side = parse_decklist(neds_deck.decklist)
     neds_main_cards, neds_main_faces, neds_side_cards, neds_side_faces = get_cards_and_faces(neds_main, neds_side)
-    to_process = neds_main_cards + neds_side_faces + neds_main_cards + neds_side_faces + users_main_cards + users_main_faces + users_side_cards + users_side_faces
+    to_process = neds_main_cards + neds_main_faces + neds_side_cards + neds_side_faces + users_main_cards + users_main_faces + users_side_cards + users_side_faces
     card_image_map = get_card_image_map(to_process)
     context = {
             'users_main': users_main,
