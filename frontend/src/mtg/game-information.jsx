@@ -5,7 +5,7 @@ import Grid from '@mui/material/Grid'
 import { Preview } from './preview'
 import { Stack } from './stack'
 
-export function GameInformation({selectedCard, setSelectedCard, boardData, setBoardData, setUserIsDone, userEndTurn, setUserEndTurn, cardImageMap, stack, ...props}) {
+export function GameInformation({selectedCard, setSelectedCard, boardData, setBoardData, setUserIsDone, userEndTurn, setUserEndTurn, cardImageMap, stack, setDndMsg, ...props}) {
   const [ isResolving, setIsResolving ] = useState(false);
   const handleClickDoneButton = () => {
     setUserIsDone(true);
@@ -20,7 +20,13 @@ export function GameInformation({selectedCard, setSelectedCard, boardData, setBo
           <Preview selectedCard={selectedCard} />
         </Grid>
         <Grid item xs={6} sx={{height: "90%"}}>
-          <Stack stack={boardData ? boardData.stack : []} setBoardData={setBoardData} map={cardImageMap} setSelectedCard={setSelectedCard}/>
+          <Stack
+            stack={boardData ? boardData.board_state.stack : []}
+            setBoardData={setBoardData}
+            map={cardImageMap}
+            setSelectedCard={setSelectedCard}
+            setDndMsg={setDndMsg}
+          />
         </Grid>
         <Grid item xs={6} sx={{height: "10%"}}>
           <Button

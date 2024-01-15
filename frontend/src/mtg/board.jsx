@@ -6,7 +6,7 @@ import { Bedrunner } from './bedrunner'
 import Box from '@mui/material/Box'
 import Grid from '@mui/material/Grid'
 
-export function Board({boardData, ned, setNed, user, setUser, cardImageMap, setSelectedCard, ...props}) {
+export function Board({boardData, ned, setNed, user, setUser, cardImageMap, setSelectedCard, setDndMsg, ...props}) {
 
   useEffect(() => {
     if (boardData.board_state) {
@@ -37,18 +37,19 @@ export function Board({boardData, ned, setNed, user, setUser, cardImageMap, setS
         </Grid>
         <Grid item xs={10} sx={{backgroundColor: "Magenta", height: "16vh"}}>
           <Hand
-            content={ned.hand}
             map={cardImageMap}
             setSelectedCard={setSelectedCard}
+            owner={ned}
+            setDndMsg={setDndMsg}
           />
         </Grid>
         <Grid item xs={12} sx={{backgroundColor: "Magenta", height: "32vh"}}>
           <Battlefield
-            owner="ned"
-            content={ned.battlefield}
             library={ned.library}
             map={cardImageMap}
             setSelectedCard={setSelectedCard}
+            owner={ned}
+            setDndMsg={setDndMsg}
           />
         </Grid>
         <Grid item xs={12} sx={{backgroundColor: "Magenta", height: "4vh",
@@ -57,11 +58,11 @@ export function Board({boardData, ned, setNed, user, setUser, cardImageMap, setS
         </Grid>
         <Grid item xs={12} sx={{backgroundColor: "Magenta", height: "32vh"}}>
           <Battlefield
-            owner="user"
-            content={user.battlefield}
             library={user.library}
             map={cardImageMap}
             setSelectedCard={setSelectedCard}
+            owner={user}
+            setDndMsg={setDndMsg}
           />
         </Grid>
         <Grid item xs={2} sx={{backgroundColor: "Magenta", height: "16vh"}} alignSelf="end">
@@ -75,9 +76,10 @@ export function Board({boardData, ned, setNed, user, setUser, cardImageMap, setS
         </Grid>
         <Grid item xs={10} sx={{backgroundColor: "Magenta", height: "16vh"}} alignSelf="end">
           <Hand
-            content={user.hand}
             map={cardImageMap}
             setSelectedCard={setSelectedCard}
+            owner={user}
+            setDndMsg={setDndMsg}
           />
         </Grid>
       </Grid>

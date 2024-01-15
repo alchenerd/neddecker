@@ -63,7 +63,7 @@ export default function PlayPage() {
   const [ requestMulligan, setRequestMulligan ] = useState(false);
   const [ requestKeepHand, setRequestKeepHand ] = useState(false);
   // For board rendering
-  const [ boardData, setBoardData ] = useState({});
+  const [ boardData, setBoardData ] = useState({board_state: {stack: [], players: [ {player_name: "ned"}, {player_name: "user"}]}});
   const [ ned, setNed ] = useState({});
   const [ user, setUser ] = useState({});
   const [ selectedCard, setSelectedCard ] = useState("");
@@ -71,6 +71,7 @@ export default function PlayPage() {
   const [ hasPriority, setHasPriority] = useState(false);
   const [ userIsDone, setUserIsDone] = useState(false);
   const [ userEndTurn, setUserEndTurn] = useState(false);
+  const [ dndMsg, setDndMsg ] = useState({});
 
   useEffect(() => {
     console.log("Connection state changed");
@@ -151,6 +152,15 @@ export default function PlayPage() {
     }
   }, [lastMessage]);
 
+  useEffect(() => {
+    if (dndMsg) {
+      console.log(dndMsg);
+      // delete everything to check if all components do update
+      // setBoardData({board_state: {stack: [], players: [ {player_name: "ned"}, {player_name: "user"}]}});
+      // TODO: searchSourceZoneById(), remove from sourceZone, parse dndMsg for targetZone, add to targetZone
+    }
+  }, [dndMsg]);
+
   const sendPassPriority = () => {
     console.log("Passing", boardData.phase)
     const payload = {
@@ -206,6 +216,7 @@ export default function PlayPage() {
             setUser={setUser}
             cardImageMap={playData.card_image_map}
             setSelectedCard={setSelectedCard}
+            setDndMsg={setDndMsg}
           />
         </Grid>
         <Grid item xs={4} width='100%'>
@@ -228,7 +239,8 @@ export default function PlayPage() {
                 userEndTurn={userEndTurn}
                 setUserEndTurn={setUserEndTurn}
                 cardImageMap={playData.card_image_map}
-                stack={boardData.stack}
+                stack={boardData.board_state.stack}
+                setDndMsg={setDndMsg}
               />
             </Grid>
             <Grid item width='100%' height='60vh'>

@@ -5,22 +5,23 @@ import { HTML5Backend } from 'react-dnd-html5-backend'
 import { ItemTypes } from './constants'
 import { Card } from './card'
 
-export function Hand({content, map, setSelectedCard, ...props}) {
+export function Hand({map, setSelectedCard, owner, setDndMsg, ...props}) {
   const [toShow, setToShow] = useState([]);
 
   useEffect(() => {
-    if (content) {
-      console.log(content);
-      setToShow(content.map((card) => ({
+    if (owner.hand) {
+      setToShow(owner.hand.map((card) => ({
         id: card.id,
         name: card.name,
         imageUrl: map[card.name] || map[card.name.split(" // ")[0]],
         backImageUrl: map[card.name.split(" // ")[1]] || "",
-        typeLine: card.type_line,
+        typeLine: card.faces ? card.faces.front.type_line + " // " + card.faces.back.type_line: card.type_line,
         manaCost: card.mana_cost,
       })));
+    } else {
+      setToShow([]);
     }
-  }, [content]);
+  }, [owner.hand]);
 
   const [, drop] = useDrop(
     () => ({
@@ -31,9 +32,20 @@ export function Hand({content, map, setSelectedCard, ...props}) {
         ItemTypes.MTG_SORCERY_CARD,
       ],
       drop: (item) => {
-        console.log(item);
+        console.log("Detected", item.type, "moving to", owner.player_name, "'s hand");
+        setDndMsg(
+          {
+            id: item.id,
+            to: {
+              pathFromBoardState: ["players"],
+              key: "player_name",
+              value: owner.player_name,
+              zone: "hand",
+            },
+          }
+        );
       },
-    }), []
+    }), [owner]
   );
 
   return (

@@ -5,20 +5,20 @@ import { HTML5Backend } from 'react-dnd-html5-backend'
 import { ItemTypes } from './constants'
 import { Card } from './card'
 
-export function Battlefield({owner, content, library, map, setSelectedCard, ...props}) {
+export function Battlefield({library, map, setSelectedCard, owner, setDndMsg, ...props}) {
   const [toShow, setToShow] = useState([]);
 
   useEffect(() => {
-    if (content) {
-      console.log(content),
-      setToShow(content.map((card) => ({
+    if (owner.battlefield) {
+      console.log(owner.battlefield),
+      setToShow(owner.battlefield.map((card) => ({
         id: card.id,
         name: card.name,
         imageUrl: map[card.name] || map[card.name.split(" // ")[0]],
         backImageUrl: map[card.name.split(" // ")[1]] || "",
       })));
     }
-  }, [content]);
+  }, [owner.battlefield]);
 
   const [, drop] = useDrop(
     () => ({
@@ -28,11 +28,20 @@ export function Battlefield({owner, content, library, map, setSelectedCard, ...p
         ItemTypes.MTG_TOKEN,
       ],
       drop: (item) => {
-        // TODO: get source zone and card
-        console.log(item);
-        console.log("moves to", owner, "'s battlefield");
+        console.log("Detected", item.type, "moving to", owner.player_name, "'s battlefield");
+        setDndMsg(
+          {
+            id: item.id,
+            to: {
+              pathFromBoardState: ["players"],
+              key: "player_name",
+              value: owner.player_name,
+              zone: "battlefield",
+            },
+          }
+        );
       },
-    }), []
+    }), [owner]
   );
 
   const renderLibrary = (cond) => {

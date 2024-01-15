@@ -5,7 +5,7 @@ import Typography from '@mui/material/Typography'
 import { ItemTypes } from './constants'
 import { Card } from './card'
 
-export function Stack({stack, setBoardData, map, setSelectedCard, ...props}) {
+export function Stack({stack, setBoardData, map, setSelectedCard, setDndMsg, ...props}) {
   const [toShow, setToShow] = useState([]);
 
   useEffect(() => {
@@ -28,10 +28,19 @@ export function Stack({stack, setBoardData, map, setSelectedCard, ...props}) {
         ItemTypes.MTG_TRIGGER,
       ],
       drop: (item) => {
-        console.log(item);
-        console.log("moves to stack");
+        console.log("Detected", item.type, "moving to the stack");
+        console.log(stack)
+        setDndMsg(
+          {
+            id: item.id,
+            to: {
+              pathFromBoardState: [],
+              zone: "stack",
+            },
+          }
+        );
       },
-    }), []
+    }), [stack]
   );
 
   return (

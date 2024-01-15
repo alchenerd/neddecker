@@ -26,6 +26,7 @@ export function Card({id, name, imageUrl, backImageUrl, backgroundColor, setSele
     item: {
       id: id,
       typeLine: typeLine,
+      type: getItemTypeByTypeLine(),
     },
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging()
