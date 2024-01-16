@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useImmer } from 'use-immer';
 import Grid from '@mui/material/Grid';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
+import _ from 'lodash';
 import { Card as MtgCard } from './mtg/card';
 import { Board as MtgBoard } from './mtg/board';
 import { MulliganDialog } from './mtg/mulligan-dialog';
@@ -152,12 +153,47 @@ export default function PlayPage() {
     }
   }, [lastMessage]);
 
+  const popCardById = (board, cardId) => {
+    if (!cardId || !board) {
+      return null;
+    }
+    console.log("POPPING", cardId, "FROM", board);
+    let cardToPop = null;
+    const zonesToCheck = [
+      "board_state.stack",
+      "board_state.players[0].battlefield",
+      "board_state.players[0].hand",
+      "board_state.players[0].graveyard",
+      "board_state.players[1].battlefield",
+      "board_state.players[1].hand",
+      "board_state.players[1].graveyard",
+      "board_state.players[0].library",
+      "board_state.players[1].library",
+      "board_state.players[0].exile",
+      "board_state.players[1].exile",
+    ];
+    for (let i = 0; i < zonesToCheck.length; i++) {
+      const path = zonesToCheck[i];
+      console.log(path);
+      console.log("TEST", _.get(board, path));
+      cardToPop = _.get(board, path).find((card) => _.get(card, "id", null) === cardId);
+      if (cardToPop) {
+        _.set(board, path, _.get(board, path).filter((card) => card !== cardToPop));
+        return cardToPop;
+      }
+    }
+    return cardToPop;
+  };
+
   useEffect(() => {
     if (dndMsg) {
       console.log(dndMsg);
-      // delete everything to check if all components do update
-      // setBoardData({board_state: {stack: [], players: [ {player_name: "ned"}, {player_name: "user"}]}});
-      // TODO: searchSourceZoneById(), remove from sourceZone, parse dndMsg for targetZone, add to targetZone
+      let toChange = {...boardData};
+      const card = popCardById(toChange, dndMsg.id);
+      const previousZoneContent = _.get(toChange, dndMsg.to, []);
+      _.set(toChange, dndMsg.to, [...previousZoneContent, card]);
+      console.log(toChange);
+      setBoardData(toChange);
     }
   }, [dndMsg]);
 

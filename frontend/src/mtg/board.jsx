@@ -7,11 +7,15 @@ import Box from '@mui/material/Box'
 import Grid from '@mui/material/Grid'
 
 export function Board({boardData, ned, setNed, user, setUser, cardImageMap, setSelectedCard, setDndMsg, ...props}) {
+  const [nedIndex, setNedIndex] = useState(-1);
+  const [userIndex, setUserIndex] = useState(-1);
 
   useEffect(() => {
     if (boardData.board_state) {
       setUser(boardData.board_state.players.find((player) => player.player_name === "user"));
+      setUserIndex(boardData.board_state.players.findIndex((player) => player.player_name === "user"));
       setNed(boardData.board_state.players.find((player) => player.player_name === "ned"));
+      setNedIndex(boardData.board_state.players.findIndex((player) => player.player_name === "ned"));
     }
   }, [boardData]);
 
@@ -40,6 +44,7 @@ export function Board({boardData, ned, setNed, user, setUser, cardImageMap, setS
             map={cardImageMap}
             setSelectedCard={setSelectedCard}
             owner={ned}
+            ownerIndex={nedIndex}
             setDndMsg={setDndMsg}
           />
         </Grid>
@@ -49,6 +54,7 @@ export function Board({boardData, ned, setNed, user, setUser, cardImageMap, setS
             map={cardImageMap}
             setSelectedCard={setSelectedCard}
             owner={ned}
+            ownerIndex={nedIndex}
             setDndMsg={setDndMsg}
           />
         </Grid>
@@ -62,6 +68,7 @@ export function Board({boardData, ned, setNed, user, setUser, cardImageMap, setS
             map={cardImageMap}
             setSelectedCard={setSelectedCard}
             owner={user}
+            ownerIndex={userIndex}
             setDndMsg={setDndMsg}
           />
         </Grid>
@@ -79,6 +86,7 @@ export function Board({boardData, ned, setNed, user, setUser, cardImageMap, setS
             map={cardImageMap}
             setSelectedCard={setSelectedCard}
             owner={user}
+            ownerIndex={userIndex}
             setDndMsg={setDndMsg}
           />
         </Grid>

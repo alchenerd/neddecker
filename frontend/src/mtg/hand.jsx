@@ -5,7 +5,7 @@ import { HTML5Backend } from 'react-dnd-html5-backend'
 import { ItemTypes } from './constants'
 import { Card } from './card'
 
-export function Hand({map, setSelectedCard, owner, setDndMsg, ...props}) {
+export function Hand({map, setSelectedCard, owner, ownerIndex, setDndMsg, ...props}) {
   const [toShow, setToShow] = useState([]);
 
   useEffect(() => {
@@ -36,12 +36,7 @@ export function Hand({map, setSelectedCard, owner, setDndMsg, ...props}) {
         setDndMsg(
           {
             id: item.id,
-            to: {
-              pathFromBoardState: ["players"],
-              key: "player_name",
-              value: owner.player_name,
-              zone: "hand",
-            },
+            to: "board_state.players[" + ownerIndex + "].hand",
           }
         );
       },

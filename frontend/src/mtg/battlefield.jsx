@@ -5,7 +5,7 @@ import { HTML5Backend } from 'react-dnd-html5-backend'
 import { ItemTypes } from './constants'
 import { Card } from './card'
 
-export function Battlefield({library, map, setSelectedCard, owner, setDndMsg, ...props}) {
+export function Battlefield({library, map, setSelectedCard, owner, ownerIndex, setDndMsg, ...props}) {
   const [toShow, setToShow] = useState([]);
 
   useEffect(() => {
@@ -16,6 +16,8 @@ export function Battlefield({library, map, setSelectedCard, owner, setDndMsg, ..
         name: card.name,
         imageUrl: map[card.name] || map[card.name.split(" // ")[0]],
         backImageUrl: map[card.name.split(" // ")[1]] || "",
+        typeLine: card.faces ? card.faces.front.type_line + " // " + card.faces.back.type_line: card.type_line,
+        manaCost: card.mana_cost,
       })));
     }
   }, [owner.battlefield]);
@@ -32,12 +34,7 @@ export function Battlefield({library, map, setSelectedCard, owner, setDndMsg, ..
         setDndMsg(
           {
             id: item.id,
-            to: {
-              pathFromBoardState: ["players"],
-              key: "player_name",
-              value: owner.player_name,
-              zone: "battlefield",
-            },
+            to: "board_state.players[" + ownerIndex + "].battlefield",
           }
         );
       },
@@ -76,6 +73,8 @@ export function Battlefield({library, map, setSelectedCard, owner, setDndMsg, ..
               imageUrl={card.imageUrl}
               backImageUrl={card.backImageUrl}
               setSelectedCard={setSelectedCard}
+              typeLine={card.typeLine}
+              manaCost={card.manaCost}
             />
           )
         })}

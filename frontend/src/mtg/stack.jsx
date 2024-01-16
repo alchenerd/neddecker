@@ -15,6 +15,8 @@ export function Stack({stack, setBoardData, map, setSelectedCard, setDndMsg, ...
         name: card.name,
         imageUrl: map[card.name] || map[card.name.split(" // ")[0]],
         backImageUrl: map[card.name.split(" // ")[1]] || "",
+        typeLine: card.faces ? card.faces.front.type_line + " // " + card.faces.back.type_line: card.type_line,
+        manaCost: card.mana_cost,
       })));
     }
   }, [stack]);
@@ -33,10 +35,7 @@ export function Stack({stack, setBoardData, map, setSelectedCard, setDndMsg, ...
         setDndMsg(
           {
             id: item.id,
-            to: {
-              pathFromBoardState: [],
-              zone: "stack",
-            },
+            to: "board_state.stack",
           }
         );
       },
@@ -66,6 +65,8 @@ export function Stack({stack, setBoardData, map, setSelectedCard, setDndMsg, ...
           imageUrl={card.imageUrl}
           backImageUrl={card.backImageUrl}
           setSelectedCard={setSelectedCard}
+          typeLine={card.typeLine}
+          manaCost={card.manaCost}
         />
       )})}
     </Box>
