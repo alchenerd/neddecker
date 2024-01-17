@@ -53,7 +53,7 @@ export function Card({id, name, imageUrl, backImageUrl, backgroundColor, setSele
         aspectRatio: 2.5 / 3.5,
         overflow: 'hidden',
         backgroundColor: backgroundColor || 'transparent',
-        borderRadius: "4px",
+        borderRadius: "4%",
         ...props.sx,
       }}
       id={id}

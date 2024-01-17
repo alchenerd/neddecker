@@ -179,20 +179,26 @@ export default function PlayPage() {
       cardToPop = _.get(board, path).find((card) => _.get(card, "id", null) === cardId);
       if (cardToPop) {
         _.set(board, path, _.get(board, path).filter((card) => card !== cardToPop));
-        return cardToPop;
+        return [cardToPop, path];
       }
     }
-    return cardToPop;
+    return null;
   };
 
   useEffect(() => {
     if (dndMsg) {
       console.log(dndMsg);
       let toChange = {...boardData};
-      const card = popCardById(toChange, dndMsg.id);
+      const [poppedCard, poppedPath] = popCardById(toChange, dndMsg.id);
+      const pushCard = {...poppedCard, offsetX: dndMsg.offsetX, offsetY: dndMsg.offsetY};
       const previousZoneContent = _.get(toChange, dndMsg.to, []);
-      _.set(toChange, dndMsg.to, [...previousZoneContent, card]);
+      _.set(toChange, dndMsg.to, [...previousZoneContent, pushCard]);
       console.log(toChange);
+      if (poppedPath === dndMsg.to) {
+        console.log("DID NOT CHANGE ZONE");
+      } else {
+        console.log("CHANGED ZONE");
+      }
       setBoardData(toChange);
     }
   }, [dndMsg]);

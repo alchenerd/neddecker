@@ -18,6 +18,8 @@ export function Battlefield({library, map, setSelectedCard, owner, ownerIndex, s
         backImageUrl: map[card.name.split(" // ")[1]] || "",
         typeLine: card.faces ? card.faces.front.type_line + " // " + card.faces.back.type_line: card.type_line,
         manaCost: card.mana_cost,
+        offsetX: card.offsetX,
+        offsetY: card.offsetY,
       })));
     }
   }, [owner.battlefield]);
@@ -29,12 +31,17 @@ export function Battlefield({library, map, setSelectedCard, owner, ownerIndex, s
         ItemTypes.MTG_NONLAND_PERMANENT_CARD,
         ItemTypes.MTG_TOKEN,
       ],
-      drop: (item) => {
+      drop: (item, monitor) => {
         console.log("Detected", item.type, "moving to", owner.player_name, "'s battlefield");
+        const clientOffset = monitor.getClientOffset();
+        const dropZone = document.getElementById("battlefield-" + owner.player_name).getBoundingClientRect();
+        const draggedCard = document.getElementById(item.id).getBoundingClientRect();
         setDndMsg(
           {
             id: item.id,
             to: "board_state.players[" + ownerIndex + "].battlefield",
+            offsetX: clientOffset.x - dropZone.x - (draggedCard.width / 2) + "px",
+            offsetY: clientOffset.y - dropZone.y - (draggedCard.height / 2)+ "px",
           }
         );
       },
@@ -51,7 +58,7 @@ export function Battlefield({library, map, setSelectedCard, owner, ownerIndex, s
             top: 0,
             right: 0,
             margin:"10px",
-            height: "50%"
+            height: "40%"
           }}
           backgroundColor="#c0ffee"
         />
@@ -61,7 +68,7 @@ export function Battlefield({library, map, setSelectedCard, owner, ownerIndex, s
 
   return (
     <>
-      <Box sx={{display: "flex", width: "100%", height: "100%", background: "blue", position: "relative"}} ref={drop}>
+      <Box sx={{display: "flex", width: "100%", height: "100%", background: "blue", position: "relative"}} ref={drop} id={"battlefield-" + owner.player_name}>
         <p>Battlefield</p>
         {renderLibrary(library && library.length > 0)}
         {toShow.map(card => {
@@ -75,6 +82,12 @@ export function Battlefield({library, map, setSelectedCard, owner, ownerIndex, s
               setSelectedCard={setSelectedCard}
               typeLine={card.typeLine}
               manaCost={card.manaCost}
+              sx={{
+                height: "40%",
+                position: "absolute",
+                left: card.offsetX,
+                top: card.offsetY,
+              }}
             />
           )
         })}
