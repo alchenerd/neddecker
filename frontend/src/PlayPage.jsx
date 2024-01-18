@@ -155,7 +155,7 @@ export default function PlayPage() {
 
   const popCardById = (board, cardId) => {
     if (!cardId || !board) {
-      return null;
+      return [null, ""];
     }
     console.log("POPPING", cardId, "FROM", board);
     let cardToPop = null;
@@ -182,7 +182,7 @@ export default function PlayPage() {
         return [cardToPop, path];
       }
     }
-    return null;
+    return [cardToPop, ""];
   };
 
   useEffect(() => {
