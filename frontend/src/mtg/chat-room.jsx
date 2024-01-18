@@ -7,7 +7,7 @@ import Button from '@mui/material/Button'
 import MicIcon from '@mui/icons-material/Mic'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 
-export function ChatRoom({lastMessage, ...props}) {
+export function ChatRoom({lastMessage, actionQueue, setActionQueue, ...props}) {
   const [chatHistory, setChatHistory] = useState([]);
   const chatroomRef = useRef(null);
 
@@ -36,6 +36,18 @@ export function ChatRoom({lastMessage, ...props}) {
   }, [lastMessage]);
 
   useEffect(() => {
+    if (actionQueue && actionQueue.length) {
+      const newMessage = {
+        user_action: {
+          action: "[" + actionQueue[actionQueue.length - 1].type + "]",
+          description: JSON.stringify({...actionQueue[actionQueue.length - 1]}),
+        }
+      };
+      setChatHistory((prev) => [...prev, newMessage]);
+    }
+  }, [actionQueue]);
+
+  useEffect(() => {
     if (chatroomRef.current && chatroomRef.current.scrollTo) {
       chatroomRef.current.scrollTo(0, chatroomRef.current.scrollHeight);
     }
@@ -56,12 +68,13 @@ export function ChatRoom({lastMessage, ...props}) {
                       color: "grey",
                       textAlign: "center",
                       textDecoration: "underline",
+                      overflowWrap: "break-word",
                     }}
                   >
                     [SYSTEM]: {message["log"]}
                   </Typography>
                 )
-              } else if ("ned" in message) {
+              } else if ("ned_action" in message) {
                 return (
                   <>
                   <Typography
@@ -72,9 +85,10 @@ export function ChatRoom({lastMessage, ...props}) {
                       backgroundColor: "palegreen",
                       color: "black",
                       textAlign: "left",
+                      overflowWrap: "break-word",
                     }}
                   >
-                    {message["ned"]["action"]}
+                    {message["ned_action"]["action"]}
                   </Typography>
                   <Typography
                     key={index}
@@ -84,13 +98,14 @@ export function ChatRoom({lastMessage, ...props}) {
                       backgroundColor: "palegreen",
                       color: "black",
                       textAlign: "left",
+                      overflowWrap: "break-word",
                     }}
                   >
-                    {message["ned"]["description"]}
+                    {message["ned_action"]["description"]}
                   </Typography>
                   </>
                 )
-              } else if ("user" in message) {
+              } else if ("user_action" in message) {
                 return (
                   <>
                   <Typography
@@ -101,21 +116,23 @@ export function ChatRoom({lastMessage, ...props}) {
                       backgroundColor: "lightblue",
                       color: "black",
                       textAlign: "right",
+                      overflowWrap: "break-word",
                     }}
                   >
-                    {message["user"]["action"]}
+                    {message["user_action"]["action"]}
                   </Typography>
                   <Typography
-                    key={message["user"]["description"]}
+                    key={message["user_action"]["description"]}
                     variant="body1"
                     sx={{
                       paddingRight: "10px",
                       backgroundColor: "lightblue",
                       color: "black",
                       textAlign: "right",
+                      overflowWrap: "break-word",
                     }}
                   >
-                    {message["user"]["description"]}
+                    {message["user_action"]["description"]}
                   </Typography>
                   </>
                 )

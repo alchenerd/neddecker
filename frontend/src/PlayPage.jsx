@@ -73,6 +73,7 @@ export default function PlayPage() {
   const [ userIsDone, setUserIsDone] = useState(false);
   const [ userEndTurn, setUserEndTurn] = useState(false);
   const [ dndMsg, setDndMsg ] = useState({});
+  const [ actionQueue, setActionQueue ] = useState([]);
 
   useEffect(() => {
     console.log("Connection state changed");
@@ -186,7 +187,7 @@ export default function PlayPage() {
   };
 
   useEffect(() => {
-    if (dndMsg) {
+    if (dndMsg && dndMsg.to) {
       console.log(dndMsg);
       let toChange = {...boardData};
       const [poppedCard, poppedPath] = popCardById(toChange, dndMsg.id);
@@ -195,9 +196,11 @@ export default function PlayPage() {
       _.set(toChange, dndMsg.to, [...previousZoneContent, pushCard]);
       console.log(toChange);
       if (poppedPath === dndMsg.to) {
-        console.log("DID NOT CHANGE ZONE");
+        //console.log("DID NOT CHANGE ZONE");
       } else {
-        console.log("CHANGED ZONE");
+        //console.log("CHANGED ZONE");
+        const newAction = {type: "move", targetId: dndMsg.id, from: poppedPath, to: dndMsg.to};
+        setActionQueue((prev) => [...prev, newAction]);
       }
       setBoardData(toChange);
     }
@@ -286,7 +289,11 @@ export default function PlayPage() {
               />
             </Grid>
             <Grid item width='100%' height='60vh'>
-              <ChatRoom lastMessage={lastMessage} />
+              <ChatRoom
+                lastMessage={lastMessage}
+                actionQueue={actionQueue}
+                setActionQueue={setActionQueue}
+              />
             </Grid>
           </Grid>
         </Grid>
