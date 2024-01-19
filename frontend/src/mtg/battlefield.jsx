@@ -33,15 +33,10 @@ export function Battlefield({library, map, setSelectedCard, owner, ownerIndex, s
       ],
       drop: (item, monitor) => {
         console.log("Detected", item.type, "moving to", owner.player_name, "'s battlefield");
-        const clientOffset = monitor.getClientOffset();
-        const dropZone = document.getElementById("battlefield-" + owner.player_name).getBoundingClientRect();
-        const draggedCard = document.getElementById(item.id).getBoundingClientRect();
         setDndMsg(
           {
             id: item.id,
             to: "board_state.players[" + ownerIndex + "].battlefield",
-            offsetX: clientOffset.x - dropZone.x - (draggedCard.width / 2) + "px",
-            offsetY: clientOffset.y - dropZone.y - (draggedCard.height / 2)+ "px",
           }
         );
       },
@@ -68,7 +63,7 @@ export function Battlefield({library, map, setSelectedCard, owner, ownerIndex, s
 
   return (
     <>
-      <Box sx={{display: "flex", width: "100%", height: "100%", background: "blue", position: "relative"}} ref={drop} id={"battlefield-" + owner.player_name}>
+      <Box sx={{display: "flex", width: "100%", height: "100%", background: "blue", position: "relative"}} ref={drop}>
         <p>Battlefield</p>
         {renderLibrary(library && library.length > 0)}
         {toShow.map(card => {
@@ -84,7 +79,7 @@ export function Battlefield({library, map, setSelectedCard, owner, ownerIndex, s
               manaCost={card.manaCost}
               sx={{
                 height: "40%",
-                position: "absolute",
+                position: "relative",
                 left: card.offsetX,
                 top: card.offsetY,
               }}

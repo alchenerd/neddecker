@@ -3,6 +3,7 @@ import { useImmer } from 'use-immer';
 import Grid from '@mui/material/Grid';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 import _ from 'lodash';
+import { cloneDeep } from 'lodash';
 import { Card as MtgCard } from './mtg/card';
 import { Board as MtgBoard } from './mtg/board';
 import { MulliganDialog } from './mtg/mulligan-dialog';
@@ -65,6 +66,7 @@ export default function PlayPage() {
   const [ requestKeepHand, setRequestKeepHand ] = useState(false);
   // For board rendering
   const [ boardData, setBoardData ] = useState({board_state: {stack: [], players: [ {player_name: "ned"}, {player_name: "user"}]}});
+  const [ shadowBoardData, setShadowBoardData ] = useState(cloneDeep(boardData));
   const [ ned, setNed ] = useState({});
   const [ user, setUser ] = useState({});
   const [ selectedCard, setSelectedCard ] = useState("");
@@ -89,11 +91,13 @@ export default function PlayPage() {
   }
 
   function handleReceiveStep(data) {
+    setShadowBoardData(cloneDeep(data));
     setBoardData(data);
   }
 
   function handleReceivePriority(data) {
     setHasPriority(true);
+    setShadowBoardData(cloneDeep(data));
     setBoardData(data);
   }
 
@@ -154,12 +158,11 @@ export default function PlayPage() {
     }
   }, [lastMessage]);
 
-  const popCardById = (board, cardId) => {
+  const findCardById = (board, cardId) => {
     if (!cardId || !board) {
       return [null, ""];
     }
-    console.log("POPPING", cardId, "FROM", board);
-    let cardToPop = null;
+    let cardToFind = null;
     const zonesToCheck = [
       "board_state.stack",
       "board_state.players[0].battlefield",
@@ -175,36 +178,52 @@ export default function PlayPage() {
     ];
     for (let i = 0; i < zonesToCheck.length; i++) {
       const path = zonesToCheck[i];
-      console.log(path);
-      console.log("TEST", _.get(board, path));
-      cardToPop = _.get(board, path).find((card) => _.get(card, "id", null) === cardId);
-      if (cardToPop) {
-        _.set(board, path, _.get(board, path).filter((card) => card !== cardToPop));
-        return [cardToPop, path];
+      cardToFind = _.get(board, path).find((card) => _.get(card, "id", null) === cardId);
+      if (cardToFind) {
+        return [cardToFind, path];
       }
     }
-    return [cardToPop, ""];
+    return [cardToFind, ""];
   };
 
   useEffect(() => {
     if (dndMsg && dndMsg.to) {
-      console.log(dndMsg);
-      let toChange = {...boardData};
-      const [poppedCard, poppedPath] = popCardById(toChange, dndMsg.id);
-      const pushCard = {...poppedCard, offsetX: dndMsg.offsetX, offsetY: dndMsg.offsetY};
-      const previousZoneContent = _.get(toChange, dndMsg.to, []);
-      _.set(toChange, dndMsg.to, [...previousZoneContent, pushCard]);
-      console.log(toChange);
-      if (poppedPath === dndMsg.to) {
-        //console.log("DID NOT CHANGE ZONE");
-      } else {
-        //console.log("CHANGED ZONE");
-        const newAction = {type: "move", targetId: dndMsg.id, from: poppedPath, to: dndMsg.to};
+      const [foundCard, foundPath] = findCardById(boardData, dndMsg.id);
+      if (foundPath !== dndMsg.to) {
+        // changed zone, record move action
+        const newAction = {
+          type: "move",
+          targetId: dndMsg.id,
+          from: foundPath,
+          to: dndMsg.to,
+        };
         setActionQueue((prev) => [...prev, newAction]);
       }
-      setBoardData(toChange);
     }
   }, [dndMsg]);
+
+  useEffect(() => {
+    if (!actionQueue) {
+      return;
+    }
+    let tempBoardData = cloneDeep(shadowBoardData);
+    actionQueue.map((action) => {
+      console.log(action);
+      switch (action.type) {
+        case "move":
+          console.log("MOVE!");
+          const [foundCard, foundPath] = findCardById(tempBoardData, action.targetId);
+          const toPopFrom = _.get(tempBoardData, foundPath, []);
+          const toPushTo = _.get(tempBoardData, action.to, []);
+          _.set(tempBoardData, foundPath, [...toPopFrom.filter((card) => card.id !== action.targetId)]);
+          _.set(tempBoardData, action.to, [...toPushTo, foundCard]);
+          console.log(_.get(tempBoardData,action.to, []));
+          break;
+      }
+    });
+    console.log(tempBoardData)
+    setBoardData(tempBoardData);
+  }, [actionQueue]);
 
   const sendPassPriority = () => {
     console.log("Passing", boardData.phase)

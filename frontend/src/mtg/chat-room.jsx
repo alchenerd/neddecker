@@ -1,14 +1,17 @@
-import { useState, useEffect, useRef } from 'react'
-import Box from '@mui/material/Box'
-import Grid from '@mui/material/Grid'
-import TextField from '@mui/material/TextField'
-import Typography from '@mui/material/Typography'
-import Button from '@mui/material/Button'
-import MicIcon from '@mui/icons-material/Mic'
-import PlayArrowIcon from '@mui/icons-material/PlayArrow'
+import { useState, useEffect, useRef } from 'react';
+import Box from '@mui/material/Box';
+import Grid from '@mui/material/Grid';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import MicIcon from '@mui/icons-material/Mic';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import IconButton from '@mui/material/IconButton';
+import CloseIcon from '@mui/icons-material/Close';
 
 export function ChatRoom({lastMessage, actionQueue, setActionQueue, ...props}) {
   const [chatHistory, setChatHistory] = useState([]);
+  const [actionHistory, setActionHistory] = useState([]);
   const chatroomRef = useRef(null);
 
   useEffect(() => {
@@ -36,14 +39,13 @@ export function ChatRoom({lastMessage, actionQueue, setActionQueue, ...props}) {
   }, [lastMessage]);
 
   useEffect(() => {
-    if (actionQueue && actionQueue.length) {
-      const newMessage = {
+    if (actionQueue) {
+      setActionHistory(actionQueue.map((action) => ({
         user_action: {
           action: "[" + actionQueue[actionQueue.length - 1].type + "]",
           description: JSON.stringify({...actionQueue[actionQueue.length - 1]}),
         }
-      };
-      setChatHistory((prev) => [...prev, newMessage]);
+      })));
     }
   }, [actionQueue]);
 
@@ -51,7 +53,13 @@ export function ChatRoom({lastMessage, actionQueue, setActionQueue, ...props}) {
     if (chatroomRef.current && chatroomRef.current.scrollTo) {
       chatroomRef.current.scrollTo(0, chatroomRef.current.scrollHeight);
     }
-  }, [chatroomRef, chatHistory]);
+  }, [chatroomRef, chatHistory, actionHistory]);
+
+  const handleCloseActionButtonClick = () => {
+    if (actionQueue && actionQueue.length) {
+      setActionQueue(actionQueue.filter((action, index) => index < actionQueue.length - 1));
+    }
+  }
 
   return (
     <Box sx={{display: "flex", height: "100%", width: "100%", alignItems: "center", justifyContent: "space-between", backgroundColor: "Yellow"}}>
@@ -62,7 +70,7 @@ export function ChatRoom({lastMessage, actionQueue, setActionQueue, ...props}) {
               if ("log" in message) {
                 return (
                   <Typography
-                    key={index}
+                    key={"chat-" + index}
                     variant="subtitle1"
                     sx={{
                       color: "grey",
@@ -74,67 +82,77 @@ export function ChatRoom({lastMessage, actionQueue, setActionQueue, ...props}) {
                     [SYSTEM]: {message["log"]}
                   </Typography>
                 )
-              } else if ("ned_action" in message) {
+              } else {
+                return null;
+              }
+            })}
+            {actionHistory && actionHistory.map((message, index) => {
+              if ("ned_action" in message) {
                 return (
-                  <>
-                  <Typography
-                    key={index}
-                    variant="body1"
-                    sx={{
-                      paddingLeft: "10px",
-                      backgroundColor: "palegreen",
-                      color: "black",
-                      textAlign: "left",
-                      overflowWrap: "break-word",
-                    }}
-                  >
-                    {message["ned_action"]["action"]}
-                  </Typography>
-                  <Typography
-                    key={index}
-                    variant="body1"
-                    sx={{
-                      paddingLeft: "10px",
-                      backgroundColor: "palegreen",
-                      color: "black",
-                      textAlign: "left",
-                      overflowWrap: "break-word",
-                    }}
-                  >
-                    {message["ned_action"]["description"]}
-                  </Typography>
-                  </>
+                  <div key={"ned-action-" + index}>
+                    <Typography
+                      key={"ned-action-title-" + index}
+                      variant="body1"
+                      sx={{
+                        paddingLeft: "10px",
+                        backgroundColor: "palegreen",
+                        color: "black",
+                        textAlign: "left",
+                        overflowWrap: "break-word",
+                      }}
+                    >
+                      {message["ned_action"]["action"]}
+                    </Typography>
+                    <Typography
+                      key={"ned-action-" + index}
+                      variant="body1"
+                      sx={{
+                        paddingLeft: "10px",
+                        backgroundColor: "palegreen",
+                        color: "black",
+                        textAlign: "left",
+                        overflowWrap: "break-word",
+                      }}
+                    >
+                      {message["ned_action"]["description"]}
+                    </Typography>
+                  </div>
                 )
               } else if ("user_action" in message) {
                 return (
-                  <>
-                  <Typography
-                    key={index}
-                    variant="body1"
-                    sx={{
-                      paddingRight: "10px",
-                      backgroundColor: "lightblue",
-                      color: "black",
-                      textAlign: "right",
-                      overflowWrap: "break-word",
-                    }}
-                  >
-                    {message["user_action"]["action"]}
-                  </Typography>
-                  <Typography
-                    key={message["user_action"]["description"]}
-                    variant="body1"
-                    sx={{
-                      paddingRight: "10px",
-                      backgroundColor: "lightblue",
-                      color: "black",
-                      textAlign: "right",
-                      overflowWrap: "break-word",
-                    }}
-                  >
-                    {message["user_action"]["description"]}
-                  </Typography>
-                  </>
+                  <div key={"user-action-" + index}>
+                    <Typography
+                      key={"user-action-title-" + index}
+                      variant="body1"
+                      sx={{
+                        paddingRight: "10px",
+                        backgroundColor: "lightblue",
+                        color: "black",
+                        textAlign: "right",
+                        overflowWrap: "break-word",
+                      }}
+                    >
+                      {message["user_action"]["action"]}
+                    </Typography>
+                    <Typography
+                      key={"user-action-desc-" + index}
+                      variant="body1"
+                      sx={{
+                        paddingRight: "10px",
+                        backgroundColor: "lightblue",
+                        color: "black",
+                        textAlign: "right",
+                        overflowWrap: "break-word",
+                      }}
+                    >
+                      {message["user_action"]["description"]}
+                      {index === actionHistory.length - 1 ? (
+                        <IconButton key={"action-" + index + "-close-btn"} onClick={handleCloseActionButtonClick}>
+                          <CloseIcon key={"action-" + index + "-close-icon"}/>
+                        </IconButton>
+                      ) : null}
+                    </Typography>
+                  </div>
                 )
               }
               <p></p>
