@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Box from '@mui/material/Box'
+import Typography from '@mui/material/Typography'
 import { DndProvider, useDrop } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { ItemTypes } from './constants'
@@ -7,21 +8,35 @@ import { Card } from './card'
 
 export function Battlefield({library, map, setSelectedCard, owner, ownerIndex, setDndMsg, ...props}) {
   const [toShow, setToShow] = useState([]);
+  const [creatureCards, setCreatureCards] = useState([]);
+  const [landCards, setLandCards] = useState([]);
+  const [otherCards, setOtherCards] = useState([]);
 
   useEffect(() => {
-    if (owner.battlefield) {
-      console.log(owner.battlefield),
-      setToShow(owner.battlefield.map((card) => ({
+    setCreatureCards([]);
+    setLandCards([]);
+    setOtherCards([]);
+    owner.battlefield?.map((card) => {
+      const processedCard = {
         id: card.id,
         name: card.name,
         imageUrl: map[card.name] || map[card.name.split(" // ")[0]],
         backImageUrl: map[card.name.split(" // ")[1]] || "",
         typeLine: card.faces ? card.faces.front.type_line + " // " + card.faces.back.type_line: card.type_line,
         manaCost: card.mana_cost,
-        offsetX: card.offsetX,
-        offsetY: card.offsetY,
-      })));
-    }
+        annotations: card.annotations ?? {},
+      }
+      const couldHaveCardType =
+        JSON.stringify(processedCard.typeLine).toLowerCase() +
+        JSON.stringify(processedCard.annotations).toLowerCase();
+      if (couldHaveCardType.includes("creature")) {
+        setCreatureCards((prev) => [...prev, processedCard]);
+      } else if (couldHaveCardType.includes("land")) {
+        setLandCards((prev) => [...prev, processedCard]);
+      } else {
+        setOtherCards((prev) => [...prev, processedCard]);
+      }
+    });
   }, [owner.battlefield]);
 
   const [, drop] = useDrop(
@@ -63,29 +78,95 @@ export function Battlefield({library, map, setSelectedCard, owner, ownerIndex, s
 
   return (
     <>
-      <Box sx={{display: "flex", width: "100%", height: "100%", background: "blue", position: "relative"}} ref={drop}>
-        <p>Battlefield</p>
-        {renderLibrary(library && library.length > 0)}
-        {toShow.map(card => {
-          return (
-            <Card
-              key={card.id}
-              id={card.id}
-              name={card.name}
-              imageUrl={card.imageUrl}
-              backImageUrl={card.backImageUrl}
-              setSelectedCard={setSelectedCard}
-              typeLine={card.typeLine}
-              manaCost={card.manaCost}
+      <Box sx={{display: "flex", flexDirection: "column", width: "100%", height: "100%", background: "navy", position: "relative", alignItems: "center"}} ref={drop}>
+        <Typography sx={{alignSelf: "flex-start"}}>Battlefield</Typography>
+          <Box id="creatureZone"
+            sx={{
+              borderStyle: "solid",
+              boarderWidth: "1px",
+              borderColor: "red",
+              height: "40%",
+              width: "90%",
+              alignSelf: "flex-start",
+            }}
+          >
+            {creatureCards && creatureCards.map(card => {
+              return (
+                <Card
+                  key={card.id}
+                  id={card.id}
+                  name={card.name}
+                  imageUrl={card.imageUrl}
+                  backImageUrl={card.backImageUrl}
+                  setSelectedCard={setSelectedCard}
+                  typeLine={card.typeLine}
+                  manaCost={card.manaCost}
+                />
+              )
+            })}
+          </Box>
+          <Box id="nonCreatureZone"
+            sx={{
+              display: "flex",
+              flexDirection: "row",
+              height: "40%",
+              width: "100%",
+              alignSelf: "flex-end",
+              justifyContent: "space-between",
+            }}
+          >
+            <Box id="landZone"
               sx={{
-                height: "40%",
-                position: "relative",
-                left: card.offsetX,
-                top: card.offsetY,
+                borderStyle: "solid",
+                boarderWidth: "1px",
+                borderColor: "green",
+                height: "100%",
+                width: "40%",
+                justifySelf: "flex-start",
               }}
-            />
-          )
-        })}
+            >
+              {landCards && landCards.map(card => {
+                return (
+                  <Card
+                    key={card.id}
+                    id={card.id}
+                    name={card.name}
+                    imageUrl={card.imageUrl}
+                    backImageUrl={card.backImageUrl}
+                    setSelectedCard={setSelectedCard}
+                    typeLine={card.typeLine}
+                    manaCost={card.manaCost}
+                  />
+                )
+              })}
+            </Box>
+            <Box id="otherZone"
+              sx={{
+                borderStyle: "solid",
+                boarderWidth: "1px",
+                borderColor: "blue",
+                height: "100%",
+                width: "40%",
+                justifySelf: "flex-end",
+              }}
+            >
+              {otherCards && otherCards.map(card => {
+                return (
+                  <Card
+                    key={card.id}
+                    id={card.id}
+                    name={card.name}
+                    imageUrl={card.imageUrl}
+                    backImageUrl={card.backImageUrl}
+                    setSelectedCard={setSelectedCard}
+                    typeLine={card.typeLine}
+                    manaCost={card.manaCost}
+                  />
+                )
+              })}
+            </Box>
+          </Box>
+        {renderLibrary(library && library.length > 0)}
       </Box>
     </>
   )

@@ -211,13 +211,11 @@ export default function PlayPage() {
       console.log(action);
       switch (action.type) {
         case "move":
-          console.log("MOVE!");
           const [foundCard, foundPath] = findCardById(tempBoardData, action.targetId);
           const toPopFrom = _.get(tempBoardData, foundPath, []);
           const toPushTo = _.get(tempBoardData, action.to, []);
           _.set(tempBoardData, foundPath, [...toPopFrom.filter((card) => card.id !== action.targetId)]);
           _.set(tempBoardData, action.to, [...toPushTo, foundCard]);
-          console.log(_.get(tempBoardData,action.to, []));
           break;
       }
     });
