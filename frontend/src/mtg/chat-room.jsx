@@ -42,8 +42,8 @@ export function ChatRoom({lastMessage, actionQueue, setActionQueue, ...props}) {
     if (actionQueue) {
       setActionHistory(actionQueue.map((action) => ({
         user_action: {
-          action: "[" + actionQueue[actionQueue.length - 1].type + "]",
-          description: JSON.stringify({...actionQueue[actionQueue.length - 1]}),
+          action: "[" + action.type + "]",
+          description: JSON.stringify(action),
         }
       })));
     }

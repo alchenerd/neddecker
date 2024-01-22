@@ -15,7 +15,10 @@ export function Hand({map, setSelectedCard, owner, ownerIndex, setDndMsg, ...pro
         name: card.name,
         imageUrl: map[card.name] || map[card.name.split(" // ")[0]],
         backImageUrl: map[card.name.split(" // ")[1]] || "",
-        typeLine: card.faces ? card.faces.front.type_line + " // " + card.faces.back.type_line: card.type_line,
+        isFlipped: card?.isFlipped || false,
+        typeLine: card?.isFlipped ?
+          (card?.faces?.back.type_line || "") :
+          (card?.faces?.front.type_line || card.type_line || ""),
         manaCost: card.mana_cost,
       })));
     } else {

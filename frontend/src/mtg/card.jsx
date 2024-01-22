@@ -3,8 +3,7 @@ import Box from '@mui/material/Box'
 import { useDrag } from 'react-dnd'
 import { ItemTypes } from './constants'
 
-export function Card({id, name, imageUrl, backImageUrl, backgroundColor, setSelectedCard, typeLine, manaCost, ...props}) {
-  const [isFlipped, setIsFlipped] = useState(false);
+export function Card({id, name, imageUrl, backImageUrl, backgroundColor, setSelectedCard, typeLine, manaCost, isFlipped, ...props}) {
   const [isFocused, setIsFocused] = useState(false);
   const imageSource = isFlipped ? backImageUrl : imageUrl;
   const getItemTypeByTypeLine = () => {
@@ -54,11 +53,13 @@ export function Card({id, name, imageUrl, backImageUrl, backgroundColor, setSele
         overflow: 'hidden',
         backgroundColor: backgroundColor || 'transparent',
         borderRadius: "4%",
+        transform: props?.annotations?.isTapped ? "rotate(90deg)" : "",
         ...props.sx,
       }}
       id={id}
       ref={drag}
       onMouseOver={registerFocus}
+      onDoubleClick={props?.onDoubleClick}
     >
       <img
         src={isFlipped? backImageUrl : imageUrl}

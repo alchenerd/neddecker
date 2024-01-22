@@ -65,8 +65,9 @@ export default function PlayPage() {
   const [ requestMulligan, setRequestMulligan ] = useState(false);
   const [ requestKeepHand, setRequestKeepHand ] = useState(false);
   // For board rendering
-  const [ boardData, setBoardData ] = useState({board_state: {stack: [], players: [ {player_name: "ned"}, {player_name: "user"}]}});
-  const [ shadowBoardData, setShadowBoardData ] = useState(cloneDeep(boardData));
+  const defaultBoardData = {board_state: {stack: [], players: [ {player_name: "ned"}, {player_name: "user"}]}};
+  const [ boardData, setBoardData ] = useState(cloneDeep(defaultBoardData));
+  const [ shadowBoardData, setShadowBoardData ] = useState(cloneDeep(defaultBoardData));
   const [ ned, setNed ] = useState({});
   const [ user, setUser ] = useState({});
   const [ selectedCard, setSelectedCard ] = useState("");
@@ -75,10 +76,13 @@ export default function PlayPage() {
   const [ userIsDone, setUserIsDone] = useState(false);
   const [ userEndTurn, setUserEndTurn] = useState(false);
   const [ dndMsg, setDndMsg ] = useState({});
+  const [ dblClkMsg, setDblClkMsg ] = useState({});
   const [ actionQueue, setActionQueue ] = useState([]);
 
   useEffect(() => {
     console.log("Connection state changed");
+    setBoardData(defaultBoardData);
+    setShadowBoardData(defaultBoardData);
     if (readyState === ReadyState.OPEN) {
       sendMessage(registerMatchPayload);
       console.log(playData.card_image_map)
@@ -203,19 +207,67 @@ export default function PlayPage() {
   }, [dndMsg]);
 
   useEffect(() => {
+    if (dblClkMsg?.id) {
+      const [foundCard, foundPath] = findCardById(boardData, dblClkMsg.id);
+      const newAction = {
+        type: foundCard?.annotations?.isTapped ? "untap" : "tap",
+        targetId: foundCard.id,
+      };
+      setActionQueue((prev) => [...prev, newAction]);
+    }
+  }, [dblClkMsg]);
+
+  useEffect(() => {
     if (!actionQueue) {
       return;
     }
     let tempBoardData = cloneDeep(shadowBoardData);
     actionQueue.map((action) => {
       console.log(action);
+      const [foundCard, foundPath] = findCardById(tempBoardData, action.targetId);
       switch (action.type) {
         case "move":
-          const [foundCard, foundPath] = findCardById(tempBoardData, action.targetId);
-          const toPopFrom = _.get(tempBoardData, foundPath, []);
-          const toPushTo = _.get(tempBoardData, action.to, []);
-          _.set(tempBoardData, foundPath, [...toPopFrom.filter((card) => card.id !== action.targetId)]);
-          _.set(tempBoardData, action.to, [...toPushTo, foundCard]);
+          {
+            const annotationWhitelist = ["stickers",];
+            let newCard = {
+              ...foundCard,
+              annotations: (action.to.indexOf("battlefield") < 0) ?
+              Object.keys(foundCard.annottions || {})
+                .filter((key) => annotationWhitelist.includes(key))
+                .reduce((obj, key) => {
+                  obj[key] = foundCard.annotations[key];
+                  return obj;
+                }, {}) :
+              foundCard.annotations,
+            }
+            const toPopFrom = _.get(tempBoardData, foundPath, []);
+            const toPushTo = _.get(tempBoardData, action.to, []);
+            _.set(tempBoardData, foundPath, [...toPopFrom.filter((card) => card.id !== action.targetId)]);
+            _.set(tempBoardData, action.to, [...toPushTo, newCard]);
+          }
+          break;
+        case "tap":
+          {
+            const newCard = {
+              ...foundCard,
+              annotations: foundCard?.annotations ? {...foundCard.annotations, isTapped: true} : {isTapped: true},
+            };
+            const targetZone = _.get(tempBoardData, foundPath, []);
+            const idx = targetZone.findIndex((card) => card.id === action.targetId);
+            targetZone.splice(idx, 1, newCard);
+          }
+          break;
+        case "untap":
+          {
+            const newCard = {
+              ...foundCard,
+              annotations: foundCard?.annotations || {},
+            };
+            delete newCard.annotations.isTapped;
+            const targetZone = _.get(tempBoardData, foundPath, []);
+            const idx = targetZone.findIndex((card) => card.id === action.targetId);
+            targetZone.splice(idx, 1, newCard);
+          }
           break;
       }
     });
@@ -279,6 +331,7 @@ export default function PlayPage() {
             cardImageMap={playData.card_image_map}
             setSelectedCard={setSelectedCard}
             setDndMsg={setDndMsg}
+            setDblClkMsg={setDblClkMsg}
           />
         </Grid>
         <Grid item xs={4} width='100%'>

@@ -5,8 +5,9 @@ import { DndProvider, useDrop } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { ItemTypes } from './constants'
 import { Card } from './card'
+import Permanent from './permanent'
 
-export function Battlefield({library, map, setSelectedCard, owner, ownerIndex, setDndMsg, ...props}) {
+export function Battlefield({library, map, setSelectedCard, owner, ownerIndex, setDndMsg, setDblClkMsg, ...props}) {
   const [toShow, setToShow] = useState([]);
   const [creatureCards, setCreatureCards] = useState([]);
   const [landCards, setLandCards] = useState([]);
@@ -22,13 +23,16 @@ export function Battlefield({library, map, setSelectedCard, owner, ownerIndex, s
         name: card.name,
         imageUrl: map[card.name] || map[card.name.split(" // ")[0]],
         backImageUrl: map[card.name.split(" // ")[1]] || "",
-        typeLine: card.faces ? card.faces.front.type_line + " // " + card.faces.back.type_line: card.type_line,
+        isFlipped: card?.isFlipped || false,
+        typeLine: card?.isFlipped ?
+          (card?.faces?.back.type_line || "") :
+          (card?.faces?.front.type_line || card.type_line || ""),
         manaCost: card.mana_cost,
         annotations: card.annotations ?? {},
       }
       const couldHaveCardType =
         JSON.stringify(processedCard.typeLine).toLowerCase() +
-        JSON.stringify(processedCard.annotations).toLowerCase();
+        (JSON.stringify(processedCard?.annotations).toLowerCase() || "");
       if (couldHaveCardType.includes("creature")) {
         setCreatureCards((prev) => [...prev, processedCard]);
       } else if (couldHaveCardType.includes("land")) {
@@ -76,23 +80,34 @@ export function Battlefield({library, map, setSelectedCard, owner, ownerIndex, s
     }
   }
 
+  const toggleTap = (e) => {
+    console.log("Detected", e?.currentTarget?.id, "tapping/untapping at", owner.player_name, "'s battlefield");
+    setDblClkMsg(
+      {
+        id: e?.currentTarget?.id,
+      }
+    );
+  }
+
   return (
     <>
       <Box sx={{display: "flex", flexDirection: "column", width: "100%", height: "100%", background: "navy", position: "relative", alignItems: "center"}} ref={drop}>
         <Typography sx={{alignSelf: "flex-start"}}>Battlefield</Typography>
           <Box id="creatureZone"
             sx={{
+              display: "flex",
               borderStyle: "solid",
               boarderWidth: "1px",
               borderColor: "red",
               height: "40%",
               width: "90%",
               alignSelf: "flex-start",
+              justifyContent: "space-around",
             }}
           >
             {creatureCards && creatureCards.map(card => {
               return (
-                <Card
+                <Permanent
                   key={card.id}
                   id={card.id}
                   name={card.name}
@@ -101,6 +116,8 @@ export function Battlefield({library, map, setSelectedCard, owner, ownerIndex, s
                   setSelectedCard={setSelectedCard}
                   typeLine={card.typeLine}
                   manaCost={card.manaCost}
+                  annotations={card.annotations}
+                  onDoubleClick={toggleTap}
                 />
               )
             })}
@@ -117,17 +134,19 @@ export function Battlefield({library, map, setSelectedCard, owner, ownerIndex, s
           >
             <Box id="landZone"
               sx={{
+                display: "flex",
                 borderStyle: "solid",
                 boarderWidth: "1px",
                 borderColor: "green",
                 height: "100%",
                 width: "40%",
                 justifySelf: "flex-start",
+                justifyContent: "space-around",
               }}
             >
               {landCards && landCards.map(card => {
                 return (
-                  <Card
+                  <Permanent
                     key={card.id}
                     id={card.id}
                     name={card.name}
@@ -136,23 +155,27 @@ export function Battlefield({library, map, setSelectedCard, owner, ownerIndex, s
                     setSelectedCard={setSelectedCard}
                     typeLine={card.typeLine}
                     manaCost={card.manaCost}
+                    annotations={card.annotations}
+                    onDoubleClick={toggleTap}
                   />
                 )
               })}
             </Box>
             <Box id="otherZone"
               sx={{
+                display: "flex",
                 borderStyle: "solid",
                 boarderWidth: "1px",
                 borderColor: "blue",
                 height: "100%",
                 width: "40%",
                 justifySelf: "flex-end",
+                justifyContent: "space-around",
               }}
             >
               {otherCards && otherCards.map(card => {
                 return (
-                  <Card
+                  <Permanent
                     key={card.id}
                     id={card.id}
                     name={card.name}
@@ -161,6 +184,8 @@ export function Battlefield({library, map, setSelectedCard, owner, ownerIndex, s
                     setSelectedCard={setSelectedCard}
                     typeLine={card.typeLine}
                     manaCost={card.manaCost}
+                    annotations={card.annotations}
+                    onDoubleClick={toggleTap}
                   />
                 )
               })}
