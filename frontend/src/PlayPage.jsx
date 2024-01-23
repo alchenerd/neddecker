@@ -81,6 +81,7 @@ export default function PlayPage() {
 
   useEffect(() => {
     console.log("Connection state changed");
+    setActionQueue([]);
     setBoardData(defaultBoardData);
     setShadowBoardData(defaultBoardData);
     if (readyState === ReadyState.OPEN) {
@@ -190,6 +191,14 @@ export default function PlayPage() {
     return [cardToFind, ""];
   };
 
+  const findPlayerIndexByName = (board, name) => {
+    if (!board || !name) {
+      return -1;
+    }
+    const players = _.get(board, "board_state.players");
+    return players.findIndex((player) => player.player_name === name);
+  }
+
   useEffect(() => {
     if (dndMsg && dndMsg.to) {
       const [foundCard, foundPath] = findCardById(boardData, dndMsg.id);
@@ -207,13 +216,32 @@ export default function PlayPage() {
   }, [dndMsg]);
 
   useEffect(() => {
-    if (dblClkMsg?.id) {
+    if (dblClkMsg) {
       const [foundCard, foundPath] = findCardById(boardData, dblClkMsg.id);
-      const newAction = {
-        type: foundCard?.annotations?.isTapped ? "untap" : "tap",
-        targetId: foundCard.id,
-      };
-      setActionQueue((prev) => [...prev, newAction]);
+      switch (dblClkMsg?.type) {
+        case "toggleTap":
+          {
+            const newAction = {
+              type: foundCard?.annotations?.isTapped ? "untap" : "tap",
+              targetId: foundCard.id,
+            };
+            setActionQueue((prev) => [...prev, newAction]);
+          }
+          break;
+        case "drawFromLibrary":
+          const ownerIndex = findPlayerIndexByName(boardData, dblClkMsg.who);
+          {
+            const newAction = {
+              type: "move",
+              targetId: null,
+              amount: 1,
+              from: "board_state.players[" + ownerIndex + "].library",
+              to: "board_state.players[" + ownerIndex + "].hand",
+            };
+            setActionQueue((prev) => [...prev, newAction]);
+          }
+          break;
+      }
     }
   }, [dblClkMsg]);
 
@@ -224,12 +252,14 @@ export default function PlayPage() {
     let tempBoardData = cloneDeep(shadowBoardData);
     actionQueue.map((action) => {
       console.log(action);
-      const [foundCard, foundPath] = findCardById(tempBoardData, action.targetId);
+      let [foundCard, foundPath] = findCardById(tempBoardData, action.targetId);
+      let newCard = null;
       switch (action.type) {
         case "move":
-          {
+          if (action.targetId) {
+            console.log("moving known card");
             const annotationWhitelist = ["stickers",];
-            let newCard = {
+            newCard = {
               ...foundCard,
               annotations: (action.to.indexOf("battlefield") < 0) ?
               Object.keys(foundCard.annottions || {})
@@ -240,11 +270,14 @@ export default function PlayPage() {
                 }, {}) :
               foundCard.annotations,
             }
-            const toPopFrom = _.get(tempBoardData, foundPath, []);
-            const toPushTo = _.get(tempBoardData, action.to, []);
-            _.set(tempBoardData, foundPath, [...toPopFrom.filter((card) => card.id !== action.targetId)]);
-            _.set(tempBoardData, action.to, [...toPushTo, newCard]);
+          } else { // moving unknown card
+            foundPath = action.from;
+            newCard = {..._.get(tempBoardData, action.from)[0]};
           }
+          const toPopFrom = _.get(tempBoardData, foundPath, []);
+          const toPushTo = _.get(tempBoardData, action.to, []);
+          _.set(tempBoardData, foundPath, [...toPopFrom.filter((card) => card.id !== newCard.id)]);
+          _.set(tempBoardData, action.to, [...toPushTo, newCard]);
           break;
         case "tap":
           {

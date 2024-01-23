@@ -75,6 +75,7 @@ export function Battlefield({library, map, setSelectedCard, owner, ownerIndex, s
             height: "40%"
           }}
           backgroundColor="#c0ffee"
+          onDoubleClick={drawFromTop}
         />
       )
     }
@@ -85,6 +86,18 @@ export function Battlefield({library, map, setSelectedCard, owner, ownerIndex, s
     setDblClkMsg(
       {
         id: e?.currentTarget?.id,
+        type: "toggleTap",
+      }
+    );
+  }
+
+  const drawFromTop = (e) => {
+    console.log("Detected", owner.player_name, "drawing from their library");
+    setDblClkMsg(
+      {
+        id: null,
+        type: "drawFromLibrary",
+        who: owner.player_name,
       }
     );
   }

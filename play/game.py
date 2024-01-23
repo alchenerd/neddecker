@@ -64,13 +64,9 @@ class Player:
             for card in zone:
                 self.move_card(card, _from=zone, to='library')
 
-    def get_board_state(self):
-        board_state = {}
-        board_state['player_name'] = self.player_name
-        board_state['library'] = self.library
-        board_state['battlefield'] = self.battlefield
-        board_state['hand'] = self.hand.copy()
-        for card in board_state['hand']:
+    def add_extra_information(self, zone):
+        ret = zone.copy()
+        for card in ret:
             card_orm = get_card_by_name(card['name'])
             front_orm, back_orm = get_faces_by_name(card['name'])
             if front_orm and back_orm:
@@ -84,8 +80,16 @@ class Player:
             else:
                 card['type_line'] = card_orm.type_line
                 card['mana_cost'] = card_orm.mana_cost
-        board_state['graveyard'] = self.graveyard
-        board_state['exile'] = self.exile
+        return ret
+
+    def get_board_state(self):
+        board_state = {}
+        board_state['player_name'] = self.player_name
+        board_state['library'] = self.add_extra_information(self.library)
+        board_state['battlefield'] = self.add_extra_information(self.battlefield)
+        board_state['hand'] = self.add_extra_information(self.hand)
+        board_state['graveyard'] = self.add_extra_information(self.graveyard)
+        board_state['exile'] = self.add_extra_information(self.exile)
         board_state['hp'] = self.hp
         board_state['infect'] = self.infect
         return board_state
