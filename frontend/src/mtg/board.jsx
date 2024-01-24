@@ -50,7 +50,6 @@ export function Board({boardData, ned, setNed, user, setUser, cardImageMap, setS
         </Grid>
         <Grid item xs={12} sx={{backgroundColor: "Magenta", height: "32vh"}}>
           <Battlefield
-            library={ned.library}
             map={cardImageMap}
             setSelectedCard={setSelectedCard}
             owner={ned}
@@ -65,7 +64,6 @@ export function Board({boardData, ned, setNed, user, setUser, cardImageMap, setS
         </Grid>
         <Grid item xs={12} sx={{backgroundColor: "Magenta", height: "32vh"}}>
           <Battlefield
-            library={user.library}
             map={cardImageMap}
             setSelectedCard={setSelectedCard}
             owner={user}
