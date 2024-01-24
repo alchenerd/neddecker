@@ -82,8 +82,8 @@ export function MulliganDialog({
 
   function handleKeep() {
     setOpen(false);
-    setRequestKeepHand(true);
     setToBottom(mulliganBottom);
+    setRequestKeepHand(true);
     setMulliganBottom([]);
   }
 
@@ -99,6 +99,8 @@ export function MulliganDialog({
         name: card.name,
         imageUrl: cardImageMap[card.name] || cardImageMap[card.name.split(" // ")[0]],
         backImageUrl: cardImageMap[card.name.split(" // ")[1]] || "",
+        typeLine: card.type_line,
+        manaCost: card.mana_cost,
       })));
     }
   }, [data]);

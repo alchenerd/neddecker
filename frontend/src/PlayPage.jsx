@@ -124,6 +124,8 @@ export default function PlayPage() {
         bottom: toBottom.map(card => ({
           id: card.id,
           name: card.name,
+          type_line: card.typeLine,
+          mana_cost: card.manaCost,
         })),
       }));
     }
