@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Card } from './card';
 
-function Library({owner, ownerIndex, content, setDndMsg, setDblClkMsg, setSelectedCard}) {
+function Library({owner, ownerIndex, content, setDndMsg, setDblClkMsg, setSelectedCard, setWhoRequestShuffle}) {
   const drawFromTop = (e) => {
     console.log("Detected", owner.player_name, "drawing from their library");
     setDblClkMsg(
@@ -12,6 +12,15 @@ function Library({owner, ownerIndex, content, setDndMsg, setDblClkMsg, setSelect
       }
     );
   }
+
+  const shuffle = () => {
+    console.log("Detected", owner.player_name, "shuffling their library");
+    setWhoRequestShuffle(owner.player_name);
+  };
+
+  const libraryFunctions = [
+    {name: "shuffle", _function: shuffle}
+  ];
 
   return (
     <>
@@ -26,6 +35,7 @@ function Library({owner, ownerIndex, content, setDndMsg, setDblClkMsg, setSelect
         }}
         backgroundColor={(content && content.length) ? "#c0ffee" : null}
         onDoubleClick={drawFromTop}
+        contextMenuFunctions={libraryFunctions}
       />
     </>
   ); 

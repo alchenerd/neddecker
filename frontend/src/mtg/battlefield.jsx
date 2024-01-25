@@ -10,7 +10,7 @@ import Library from './library'
 import Graveyard from './graveyard'
 import Exile from './exile'
 
-export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg, setDblClkMsg, ...props}) {
+export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg, setDblClkMsg, setWhoRequestShuffle, ...props}) {
   const [toShow, setToShow] = useState([]);
   const [creatureCards, setCreatureCards] = useState([]);
   const [landCards, setLandCards] = useState([]);
@@ -227,6 +227,7 @@ export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg,
           setDndMsg={setDndMsg}
           setDblClkMsg={setDblClkMsg}
           setSelectedCard={setSelectedCard}
+          setWhoRequestShuffle={setWhoRequestShuffle}
         />
         <Exile
           owner={owner}

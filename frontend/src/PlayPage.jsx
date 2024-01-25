@@ -78,6 +78,7 @@ export default function PlayPage() {
   const [ dndMsg, setDndMsg ] = useState({});
   const [ dblClkMsg, setDblClkMsg ] = useState({});
   const [ actionQueue, setActionQueue ] = useState([]);
+  const [ whoRequestShuffle, setWhoRequestShuffle ] = useState("");
 
   useEffect(() => {
     console.log("Connection state changed");
@@ -304,6 +305,13 @@ export default function PlayPage() {
             targetZone.splice(idx, 1, newCard);
           }
           break;
+        case "shuffle":
+          {
+            console.log(action.who + ".library");
+            const targetZone = _.get(tempBoardData, action.who + ".library");
+            targetZone.sort(() => Math.random() - 0.5);
+          }
+          break;
       }
     });
     console.log(tempBoardData)
@@ -341,6 +349,19 @@ export default function PlayPage() {
     }
   }, [boardData.whose_turn]);
 
+  useEffect(() => {
+    const ownerIndex = findPlayerIndexByName(boardData, whoRequestShuffle);
+    if (whoRequestShuffle && whoRequestShuffle.length) {
+      const newAction = {
+        type: "shuffle",
+        targetId: null,
+        who: "board_state.players[" + ownerIndex + "]",
+      };
+      setActionQueue((prev) => [...prev, newAction]);
+      setWhoRequestShuffle("");
+    }
+  }, [whoRequestShuffle])
+
   return (
     <>
       <Grid 
@@ -367,6 +388,7 @@ export default function PlayPage() {
             setSelectedCard={setSelectedCard}
             setDndMsg={setDndMsg}
             setDblClkMsg={setDblClkMsg}
+            setWhoRequestShuffle={setWhoRequestShuffle}
           />
         </Grid>
         <Grid item xs={4} width='100%'>

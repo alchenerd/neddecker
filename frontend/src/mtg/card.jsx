@@ -1,11 +1,36 @@
-import { useState, useEffect } from 'react'
-import Box from '@mui/material/Box'
-import { useDrag } from 'react-dnd'
-import { ItemTypes } from './constants'
+import { useState, useEffect } from 'react';
+import Box from '@mui/material/Box';
+import { useDrag } from 'react-dnd';
+import { ItemTypes } from './constants';
+import CardContextMenu from './card-context-menu';
 
-export function Card({id, name, imageUrl, backImageUrl, backgroundColor, setSelectedCard, typeLine, manaCost, isFlipped, ...props}) {
+export function Card({
+  id,
+  name,
+  imageUrl,
+  backImageUrl,
+  backgroundColor,
+  setSelectedCard,
+  typeLine,
+  manaCost,
+  isFlipped,
+  contextMenuFunctions,
+  ...props
+}) {
   const [isFocused, setIsFocused] = useState(false);
+  const [contextMenu, setContextMenu] = useState(null);
   const imageSource = isFlipped ? backImageUrl : imageUrl;
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+    setContextMenu(
+      contextMenu === null
+      ? {
+        mouseX: e.clientX + 2,
+        mouseY: e.clientY - 6,
+        }
+      : null,
+    )
+  };
   const getItemTypeByTypeLine = () => {
     if (!typeLine) {
       return null;
@@ -60,6 +85,7 @@ export function Card({id, name, imageUrl, backImageUrl, backgroundColor, setSele
       ref={drag}
       onMouseOver={registerFocus}
       onDoubleClick={props?.onDoubleClick}
+      onContextMenu={handleContextMenu}
     >
       <img
         src={isFlipped? backImageUrl : imageUrl}
@@ -70,6 +96,7 @@ export function Card({id, name, imageUrl, backImageUrl, backgroundColor, setSele
           aspectRatio: 2.5 / 3.5,
         }}
       />
+      <CardContextMenu {...{contextMenu, setContextMenu}} functions={contextMenuFunctions}/>
     </Box>
   );
 }
