@@ -73,6 +73,7 @@ export default function PlayPage() {
   const [ selectedCard, setSelectedCard ] = useState("");
   // For communication
   const [ hasPriority, setHasPriority] = useState(false);
+  const [ hasPseudopriority, setHasPseudopriority] = useState(false);
   const [ userIsDone, setUserIsDone] = useState(false);
   const [ userEndTurn, setUserEndTurn] = useState(false);
   const [ dndMsg, setDndMsg ] = useState({});
@@ -103,6 +104,12 @@ export default function PlayPage() {
 
   function handleReceivePriority(data) {
     setHasPriority(true);
+    setShadowBoardData(cloneDeep(data));
+    setBoardData(data);
+  }
+
+  function handleRequirePlayerAction(data) {
+    setHasPseudopriority(true);
     setShadowBoardData(cloneDeep(data));
     setBoardData(data);
   }
@@ -161,6 +168,10 @@ export default function PlayPage() {
         case 'receive_priority':
           console.log("Received priority", data.whose_turn, data.phase);
           handleReceivePriority(data);
+          break;
+        case 'require_player_action':
+          console.log("Requires Player's action but no priority", data.whose_turn, data.phase);
+          handleRequirePlayerAction(data);
           break;
       }
     }
@@ -328,20 +339,37 @@ export default function PlayPage() {
     sendMessage(JSON.stringify(payload));
   };
 
+  const sendPassNonPriority = () => {
+    console.log("Ending", boardData.phase)
+    const payload = {
+      type: "pass_non_priority_action",
+      who: "user",
+      actions: [],
+    }
+    sendMessage(JSON.stringify(payload));
+  };
+
   useEffect(() => {
     if (hasPriority && userIsDone) {
       setHasPriority(false);
       setUserIsDone(false);
       sendPassPriority();
+    } else if (hasPseudopriority && userIsDone) {
+      setHasPseudopriority(false);
+      setUserIsDone(false);
+      sendPassNonPriority();
     }
-  }, [hasPriority, userIsDone]);
+  }, [hasPriority, hasPseudopriority, userIsDone]);
 
   useEffect(() => {
     if (hasPriority && userEndTurn && boardData.whose_turn === "user") {
       setHasPriority(false);
       sendPassPriority();
+    } else if (hasPseudopriority && userEndTurn && boardData.whose_turn === "user") {
+      setHasPseudopriority(false);
+      sendPassNonPriority();
     }
-  }, [hasPriority, userEndTurn]);
+  }, [hasPriority, hasPseudopriority, userEndTurn]);
 
   useEffect(() => {
     if (boardData.whose_turn !== "user") {

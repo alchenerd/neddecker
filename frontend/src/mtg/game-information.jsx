@@ -35,7 +35,7 @@ export function GameInformation({selectedCard, setSelectedCard, boardData, setBo
             sx={{width: "100%", height: "100%"}}
             onClick={handleClickDoneButton}
           >
-            { isResolving ? `Submit Resolve` : `Pass Priority` }
+            { isResolving ? `Resolve` : `Pass` }
           </Button>
         </Grid>
         <Grid item xs={6} sx={{height: "10%"}}>

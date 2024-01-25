@@ -35,6 +35,8 @@ class PlayConsumer(WebsocketConsumer):
                 self.player_keep_hand(data)
             case 'pass_priority':
                 self.handle_pass_priority(data)
+            case 'pass_non_priority_action':
+                self.handle_non_priority_action(data)
 
     def register_match(self, data):
         if hasattr(self, 'mtg_match'):
@@ -165,7 +167,11 @@ class PlayConsumer(WebsocketConsumer):
         player = [p for p in self.mtg_match.game.players if p.player_name == player][0]
         payload = self.mtg_match.game.get_payload()
         self.send_to_player(player, json.dumps(payload))
-        if not self.mtg_match.game.player_has_priority:
+        if self.mtg_match.game.require_player_action:
+            return
+        if self.mtg_match.game.player_has_priority:
+            return
+        else:
             self.advance()
 
     # Called when a player passes priority
@@ -180,7 +186,7 @@ class PlayConsumer(WebsocketConsumer):
         for action in actions:
             self.mtg_match.game.apply(action)
         if len(self.mtg_match.game.priority_waitlist) > 0:
-            # other player can respond
+            # other players can respond
             self.mtg_match.game.whose_priority = self.mtg_match.game.priority_waitlist[0]
             whose_priority = self.mtg_match.game.whose_priority
             player = [p for p in self.mtg_match.game.players if p.player_name == whose_priority][0]
@@ -194,6 +200,13 @@ class PlayConsumer(WebsocketConsumer):
                 # TODO have controller resolve stack
                 pass
 
+    def handle_non_priority_action(self, data={}):
+        print(f'passed non-priority action {self.mtg_match.game.phase}!')
+        actions = data.get('actions', [])
+        for action in actions:
+            self.mtg_match.game.apply(action)
+        self.advance()
+
     # Called when all players agree to move to the next step
     def advance(self, data={}):
         self.mtg_match.game.next_step()
@@ -201,8 +214,11 @@ class PlayConsumer(WebsocketConsumer):
         player = [p for p in self.mtg_match.game.players if p.player_name == player][0]
         payload = self.mtg_match.game.get_payload()
         self.send_to_player(player, json.dumps(payload))
-        # Untap and cleanup don't let player have priority
-        if not self.mtg_match.game.player_has_priority:
+        if self.mtg_match.game.require_player_action:
+            return
+        if self.mtg_match.game.player_has_priority:
+            return
+        else:
             self.advance()
 
     def send_log(self, to_log):

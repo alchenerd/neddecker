@@ -3,6 +3,7 @@ import Typography from '@mui/material/Typography'
 
 export function Bedrunner({whoseTurn, phase, ...props}) {
   const phaseMap = {
+    "start of game phase": "Start of Game Phase",
     "beginning phase": "Beginning Phase",
     "untap step": "Beginning Phase : Untap",
     "upkeep step": "Beginning Phase: Upkeep",
@@ -12,6 +13,9 @@ export function Bedrunner({whoseTurn, phase, ...props}) {
     "beginning of combat step": "Combat Phase: Beginning of Combat",
     "declare attackers step": "Combat Phase: Declare Attackers",
     "declare blockers step": "Combat Phase: Declare Blockers",
+    "order blockers step": "Combat Phase: Order Damage Assignment on blockers",
+    "order attackers step": "Combat Phase: Order Damage Assignment on Attackers",
+    "first strike combat damage step": "Combat Phase: Assign First Strike Damage",
     "combat damage step": "Combat Phase: Assign Combat Damage",
     "end of combat step": "Combat Phase: End of Combat",
     "postcombat main phase": "Postcombat Main Phase",

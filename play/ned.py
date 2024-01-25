@@ -76,8 +76,10 @@ class Ned():
                 return thoughts, choice
             case 'receive_priority':
                 return f'Beep boop Ned passes priority ({json_data["whose_turn"]}\'s {json_data["phase"]})', {'type': 'pass_priority', 'who': 'ned', 'actions': []}
+            case 'require_player_action':
+                return 'Beep boop Ned does nothing on ' + json_data['phase'], {'type': 'pass_non_priority_action', 'who': 'ned', 'actions': []}
             case 'receive_step':
-                return 'Beep boop Ned does nothing', {'type': 'log', 'message': 'received step ' + json_data['phase']}
+                return 'Beep boop Ned does nothing on ' + json_data['phase'], {'type': 'log', 'message': 'received step ' + json_data['phase']}
             case _:
                 print('[ERROR]')
                 print(json_data)

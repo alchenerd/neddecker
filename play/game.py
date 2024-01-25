@@ -91,9 +91,10 @@ class Game:
         self.stack = []
         self.turn_count = 1
         self.whose_turn = ''
-        self.phase = 0
+        self.phase = ''
         self.whose_priority = ''
         self.player_has_priority = False
+        self.require_player_action = False
         self.turn_phase_tracker = None
         self.priority_waitlist = []
 
@@ -173,8 +174,7 @@ class Game:
         self.next_step()
 
     def next_step(self):
-        self.turn_count, self.whose_turn, (self.phase, self.player_has_priority) = next(self.turn_phase_tracker)
-        self.apply_turn_based_actions()
+        self.turn_count, self.whose_turn, (self.phase, self.player_has_priority, self.require_player_action) = next(self.turn_phase_tracker)
         self.whose_priority = self.whose_turn
         self.priority_waitlist = [p.player_name for p in self.players]
         while True:
@@ -184,18 +184,6 @@ class Game:
                 break
         assert(len(self.priority_waitlist) == 2)
         assert(self.priority_waitlist[0] == self.whose_priority)
-
-    def apply_turn_based_actions(self):
-        player = self.whose_turn
-        player = [p for p in self.players if p.player_name == player][0]
-        match self.phase:
-            case 'untap step':
-                player.untap()
-            case 'draw step':
-                if self.turn_count > 1:
-                    player.draw()
-            case 'cleanup step':
-                player.cleanup()
 
     def apply(self, action):
         pass
@@ -209,6 +197,15 @@ class Game:
                 'whose_turn': self.whose_turn,
                 'phase': self.phase,
                 'whose_priority': self.whose_priority,
+                'board_state': self.get_board_state(),
+            }
+        elif self.require_player_action:
+            payload = {
+                'type': 'require_player_action',
+                'turn_count': self.turn_count,
+                'whose_turn': self.whose_turn,
+                'phase': self.phase,
+                'whose_priority': None,
                 'board_state': self.get_board_state(),
             }
         else:
@@ -245,9 +242,9 @@ class Game:
         self.players.append(self.players.pop(0))
         self.turn_phase_tracker = iter(MTGTNPS([p.player_name for p in self.players]))
         # will be overwritten but set just in case
-        self.turn_count = 0
+        self.turn_count = 1
         self.whose_turn = self.players[0].player_name
-        self.phase = 0
+        self.phase = ''
         self.whose_priority = self.players[0].player_name
         self.priority_waitlist = []
         self.has_ended = False

@@ -16,22 +16,26 @@ class Players():
 
 class MtgTurnsAndPhases():
     PHASES_AND_STEPS = [
-        # (name, playerGetsPriority)
-        ('beginning phase', False),
-        ('untap step', False),
-        ('upkeep step', True),
-        ('draw step', True),
-        ('precombat main phase', True),
-        ('combat phase', False),
-        ('beginning of combat step', True),
-        ('declare attackers step', True),
-        ('declare blockers step', True),
-        ('combat damage step', True),
-        ('end of combat step', True),
-        ('postcombat main phase', True),
-        ('ending phase', False),
-        ('end step', True),
-        ('cleanup step', False), # but can be broken by madness
+        # (name, playerGetsPriority, requirePlayerAct)
+        # ('start of game phase', False, True), # This is added in initialization
+        ('beginning phase', False, False),
+        ('untap step', False, True),
+        ('upkeep step', True, True),
+        ('draw step', True, True),
+        ('precombat main phase', True, True),
+        ('combat phase', False, False),
+        ('beginning of combat step', True, True),
+        ('declare attackers step', True, True),
+        ('declare blockers step', True, True),
+        ('order blockers step', False, True),
+        ('order attackers step', False, True),
+        ('first strike combat damage step', True, True),
+        ('combat damage step', True, True),
+        ('end of combat step', True, True),
+        ('postcombat main phase', True, True),
+        ('ending phase', False, False),
+        ('end step', True, True),
+        ('cleanup step', False, True),
     ]
 
     def __init__(self, players):
@@ -43,7 +47,9 @@ class MtgTurnsAndPhases():
         self.turn_ring = players
         self.turn_stack = []
         self.turn_ring_length = len(self.turn_ring)
-        self.phase_queue = list(MtgTurnsAndPhases.PHASES_AND_STEPS)
+        # Priority set to true to ensure both players have time to do things at start of game
+        self.phase_queue = [('start of game phase', True, True)]
+        self.phase_queue.extend(list(MtgTurnsAndPhases.PHASES_AND_STEPS))
         # this is also seen at __iter__
         self.turn_count = 1
         self.turn_index = 0
@@ -51,7 +57,9 @@ class MtgTurnsAndPhases():
     def __iter__(self):
         self.turn_count = 1
         self.turn_index = 0
-        self.phase_queue = list(MtgTurnsAndPhases.PHASES_AND_STEPS)
+        # Priority set to true to ensure both players have time to do things at start of game
+        self.phase_queue = [('start of game phase', True, True)]
+        self.phase_queue.extend(list(MtgTurnsAndPhases.PHASES_AND_STEPS))
         return self
 
     def __next__(self):
