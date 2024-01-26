@@ -20,20 +20,23 @@ class Card(models.Model):
     """
     Cards scraped from scryfall
     """
-    cmc = models.FloatField(blank=False) # e.g. 6
-    colors = models.CharField(max_length=255, blank=True) # need preprocessing e.g. ["G"]
+    cmc = models.FloatField(blank=False) # e.g. 6, for cascade
+    colors = models.CharField(max_length=255, blank=True) # e.g. ["G"], for protection
     defense = models.CharField(max_length=255, blank=True) # for battles
     loyalty = models.CharField(max_length=255, blank=True) # for planeswalkers
     mana_cost = models.CharField(max_length=255, blank=True) # e.g. "{4}{G}{G}"
     name = models.CharField(max_length=255) # e.g. "Colossal Dreadmaw"
     oracle_text = models.CharField(max_length=1023, blank=True) # e.g. "Trample"
     power = models.CharField(max_length=255, blank=True) # e.g. "6"
-    produced_mana = models.CharField(max_length=255, blank=True)# see colors
+    produced_mana = models.CharField(max_length=255, blank=True) # for mana sources, see colors
     toughness = models.CharField(max_length=255, blank=True) # e.g. "6"
     type_line = models.CharField(max_length=255, blank=True) # e.g. "Creature - Dinosaur"
-    card_image = models.URLField(max_length=255, blank=True)
+    card_image_uri = models.URLField(max_length=255, blank=True) # for frontend rendering
+    layout = models.CharField(max_length=255, blank=True) # for frontend rendering
     def __str__(self):
         fields = (
+                'cmc',
+                'colors',
                 'name',
                 'mana_cost',
                 'type_line',
@@ -43,6 +46,7 @@ class Card(models.Model):
                 'produced_mana',
                 'loyalty',
                 'defense',
+                'layout',
         )
         return json.dumps(json.loads(serializers.serialize('json', (self,), fields=fields))[-1]['fields'])
 
@@ -64,9 +68,11 @@ class Face(models.Model):
     power = models.CharField(max_length=255, blank=True)
     toughness = models.CharField(max_length=255, blank=True)
     type_line = models.CharField(max_length=255, blank=True)
-    card_image = models.URLField(max_length=255, blank=True)
+    card_image_uri = models.URLField(max_length=255, blank=True)
     def __str__(self):
         fields = (
+                'cmc',
+                'colors',
                 'name',
                 'mana_cost',
                 'type_line',

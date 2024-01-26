@@ -15,7 +15,7 @@ class Command(BaseCommand):
     Syncronize the database before starting the server.
     """
 
-    def goldfish_outdated(self):
+    def is_goldfish_outdated(self):
         deck_count = Deck.objects.count()
         if deck_count < 10:
             return True
@@ -59,7 +59,7 @@ class Command(BaseCommand):
         reply = Deck.objects.bulk_create(deck_objs)
         print(f'Bulk objects inserted: {reply}')
 
-    def scryfall_outdated(self):
+    def is_scryfall_outdated(self):
         """
         Checks scryfall API for latest default card bulk data; if there is unseen bulk data available, download it and save it in scryfall/; all other files in scryfall/ will be purged.
         """
@@ -118,7 +118,8 @@ class Command(BaseCommand):
                             produced_mana=card.get('produced_mana', ''),
                             toughness=card.get('toughness', ''),
                             type_line=card.get('type_line', ''),
-                            card_image=card.get('image_uris', {}).get('normal', ''),
+                            card_image_uri=card.get('image_uris', {}).get('normal', ''),
+                            layout=card.get('layout', ''),
                             )
                     obj_cards.append(obj_card)
                     if card.get('card_faces', None):
@@ -137,7 +138,7 @@ class Command(BaseCommand):
                                     power=face.get('power', ''),
                                     toughness=face.get('toughness', ''),
                                     type_line=face.get('type_line', ''),
-                                    card_image=face.get('image_uris', {}).get('normal', ''),
+                                    card_image_uri=face.get('image_uris', {}).get('normal', ''),
                             )
                             obj_faces.append(obj_face)
         Card.objects.bulk_create(obj_cards, batch_size=100)
@@ -162,7 +163,7 @@ class Command(BaseCommand):
                 searched_card = Card.objects.filter(name=name).first()
                 if not searched_card:
                     print(f'Before: {name}')
-                    trig_card = Card.objects.annotate(similarity=TrigramSimilarity('name', name),).filter(similarity__gt=0.3).order_by('-similarity', Length('card_image').desc()).first()
+                    trig_card = Card.objects.annotate(similarity=TrigramSimilarity('name', name),).filter(similarity__gt=0.3).order_by('-similarity', Length('card_image_uri').desc()).first()
                     name = trig_card.name
                     print(f'After: {name}')
                 new_decklist += ' '.join((count, name)) + '\r\n'
@@ -171,13 +172,13 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         try:
-            if self.goldfish_outdated():
+            if self.is_goldfish_outdated():
                 print('Goldfish data is outdated; discarding table Deck...')
                 Deck.objects.all().delete()
                 print('Updating mtggoldfish...')
                 self.update_goldfish()
                 print('Update mtggoldfish done!')
-            if self.scryfall_outdated():
+            if self.is_scryfall_outdated():
                 print('Scryfall data is outdated; discarding table Card and Face...')
                 Card.objects.all().delete()
                 Face.objects.all().delete()

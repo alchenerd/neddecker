@@ -128,8 +128,8 @@ def get_card_image_map(*args):
     card_image_map = {}
     for arg in args:
         for item in arg:
-            if hasattr(item, 'card_image') and item.card_image:
-                card_image_map[item.name] = item.card_image
+            if hasattr(item, 'card_image_uri') and item.card_image_uri:
+                card_image_map[item.name] = item.card_image_uri
     return card_image_map
 
 def get_type_line_map(*args):
