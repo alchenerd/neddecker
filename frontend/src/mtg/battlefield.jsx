@@ -9,6 +9,7 @@ import Permanent from './permanent'
 import Library from './library'
 import Graveyard from './graveyard'
 import Exile from './exile'
+import ZoneButton from './zone-button'
 
 export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg, setDblClkMsg, setWhoRequestShuffle, ...props}) {
   const [toShow, setToShow] = useState([]);
@@ -229,16 +230,48 @@ export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg,
           setSelectedCard={setSelectedCard}
           setWhoRequestShuffle={setWhoRequestShuffle}
         />
-        <Exile
-          owner={owner}
-          content={exileCards}
-          setSelectedCard={setSelectedCard}
-        />
-        <Graveyard
-          owner={owner}
-          content={graveyardCards}
-          setSelectedCard={setSelectedCard}
-        />
+        <Box id="graveyardExileBox"
+          sx={{
+            position: "absolute",
+            bottom: 0,
+            right: 0,
+            margin:"20px",
+            height: "40%"
+          }}
+        >
+          <Exile
+            owner={owner}
+            content={exileCards}
+            setSelectedCard={setSelectedCard}
+          />
+          <Graveyard
+            owner={owner}
+            content={graveyardCards}
+            setSelectedCard={setSelectedCard}
+          />
+          <ZoneButton id="graveyardButton"
+            zoneName="graveyard"
+            buttonText="💀"
+            ownerName={owner.player_name}
+            content={graveyardCards}
+            sx={{
+              position: "absolute",
+              top: "12px",
+              right: "4px",
+            }}
+          />
+          <ZoneButton id="exileButton"
+            zoneName="exile"
+            buttonText="❌"
+            ownerName={owner.player_name}
+            content={exileCards}
+            sx={{
+              position: "absolute",
+              bottom: "12px",
+              right: "4px",
+            }}
+          />
+        </Box>
       </Box>
     </>
   )

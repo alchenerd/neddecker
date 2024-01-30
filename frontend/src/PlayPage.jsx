@@ -244,11 +244,11 @@ export default function PlayPage() {
           break;
         case "drawFromLibrary":
           const ownerIndex = findPlayerIndexByName(boardData, dblClkMsg.who);
+          const cardId = _.get(boardData, "board_state.players[" + ownerIndex + "].library[0]").id;
           {
             const newAction = {
               type: "move",
-              targetId: null,
-              amount: 1,
+              targetId: cardId,
               from: "board_state.players[" + ownerIndex + "].library",
               to: "board_state.players[" + ownerIndex + "].hand",
             };
@@ -284,7 +284,7 @@ export default function PlayPage() {
                 }, {}) :
               foundCard.annotations,
             }
-          } else { // moving unknown card
+          } else { // moving unknown card, deprecated for now
             foundPath = action.from;
             newCard = {..._.get(tempBoardData, action.from)[0]};
           }

@@ -10,8 +10,7 @@ function Exile({owner, content, setSelectedCard}) {
           position: "absolute",
           bottom: 0,
           right: 0,
-          margin:"20px",
-          height: "40%",
+          height: "100%",
           transform: "rotate(90deg)",
         }}
         imageUrl={(content && content.length) ? content[content.length - 1].imageUrl : ""}
