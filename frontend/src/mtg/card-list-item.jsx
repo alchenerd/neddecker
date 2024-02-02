@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import CardContextMenu from './card-context-menu';
-function CardListItem ({string}) {
+import './card-list-item.css';
+
+function CardListItem ({id, string, setMoveTargetCard, setOpenMoveDialog}) {
   const [contextMenu, setContextMenu] = useState(null);
   const handleContextMenu = (e) => {
     e.preventDefault();
@@ -13,13 +15,17 @@ function CardListItem ({string}) {
       : null,
     )
   };
+  const handleMove = () => {
+    setMoveTargetCard({id: id, name: string});
+    setOpenMoveDialog(true);
+  };
   return (
     <>
-      <li style={{"listStyleType": "none"}} onContextMenu={handleContextMenu}>{string}</li>
+      <li className="card-list-item" style={{"listStyleType": "none"}} onContextMenu={handleContextMenu}>{string}</li>
       <CardContextMenu
         {...{contextMenu, setContextMenu}}
         functions={[
-          {name: "move (not implemented)", _function: () => {console.log("move is not yet implemented!");}},
+          {name: "move", _function: handleMove},
         ]}
       />
     </>

@@ -5,7 +5,7 @@ import { HTML5Backend } from 'react-dnd-html5-backend'
 import { ItemTypes } from './constants'
 import { Card } from './card'
 
-export function Hand({map, setSelectedCard, owner, ownerIndex, setDndMsg, ...props}) {
+export function Hand({map, setSelectedCard, owner, ownerIndex, setDndMsg, setMoveTargetCard, setOpenMoveDialog, ...props}) {
   const [toShow, setToShow] = useState([]);
 
   useEffect(() => {
@@ -60,6 +60,13 @@ export function Hand({map, setSelectedCard, owner, ownerIndex, setDndMsg, ...pro
       }}
     >
       {toShow.map(card => {
+        const handleMove = () => {
+          setMoveTargetCard({id: card.id, name: card.name});
+          setOpenMoveDialog(true);
+        }
+        const functions = [
+          {name: "move", _function: handleMove},
+        ];
         return (
           <Card
             key={card.id}
@@ -70,6 +77,7 @@ export function Hand({map, setSelectedCard, owner, ownerIndex, setDndMsg, ...pro
             setSelectedCard={setSelectedCard}
             typeLine={card.typeLine}
             manaCost={card.manaCost}
+            contextMenuFunctions={functions}
           />
         )
       })}

@@ -5,7 +5,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Button from '@mui/material/Button';
 import CardListItem from './card-list-item';
 
-function InspectDialog({open, setOpen, title, content}) {
+function InspectDialog({open, setOpen, title, content, setMoveTargetCard, setOpenMoveDialog}) {
   const handleClose = () => {setOpen(false);};
   return (
     <Dialog open={open} onClose={handleClose} fullWidth={true} maxWidth="sm">
@@ -15,7 +15,7 @@ function InspectDialog({open, setOpen, title, content}) {
       <DialogContent>
         {
           content?.map((card) => (
-            <CardListItem key={card.id} string={card.name} />
+            <CardListItem key={card.id} id={card.id} string={card.name} setMoveTargetCard={setMoveTargetCard} setOpenMoveDialog={setOpenMoveDialog}/>
           ))
         }
       </DialogContent>

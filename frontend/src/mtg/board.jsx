@@ -6,7 +6,7 @@ import { Bedrunner } from './bedrunner'
 import Box from '@mui/material/Box'
 import Grid from '@mui/material/Grid'
 
-export function Board({boardData, ned, setNed, user, setUser, cardImageMap, setSelectedCard, setDndMsg, setDblClkMsg, setWhoRequestShuffle, ...props}) {
+export function Board({boardData, ned, setNed, user, setUser, cardImageMap, setSelectedCard, setDndMsg, setDblClkMsg, setWhoRequestShuffle, setMoveTargetCard, setOpenMoveDialog, ...props}) {
   const [nedIndex, setNedIndex] = useState(-1);
   const [userIndex, setUserIndex] = useState(-1);
 
@@ -46,6 +46,8 @@ export function Board({boardData, ned, setNed, user, setUser, cardImageMap, setS
             owner={ned}
             ownerIndex={nedIndex}
             setDndMsg={setDndMsg}
+            setMoveTargetCard={setMoveTargetCard}
+            setOpenMoveDialog={setOpenMoveDialog}
           />
         </Grid>
         <Grid item xs={12} sx={{backgroundColor: "Magenta", height: "32vh"}}>
@@ -57,6 +59,8 @@ export function Board({boardData, ned, setNed, user, setUser, cardImageMap, setS
             setDndMsg={setDndMsg}
             setDblClkMsg={setDblClkMsg}
             setWhoRequestShuffle={setWhoRequestShuffle}
+            setMoveTargetCard={setMoveTargetCard}
+            setOpenMoveDialog={setOpenMoveDialog}
           />
         </Grid>
         <Grid item xs={12} sx={{backgroundColor: "Magenta", height: "4vh",
@@ -72,6 +76,8 @@ export function Board({boardData, ned, setNed, user, setUser, cardImageMap, setS
             setDndMsg={setDndMsg}
             setDblClkMsg={setDblClkMsg}
             setWhoRequestShuffle={setWhoRequestShuffle}
+            setMoveTargetCard={setMoveTargetCard}
+            setOpenMoveDialog={setOpenMoveDialog}
           />
         </Grid>
         <Grid item xs={2} sx={{backgroundColor: "Magenta", height: "16vh"}} alignSelf="end">
@@ -90,6 +96,8 @@ export function Board({boardData, ned, setNed, user, setUser, cardImageMap, setS
             owner={user}
             ownerIndex={userIndex}
             setDndMsg={setDndMsg}
+            setMoveTargetCard={setMoveTargetCard}
+            setOpenMoveDialog={setOpenMoveDialog}
           />
         </Grid>
       </Grid>

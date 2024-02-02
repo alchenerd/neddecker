@@ -42,6 +42,10 @@ export function Stack({stack, setBoardData, map, setSelectedCard, setDndMsg, ...
     }), [stack]
   );
 
+  const stackFunctions = [
+    {name: "move (not yet implemented)", _function: () => {console.log("test");}},
+  ];
+
   return (
     <Box
       backgroundColor='#abcdef'
@@ -67,6 +71,7 @@ export function Stack({stack, setBoardData, map, setSelectedCard, setDndMsg, ...
           setSelectedCard={setSelectedCard}
           typeLine={card.typeLine}
           manaCost={card.manaCost}
+          contextMenuFunctions={stackFunctions}
         />
       )})}
     </Box>

@@ -11,7 +11,7 @@ import Graveyard from './graveyard'
 import Exile from './exile'
 import ZoneButton from './zone-button'
 
-export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg, setDblClkMsg, setWhoRequestShuffle, ...props}) {
+export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg, setDblClkMsg, setWhoRequestShuffle, setMoveTargetCard, setOpenMoveDialog, ...props}) {
   const [toShow, setToShow] = useState([]);
   const [creatureCards, setCreatureCards] = useState([]);
   const [landCards, setLandCards] = useState([]);
@@ -148,6 +148,8 @@ export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg,
                 manaCost={card.manaCost}
                 annotations={card.annotations}
                 onDoubleClick={toggleTap}
+                setMoveTargetCard={setMoveTargetCard}
+                setOpenMoveDialog={setOpenMoveDialog}
               />
             )
           })}
@@ -187,6 +189,8 @@ export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg,
                   manaCost={card.manaCost}
                   annotations={card.annotations}
                   onDoubleClick={toggleTap}
+                  setMoveTargetCard={setMoveTargetCard}
+                  setOpenMoveDialog={setOpenMoveDialog}
                 />
               )
             })}
@@ -216,6 +220,8 @@ export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg,
                   manaCost={card.manaCost}
                   annotations={card.annotations}
                   onDoubleClick={toggleTap}
+                  setMoveTargetCard={setMoveTargetCard}
+                  setOpenMoveDialog={setOpenMoveDialog}
                 />
               )
             })}
@@ -229,6 +235,8 @@ export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg,
           setDblClkMsg={setDblClkMsg}
           setSelectedCard={setSelectedCard}
           setWhoRequestShuffle={setWhoRequestShuffle}
+          setMoveTargetCard={setMoveTargetCard}
+          setOpenMoveDialog={setOpenMoveDialog}
         />
         <Box id="graveyardExileBox"
           sx={{
@@ -254,6 +262,8 @@ export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg,
             buttonText="💀"
             ownerName={owner.player_name}
             content={graveyardCards}
+            setMoveTargetCard={setMoveTargetCard}
+            setOpenMoveDialog={setOpenMoveDialog}
             sx={{
               position: "absolute",
               top: "12px",
@@ -265,6 +275,8 @@ export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg,
             buttonText="❌"
             ownerName={owner.player_name}
             content={exileCards}
+            setMoveTargetCard={setMoveTargetCard}
+            setOpenMoveDialog={setOpenMoveDialog}
             sx={{
               position: "absolute",
               bottom: "12px",

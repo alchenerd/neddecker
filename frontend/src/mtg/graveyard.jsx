@@ -14,7 +14,7 @@ function Graveyard({owner, content, setSelectedCard}) {
           height: "100%"
         }}
         imageUrl={(content && content.length) ? content[content.length - 1].imageUrl : ""}
-        setSelectedCard={setSelectedCard}
+        setSelectedCard={(content && content.length) ? setSelectedCard : null}
       />
     </>
   ); 

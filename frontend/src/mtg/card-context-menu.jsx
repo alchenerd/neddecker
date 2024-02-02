@@ -3,7 +3,7 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Typography from '@mui/material/Typography';
 
-function CardContextMenu({contextMenu, setContextMenu, functions}) {
+function CardContextMenu({contextMenu, setContextMenu, functions, setMoveTargetCard, setOpenMoveDialog}) {
   const handleClose = () => {
     setContextMenu(null);  
   }

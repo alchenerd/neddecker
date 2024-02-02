@@ -9,6 +9,7 @@ import { Board as MtgBoard } from './mtg/board';
 import { MulliganDialog } from './mtg/mulligan-dialog';
 import { GameInformation } from './mtg/game-information';
 import { ChatRoom } from './mtg/chat-room';
+import MoveDialog from './mtg/move-dialog';
 
 import './play.css';
 
@@ -59,7 +60,7 @@ export default function PlayPage() {
   const wsUrl = 'ws://localhost:8000/ws/play/';
   const { sendMessage, lastMessage, readyState } = useWebSocket(wsUrl);
   // For mulligan
-  const [ openMulligan, setOpenMulligan ] = useState(false);
+  const [ openMulliganDialog, setOpenMulliganDialog ] = useState(false);
   const [ mulliganData, setMulliganData ] = useState({});
   const [ toBottom, setToBottom ] = useState([]);
   const [ requestMulligan, setRequestMulligan ] = useState(false);
@@ -80,6 +81,8 @@ export default function PlayPage() {
   const [ dblClkMsg, setDblClkMsg ] = useState({});
   const [ actionQueue, setActionQueue ] = useState([]);
   const [ whoRequestShuffle, setWhoRequestShuffle ] = useState("");
+  const [ moveTargetCard, setMoveTargetCard ] = useState(null);
+  const [ openMoveDialog, setOpenMoveDialog] = useState(false);
 
   useEffect(() => {
     console.log("Connection state changed");
@@ -94,7 +97,7 @@ export default function PlayPage() {
 
   function handleMulliganMessage(data) {
     setMulliganData(data);
-    setOpenMulligan(true);
+    setOpenMulliganDialog(true);
   }
 
   function handleReceiveStep(data) {
@@ -115,7 +118,7 @@ export default function PlayPage() {
   }
 
   useEffect(() => {
-    if (openMulligan === false && requestMulligan === true) {
+    if (openMulliganDialog === false && requestMulligan === true) {
       sendMessage(JSON.stringify({
         type: "mulligan",
         who: "user",
@@ -213,19 +216,24 @@ export default function PlayPage() {
     return players.findIndex((player) => player.player_name === name);
   }
 
+  const registerMoveAction = (id, to) => {
+    console.log("registermoveaction: I am called!");
+    console.log("moving", id, "to", to);
+    const [foundCard, foundPath] = findCardById(boardData, id);
+    if (foundPath !== to) {
+      const newAction = {
+        type: "move",
+        targetId: id,
+        from: foundPath,
+        to: to,
+      };
+      setActionQueue((prev) => [...prev, newAction]);
+    }
+  }
+
   useEffect(() => {
-    if (dndMsg && dndMsg.to) {
-      const [foundCard, foundPath] = findCardById(boardData, dndMsg.id);
-      if (foundPath !== dndMsg.to) {
-        // changed zone, record move action
-        const newAction = {
-          type: "move",
-          targetId: dndMsg.id,
-          from: foundPath,
-          to: dndMsg.to,
-        };
-        setActionQueue((prev) => [...prev, newAction]);
-      }
+    if (dndMsg && dndMsg.to && dndMsg.id) {
+      registerMoveAction(dndMsg.id, dndMsg.to);
     }
   }, [dndMsg]);
 
@@ -417,6 +425,8 @@ export default function PlayPage() {
             setDndMsg={setDndMsg}
             setDblClkMsg={setDblClkMsg}
             setWhoRequestShuffle={setWhoRequestShuffle}
+            setMoveTargetCard={setMoveTargetCard}
+            setOpenMoveDialog={setOpenMoveDialog}
           />
         </Grid>
         <Grid item xs={4} width='100%'>
@@ -454,13 +464,20 @@ export default function PlayPage() {
         </Grid>
       </Grid>
       <MulliganDialog
-        open={openMulligan}
-        setOpen={setOpenMulligan}
+        open={openMulliganDialog}
+        setOpen={setOpenMulliganDialog}
         data={mulliganData}
         cardImageMap={playData.card_image_map}
         setToBottom={setToBottom}
         setRequestMulligan={setRequestMulligan}
         setRequestKeepHand={setRequestKeepHand}
+      />
+      <MoveDialog
+        open={openMoveDialog}
+        setOpen={setOpenMoveDialog}
+        card={moveTargetCard}
+        userIndex={findPlayerIndexByName(boardData, "user")}
+        registerMoveAction={registerMoveAction}
       />
     </>
   );
