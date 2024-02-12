@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card } from './card';
 import InspectDialog from './inspect-dialog';
 
-function Library({owner, ownerIndex, content, setDndMsg, setDblClkMsg, setSelectedCard, setWhoRequestShuffle, setMoveTargetCard, setOpenMoveDialog}) {
+function Library({owner, ownerIndex, content, setDndMsg, setDblClkMsg, setSelectedCard, setWhoRequestShuffle, setActionTargetCard, setOpenMoveDialog}) {
   const [openInspectDialog, setOpenInspectDialog] = useState(false);
 
   const drawFromTop = (e) => {
@@ -51,7 +51,7 @@ function Library({owner, ownerIndex, content, setDndMsg, setDblClkMsg, setSelect
         setOpen={setOpenInspectDialog}
         title={owner.player_name + "'s library"}
         content={content}
-        setMoveTargetCard={setMoveTargetCard}
+        setActionTargetCard={setActionTargetCard}
         setOpenMoveDialog={setOpenMoveDialog}
       />
     </>

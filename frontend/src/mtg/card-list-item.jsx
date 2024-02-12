@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import CardContextMenu from './card-context-menu';
 import './card-list-item.css';
 
-function CardListItem ({id, string, setMoveTargetCard, setOpenMoveDialog}) {
+function CardListItem ({id, string, setActionTargetCard, setOpenMoveDialog}) {
   const [contextMenu, setContextMenu] = useState(null);
   const handleContextMenu = (e) => {
     e.preventDefault();
@@ -16,7 +16,7 @@ function CardListItem ({id, string, setMoveTargetCard, setOpenMoveDialog}) {
     )
   };
   const handleMove = () => {
-    setMoveTargetCard({id: id, name: string});
+    setActionTargetCard({id: id, name: string});
     setOpenMoveDialog(true);
   };
   return (

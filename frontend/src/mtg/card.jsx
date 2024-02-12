@@ -13,6 +13,8 @@ export function Card({
   setSelectedCard,
   typeLine,
   manaCost,
+  counters,
+  annotations,
   isFlipped,
   contextMenuFunctions,
   ...props

@@ -11,7 +11,7 @@ import Graveyard from './graveyard'
 import Exile from './exile'
 import ZoneButton from './zone-button'
 
-export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg, setDblClkMsg, setWhoRequestShuffle, setMoveTargetCard, setOpenMoveDialog, ...props}) {
+export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg, setDblClkMsg, setWhoRequestShuffle, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, ...props}) {
   const [toShow, setToShow] = useState([]);
   const [creatureCards, setCreatureCards] = useState([]);
   const [landCards, setLandCards] = useState([]);
@@ -31,6 +31,7 @@ export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg,
         (card?.faces?.back.type_line || "") :
         (card?.faces?.front.type_line || card.type_line || ""),
       manaCost: card.mana_cost,
+      counters: card.counters ?? {},
       annotations: card.annotations ?? {},
     }
     return {...processedCard};
@@ -146,10 +147,12 @@ export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg,
                 setSelectedCard={setSelectedCard}
                 typeLine={card.typeLine}
                 manaCost={card.manaCost}
+                counters={card.counters}
                 annotations={card.annotations}
                 onDoubleClick={toggleTap}
-                setMoveTargetCard={setMoveTargetCard}
+                setActionTargetCard={setActionTargetCard}
                 setOpenMoveDialog={setOpenMoveDialog}
+                setOpenCounterDialog={setOpenCounterDialog}
               />
             )
           })}
@@ -187,10 +190,12 @@ export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg,
                   setSelectedCard={setSelectedCard}
                   typeLine={card.typeLine}
                   manaCost={card.manaCost}
+                  counters={card.counters}
                   annotations={card.annotations}
                   onDoubleClick={toggleTap}
-                  setMoveTargetCard={setMoveTargetCard}
+                  setActionTargetCard={setActionTargetCard}
                   setOpenMoveDialog={setOpenMoveDialog}
+                  setOpenCounterDialog={setOpenCounterDialog}
                 />
               )
             })}
@@ -218,10 +223,12 @@ export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg,
                   setSelectedCard={setSelectedCard}
                   typeLine={card.typeLine}
                   manaCost={card.manaCost}
+                  counters={card.counters}
                   annotations={card.annotations}
                   onDoubleClick={toggleTap}
-                  setMoveTargetCard={setMoveTargetCard}
+                  setActionTargetCard={setActionTargetCard}
                   setOpenMoveDialog={setOpenMoveDialog}
+                  setOpenCounterDialog={setOpenCounterDialog}
                 />
               )
             })}
@@ -235,7 +242,7 @@ export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg,
           setDblClkMsg={setDblClkMsg}
           setSelectedCard={setSelectedCard}
           setWhoRequestShuffle={setWhoRequestShuffle}
-          setMoveTargetCard={setMoveTargetCard}
+          setActionTargetCard={setActionTargetCard}
           setOpenMoveDialog={setOpenMoveDialog}
         />
         <Box id="graveyardExileBox"
@@ -262,8 +269,9 @@ export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg,
             buttonText="💀"
             ownerName={owner.player_name}
             content={graveyardCards}
-            setMoveTargetCard={setMoveTargetCard}
+            setActionTargetCard={setActionTargetCard}
             setOpenMoveDialog={setOpenMoveDialog}
+            setOpenCounterDialog={setOpenCounterDialog}
             sx={{
               position: "absolute",
               top: "12px",
@@ -275,8 +283,9 @@ export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg,
             buttonText="❌"
             ownerName={owner.player_name}
             content={exileCards}
-            setMoveTargetCard={setMoveTargetCard}
+            setActionTargetCard={setActionTargetCard}
             setOpenMoveDialog={setOpenMoveDialog}
+            setOpenCounterDialog={setOpenCounterDialog}
             sx={{
               position: "absolute",
               bottom: "12px",

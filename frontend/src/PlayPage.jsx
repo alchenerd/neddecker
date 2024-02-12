@@ -10,6 +10,7 @@ import { MulliganDialog } from './mtg/mulligan-dialog';
 import { GameInformation } from './mtg/game-information';
 import { ChatRoom } from './mtg/chat-room';
 import MoveDialog from './mtg/move-dialog';
+import CounterDialog from './mtg/counter-dialog';
 
 import './play.css';
 
@@ -81,8 +82,10 @@ export default function PlayPage() {
   const [ dblClkMsg, setDblClkMsg ] = useState({});
   const [ actionQueue, setActionQueue ] = useState([]);
   const [ whoRequestShuffle, setWhoRequestShuffle ] = useState("");
-  const [ moveTargetCard, setMoveTargetCard ] = useState(null);
+  const [ actionTargetCard, setActionTargetCard ] = useState(null);
   const [ openMoveDialog, setOpenMoveDialog] = useState(false);
+  const [ openCounterDialog, setOpenCounterDialog] = useState(true);
+  const [ cardCounter, setCardCounter ] = useState({});
 
   useEffect(() => {
     console.log("Connection state changed");
@@ -425,7 +428,7 @@ export default function PlayPage() {
             setDndMsg={setDndMsg}
             setDblClkMsg={setDblClkMsg}
             setWhoRequestShuffle={setWhoRequestShuffle}
-            setMoveTargetCard={setMoveTargetCard}
+            setActionTargetCard={setActionTargetCard}
             setOpenMoveDialog={setOpenMoveDialog}
           />
         </Grid>
@@ -475,9 +478,15 @@ export default function PlayPage() {
       <MoveDialog
         open={openMoveDialog}
         setOpen={setOpenMoveDialog}
-        card={moveTargetCard}
+        card={actionTargetCard}
         userIndex={findPlayerIndexByName(boardData, "user")}
         registerMoveAction={registerMoveAction}
+      />
+      <CounterDialog
+        open={openCounterDialog}
+        setOpen={setOpenCounterDialog}
+        card={actionTargetCard}
+        setCardCounter={setCardCounter}
       />
     </>
   );
