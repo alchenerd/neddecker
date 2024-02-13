@@ -5,27 +5,55 @@ import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import Grid from '@mui/material/Grid';
 import TextField from '@mui/material/TextField';
-import Autocomplete from '@mui/material/Autocomplete';
+import Autocomplete, {createFilterOptions} from '@mui/material/Autocomplete';
 import { Card } from './card';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-function CounterDialog({open, setOpen, card, setCardCounter}) {
-  const handleClose = () => {setOpen(false)}
-  const [counterType, setCounterType] = useState("+1/+1")
-  const [counterAmount, setCounterAmount] = useState(1)
+const filter = createFilterOptions();
+
+function CounterDialog({open, setOpen, card, setCardCounter, registerCounterAction}) {
+  useEffect(() => {
+    if (open) {
+      setCounterType(null);
+      setCounterAmount(null);
+    }
+  }, [open]);
+  const handleClose = () => {
+    setOpen(false);
+  };
+  const [counterType, setCounterType] = useState(null);
+  const [counterAmount, setCounterAmount] = useState(null);
+  const handleChangeType = (event, newValue) => {
+    console.log(newValue);
+    if (newValue && newValue.inputValue) {
+      setCounterType(newValue.inputValue);
+    } else {
+      setCounterType(newValue);
+    }
+  };
+  const handleChangeAmount = (event) => {
+    //console.log(event.target.value);
+    setCounterAmount(event.target.value);
+  };
+  const handleSubmit = () => {
+    setOpen(false);
+    setCardCounter({type: counterType, amount: counterAmount});
+    registerCounterAction(card.id, counterType, counterAmount);
+  };
   return (
     <>
       <Dialog open={open} onClose={handleClose} fullWidth={true} maxWidth="sm">
         <DialogTitle>
-          {card?.id || 'Undefined'}
+          {"Set counter on " + (card?.name || 'Undefined')}
         </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{overflowY: "visible"}}>
           <Grid container spacing={2} direction="row">
             <Grid item xs={6} display="flex" justifyContent="center" alignItems="center">
               <Card
+                id="card-preview"
                 canDrag="false"
                 imageUrl={card?.imageUrl || ''}
-                name="where is this card?"
+                name={card?.name || "Undefined"}
                 backgroundColor="maroon"
               />
             </Grid>
@@ -34,11 +62,29 @@ function CounterDialog({open, setOpen, card, setCardCounter}) {
               <Autocomplete
                 id="counter-type"
                 label="Type"
-                value={counterType}
                 freeSolo
+                selectOnFocus
+                clearOnBlur
+                handleHomeEndKeys
                 fullWidth={true}
-                options={["+1/+1", "Loyalty"]}
-                renderInput={(params) => <TextField {...params} label="Counter type"/>}
+                options={
+                  [
+                    "+1/+1",
+                    "Loyalty",
+                  ]
+                }
+                onChange={handleChangeType}
+                filterOptions={(options, params) => {
+                  const filtered = filter(options, params);
+                  const { inputValue } = params;
+                  // Suggest the creation of a new value
+                  const isExisting = options.some((option) => inputValue === option.title);
+                  if (inputValue !== '' && !isExisting) {
+                    filtered.push(`${inputValue}`);
+                  }
+                  return filtered;
+                }}
+                renderInput={(params) => <TextField {...params} label="Counter type" />}
               />
             </Grid>
             <Grid item xs={5}>
@@ -46,7 +92,8 @@ function CounterDialog({open, setOpen, card, setCardCounter}) {
                 id="counter-amount"
                 label="Amount"
                 type="number"
-                value={counterAmount}
+                defaultValue={0}
+                onChange={handleChangeAmount}
                 fullWidth={true}
                 InputLabelProps={{
                   shrink: true,
@@ -60,7 +107,7 @@ function CounterDialog({open, setOpen, card, setCardCounter}) {
           <Button onClick={handleClose}>
             Close
           </Button>
-          <Button onClick={handleClose}>
+          <Button onClick={handleSubmit}>
             Submit
           </Button>
         </DialogActions>

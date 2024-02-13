@@ -5,7 +5,7 @@ import Typography from '@mui/material/Typography'
 import { ItemTypes } from './constants'
 import { Card } from './card'
 
-export function Stack({stack, setBoardData, map, setSelectedCard, setDndMsg, ...props}) {
+export function Stack({stack, setBoardData, map, setSelectedCard, setDndMsg, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, ...props}) {
   const [toShow, setToShow] = useState([]);
 
   useEffect(() => {
@@ -42,10 +42,6 @@ export function Stack({stack, setBoardData, map, setSelectedCard, setDndMsg, ...
     }), [stack]
   );
 
-  const stackFunctions = [
-    {name: "move (not yet implemented)", _function: () => {console.log("test");}},
-  ];
-
   return (
     <Box
       backgroundColor='#abcdef'
@@ -61,19 +57,32 @@ export function Stack({stack, setBoardData, map, setSelectedCard, setDndMsg, ...
       <Typography variant="h5" color="Black">
         Stack
       </Typography>
-      {toShow.map(card => {return (
-        <Card
-          key={card.id}
-          id={card.id}
-          name={card.name}
-          imageUrl={card.imageUrl}
-          backImageUrl={card.backImageUrl}
-          setSelectedCard={setSelectedCard}
-          typeLine={card.typeLine}
-          manaCost={card.manaCost}
-          contextMenuFunctions={stackFunctions}
-        />
-      )})}
+      {toShow.map(card => {
+        const handleMove = () => {
+          setActionTargetCard(card);
+          setOpenMoveDialog(true);
+        }
+        const functions = [
+          {name: "move", _function: handleMove},
+          {name: "set counter", _function: () => {
+            setActionTargetCard(card);
+            setOpenCounterDialog(true);
+          }},
+        ];
+        return (
+          <Card
+            key={card.id}
+            id={card.id}
+            name={card.name}
+            imageUrl={card.imageUrl}
+            backImageUrl={card.backImageUrl}
+            setSelectedCard={setSelectedCard}
+            typeLine={card.typeLine}
+            manaCost={card.manaCost}
+            contextMenuFunctions={functions}
+          />
+        )
+      })}
     </Box>
   );
 }

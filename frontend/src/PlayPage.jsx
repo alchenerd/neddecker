@@ -84,7 +84,7 @@ export default function PlayPage() {
   const [ whoRequestShuffle, setWhoRequestShuffle ] = useState("");
   const [ actionTargetCard, setActionTargetCard ] = useState(null);
   const [ openMoveDialog, setOpenMoveDialog] = useState(false);
-  const [ openCounterDialog, setOpenCounterDialog] = useState(true);
+  const [ openCounterDialog, setOpenCounterDialog] = useState(false);
   const [ cardCounter, setCardCounter ] = useState({});
 
   useEffect(() => {
@@ -234,6 +234,19 @@ export default function PlayPage() {
     }
   }
 
+  const registerCounterAction = (id, type, amount) => {
+    if (type === null || amount === null) {
+      return;
+    }
+    const newAction = {
+      type: "set_counter",
+      targetId: id,
+      counterType: type,
+      counterAmount: amount,
+    };
+    setActionQueue((prev) => [...prev, newAction]);
+  }
+
   useEffect(() => {
     if (dndMsg && dndMsg.to && dndMsg.id) {
       registerMoveAction(dndMsg.id, dndMsg.to);
@@ -334,6 +347,34 @@ export default function PlayPage() {
             targetZone.sort(() => Math.random() - 0.5);
           }
           break;
+        case "set_counter":
+          {
+            let updatedCounters = []
+            if (foundCard.counters) {
+              updatedCounters = foundCard.counters.map((counter) => {
+                if (action.counterType === counter.type) {
+                  return {...counter, ...{type: action.counterType, amount: action.counterAmount}};
+                } else {
+                  return counter;
+                }
+              });
+            } else {
+              updatedCounters = [
+                {
+                  type: action.counterType,
+                  amount: action.counterAmount,
+                },
+              ];
+            }
+            const newCard = {
+              ...foundCard,
+              counters: updatedCounters,
+            };
+            const targetZone = _.get(tempBoardData, foundPath, []);
+            const idx = targetZone.findIndex((card) => card.id === action.targetId);
+            targetZone.splice(idx, 1, newCard);
+          }
+          break;
       }
     });
     console.log(tempBoardData)
@@ -430,6 +471,7 @@ export default function PlayPage() {
             setWhoRequestShuffle={setWhoRequestShuffle}
             setActionTargetCard={setActionTargetCard}
             setOpenMoveDialog={setOpenMoveDialog}
+            setOpenCounterDialog={setOpenCounterDialog}
           />
         </Grid>
         <Grid item xs={4} width='100%'>
@@ -454,6 +496,9 @@ export default function PlayPage() {
                 cardImageMap={playData.card_image_map}
                 stack={boardData.board_state.stack}
                 setDndMsg={setDndMsg}
+                setActionTargetCard={setActionTargetCard}
+                setOpenMoveDialog={setOpenMoveDialog}
+                setOpenCounterDialog={setOpenCounterDialog}
               />
             </Grid>
             <Grid item width='100%' height='60vh'>
@@ -487,6 +532,7 @@ export default function PlayPage() {
         setOpen={setOpenCounterDialog}
         card={actionTargetCard}
         setCardCounter={setCardCounter}
+        registerCounterAction={registerCounterAction}
       />
     </>
   );

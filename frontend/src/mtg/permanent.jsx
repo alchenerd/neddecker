@@ -1,13 +1,13 @@
 import { Card } from './card';
 import Box from '@mui/material/Box';
 
-function Permanent({id, name, imageUrl, backImageUrl, backgroundColor, setSelectedCard, typeLine, manaCost, counters, annotations, isFlipped, setActionTargetCard, setOpenMoveDialog, ...props}) {
+function Permanent({id, card, backgroundColor, setSelectedCard, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, ...props}) {
   const handleMove = () => {
-    setActionTargetCard({id: id, name: name});
+    setActionTargetCard(card);
     setOpenMoveDialog(true);
   };
   const addCounter = () => {
-    setActionTargetCard({id: id, name: name});
+    setActionTargetCard(card);
     setOpenCounterDialog(true);
   };
   const permanentFunctions = [
@@ -15,7 +15,7 @@ function Permanent({id, name, imageUrl, backImageUrl, backgroundColor, setSelect
     {name: "add counter", _function: addCounter},
   ];
   return (
-      <Card {...{id, name, imageUrl, backImageUrl, backgroundColor, setSelectedCard, typeLine, manaCost, counters, annotations, isFlipped}} tappable={true} contextMenuFunctions={permanentFunctions} {...props} />
+      <Card {...card} tappable={true} contextMenuFunctions={permanentFunctions} {...props} />
   );
 }
 export default Permanent;

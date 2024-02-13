@@ -140,15 +140,8 @@ export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg,
             return (
               <Permanent
                 key={card.id}
-                id={card.id}
-                name={card.name}
-                imageUrl={card.imageUrl}
-                backImageUrl={card.backImageUrl}
+                card={card}
                 setSelectedCard={setSelectedCard}
-                typeLine={card.typeLine}
-                manaCost={card.manaCost}
-                counters={card.counters}
-                annotations={card.annotations}
                 onDoubleClick={toggleTap}
                 setActionTargetCard={setActionTargetCard}
                 setOpenMoveDialog={setOpenMoveDialog}
@@ -183,15 +176,8 @@ export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg,
               return (
                 <Permanent
                   key={card.id}
-                  id={card.id}
-                  name={card.name}
-                  imageUrl={card.imageUrl}
-                  backImageUrl={card.backImageUrl}
+                  card={card}
                   setSelectedCard={setSelectedCard}
-                  typeLine={card.typeLine}
-                  manaCost={card.manaCost}
-                  counters={card.counters}
-                  annotations={card.annotations}
                   onDoubleClick={toggleTap}
                   setActionTargetCard={setActionTargetCard}
                   setOpenMoveDialog={setOpenMoveDialog}
@@ -216,15 +202,8 @@ export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg,
               return (
                 <Permanent
                   key={card.id}
-                  id={card.id}
-                  name={card.name}
-                  imageUrl={card.imageUrl}
-                  backImageUrl={card.backImageUrl}
+                  card={card}
                   setSelectedCard={setSelectedCard}
-                  typeLine={card.typeLine}
-                  manaCost={card.manaCost}
-                  counters={card.counters}
-                  annotations={card.annotations}
                   onDoubleClick={toggleTap}
                   setActionTargetCard={setActionTargetCard}
                   setOpenMoveDialog={setOpenMoveDialog}
