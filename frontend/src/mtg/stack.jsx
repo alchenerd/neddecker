@@ -11,12 +11,10 @@ export function Stack({stack, setBoardData, map, setSelectedCard, setDndMsg, set
   useEffect(() => {
     if (stack) {
       setToShow(stack.map((card) => ({
-        id: card.id,
-        name: card.name,
+        ...card,
         imageUrl: map[card.name] || map[card.name.split(" // ")[0]],
         backImageUrl: map[card.name.split(" // ")[1]] || "",
         typeLine: card.faces ? card.faces.front.type_line + " // " + card.faces.back.type_line: card.type_line,
-        manaCost: card.mana_cost,
       })));
     }
   }, [stack]);
@@ -72,13 +70,8 @@ export function Stack({stack, setBoardData, map, setSelectedCard, setDndMsg, set
         return (
           <Card
             key={card.id}
-            id={card.id}
-            name={card.name}
-            imageUrl={card.imageUrl}
-            backImageUrl={card.backImageUrl}
+            {...card}
             setSelectedCard={setSelectedCard}
-            typeLine={card.typeLine}
-            manaCost={card.manaCost}
             contextMenuFunctions={functions}
           />
         )

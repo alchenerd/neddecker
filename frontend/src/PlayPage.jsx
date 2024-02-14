@@ -300,7 +300,7 @@ export default function PlayPage() {
             newCard = {
               ...foundCard,
               annotations: (action.to.indexOf("battlefield") < 0) ?
-              Object.keys(foundCard.annottions || {})
+              Object.keys(foundCard.annotations || {})
                 .filter((key) => annotationWhitelist.includes(key))
                 .reduce((obj, key) => {
                   obj[key] = foundCard.annotations[key];
@@ -351,13 +351,18 @@ export default function PlayPage() {
           {
             let updatedCounters = []
             if (foundCard.counters) {
+              let foundCounter = false;
               updatedCounters = foundCard.counters.map((counter) => {
                 if (action.counterType === counter.type) {
+                  foundCounter = true;
                   return {...counter, ...{type: action.counterType, amount: action.counterAmount}};
                 } else {
                   return counter;
                 }
               });
+              if (!foundCounter) {
+                updatedCounters.push({type: action.counterType, amount: action.counterAmount});
+              }
             } else {
               updatedCounters = [
                 {
@@ -366,6 +371,7 @@ export default function PlayPage() {
                 },
               ];
             }
+            console.log(updatedCounters);
             const newCard = {
               ...foundCard,
               counters: updatedCounters,

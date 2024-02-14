@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import CardContextMenu from './card-context-menu';
 import './card-list-item.css';
 
-function CardListItem ({id, string, setActionTargetCard, setOpenMoveDialog}) {
+function CardListItem ({id, card, zoneName, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog}) {
   const [contextMenu, setContextMenu] = useState(null);
+  const [showString, setShowString] = useState(null);
   const handleContextMenu = (e) => {
     e.preventDefault();
     setContextMenu(
@@ -16,17 +17,53 @@ function CardListItem ({id, string, setActionTargetCard, setOpenMoveDialog}) {
     )
   };
   const handleMove = () => {
-    setActionTargetCard({id: id, name: string});
+    setActionTargetCard(card);
     setOpenMoveDialog(true);
   };
+  const handleSetCounter = () => {
+    setActionTargetCard(card)
+    setOpenCounterDialog(true);
+  }
+  const functions =
+    (zoneName === "graveyard" || zoneName === "exile") ?
+    [
+      {name: "move", _function: handleMove},
+      {name: "set counter", _function: handleSetCounter},
+    ] :
+    [
+      {name: "move", _function: handleMove},
+    ];
+  useEffect(() => {
+    if (card && card.name) {
+      setShowString(card.name);
+    }
+    if (card && card.counters && card.counters.length) {
+      let buffer = " (";
+      card.counters.forEach((counter) => {
+        buffer += `${counter.type}: ${counter.amount};`;
+      });
+      buffer += ")";
+      setShowString((prev) => prev + buffer);
+    }
+    if (card && card.annotations && Object.keys(card.annotations).length) {
+      let buffer = "";
+      Object.keys(card.annotations).forEach((key) => {
+        buffer += ` [${key}: ${card.annotations[key]}]`;
+      });
+      setShowString((prev) => prev + buffer);
+    }
+  }, [card, card?.counters, card?.annotations]);
+
   return (
     <>
-      <li className="card-list-item" style={{"listStyleType": "none"}} onContextMenu={handleContextMenu}>{string}</li>
+      <li className="card-list-item" style={{"listStyleType": "none"}}
+        onContextMenu={handleContextMenu}
+      >
+        {showString}
+      </li>
       <CardContextMenu
         {...{contextMenu, setContextMenu}}
-        functions={[
-          {name: "move", _function: handleMove},
-        ]}
+        functions={functions}
       />
     </>
   )

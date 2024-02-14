@@ -12,6 +12,12 @@ import { useState, useEffect } from 'react';
 const filter = createFilterOptions();
 
 function CounterDialog({open, setOpen, card, setCardCounter, registerCounterAction}) {
+  const [counterTypes, setCounterTypes] = useState(null);
+  useEffect(() => {
+    if (card && card.counters && card.counters.length) {
+      setCounterTypes(card.counters.map((counter) => counter.type));
+    }
+  }, [card]);
   useEffect(() => {
     if (open) {
       setCounterType(null);
@@ -21,8 +27,8 @@ function CounterDialog({open, setOpen, card, setCardCounter, registerCounterActi
   const handleClose = () => {
     setOpen(false);
   };
-  const [counterType, setCounterType] = useState(null);
-  const [counterAmount, setCounterAmount] = useState(null);
+  const [counterType, setCounterType] = useState("");
+  const [counterAmount, setCounterAmount] = useState(0);
   const handleChangeType = (event, newValue) => {
     console.log(newValue);
     if (newValue && newValue.inputValue) {
@@ -40,6 +46,18 @@ function CounterDialog({open, setOpen, card, setCardCounter, registerCounterActi
     setCardCounter({type: counterType, amount: counterAmount});
     registerCounterAction(card.id, counterType, counterAmount);
   };
+  useEffect(() => {
+    if (counterType && card && card.counters && card.counters.length) {
+      setCounterAmount(0);
+      card.counters?.forEach((counter) => {
+        if (counter.type === counterType) {
+          setCounterAmount(counter.amount);
+        }
+      });
+    } else {
+      setCounterAmount(0);
+    }
+  }, [counterType])
   return (
     <>
       <Dialog open={open} onClose={handleClose} fullWidth={true} maxWidth="sm">
@@ -63,15 +81,12 @@ function CounterDialog({open, setOpen, card, setCardCounter, registerCounterActi
                 id="counter-type"
                 label="Type"
                 freeSolo
-                selectOnFocus
+                autoSelect
                 clearOnBlur
                 handleHomeEndKeys
                 fullWidth={true}
                 options={
-                  [
-                    "+1/+1",
-                    "Loyalty",
-                  ]
+                  counterTypes || ["+1/+1", "Loyalty", "Defense"]
                 }
                 onChange={handleChangeType}
                 filterOptions={(options, params) => {
@@ -92,7 +107,7 @@ function CounterDialog({open, setOpen, card, setCardCounter, registerCounterActi
                 id="counter-amount"
                 label="Amount"
                 type="number"
-                defaultValue={0}
+                value={counterAmount || 0}
                 onChange={handleChangeAmount}
                 fullWidth={true}
                 InputLabelProps={{

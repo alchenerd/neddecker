@@ -49,6 +49,7 @@ function Library({owner, ownerIndex, content, setDndMsg, setDblClkMsg, setSelect
       <InspectDialog
         open={openInspectDialog}
         setOpen={setOpenInspectDialog}
+        zoneName="library"
         title={owner.player_name + "'s library"}
         content={content}
         setActionTargetCard={setActionTargetCard}
