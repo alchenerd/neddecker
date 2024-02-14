@@ -80,7 +80,7 @@ export function Card({
         overflow: 'hidden',
         backgroundColor: backgroundColor || 'transparent',
         borderRadius: "4%",
-        transform: props?.annotations?.isTapped ? "rotate(90deg)" : "",
+        transform: annotations?.isTapped ? "rotate(90deg)" : "",
         ...props.sx,
       }}
       id={id}
