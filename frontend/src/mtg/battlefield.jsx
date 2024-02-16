@@ -11,7 +11,7 @@ import Graveyard from './graveyard'
 import Exile from './exile'
 import ZoneButton from './zone-button'
 
-export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg, setDblClkMsg, setWhoRequestShuffle, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, ...props}) {
+export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg, setDblClkMsg, setWhoRequestShuffle, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, ...props}) {
   const [toShow, setToShow] = useState([]);
   const [creatureCards, setCreatureCards] = useState([]);
   const [landCards, setLandCards] = useState([]);
@@ -146,6 +146,7 @@ export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg,
                 setActionTargetCard={setActionTargetCard}
                 setOpenMoveDialog={setOpenMoveDialog}
                 setOpenCounterDialog={setOpenCounterDialog}
+                setOpenAnnotationDialog={setOpenAnnotationDialog}
               />
             )
           })}
@@ -182,6 +183,7 @@ export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg,
                   setActionTargetCard={setActionTargetCard}
                   setOpenMoveDialog={setOpenMoveDialog}
                   setOpenCounterDialog={setOpenCounterDialog}
+                  setOpenAnnotationDialog={setOpenAnnotationDialog}
                 />
               )
             })}
@@ -208,6 +210,7 @@ export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg,
                   setActionTargetCard={setActionTargetCard}
                   setOpenMoveDialog={setOpenMoveDialog}
                   setOpenCounterDialog={setOpenCounterDialog}
+                  setOpenAnnotationDialog={setOpenAnnotationDialog}
                 />
               )
             })}
@@ -251,6 +254,7 @@ export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg,
             setActionTargetCard={setActionTargetCard}
             setOpenMoveDialog={setOpenMoveDialog}
             setOpenCounterDialog={setOpenCounterDialog}
+            setOpenAnnotationDialog={setOpenAnnotationDialog}
             sx={{
               position: "absolute",
               top: "12px",
@@ -265,6 +269,7 @@ export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg,
             setActionTargetCard={setActionTargetCard}
             setOpenMoveDialog={setOpenMoveDialog}
             setOpenCounterDialog={setOpenCounterDialog}
+            setOpenAnnotationDialog={setOpenAnnotationDialog}
             sx={{
               position: "absolute",
               bottom: "12px",

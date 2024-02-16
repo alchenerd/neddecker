@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Button from '@mui/material/Button';
 import InspectDialog from './inspect-dialog';
 
-function ZoneButton ({zoneName, buttonText, ownerName, content, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, sx}) {
+function ZoneButton ({zoneName, buttonText, ownerName, content, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, sx}) {
   const [open, setOpen] = useState(false);
   const handleClick = (e) => {
     setOpen(true);
@@ -16,7 +16,7 @@ function ZoneButton ({zoneName, buttonText, ownerName, content, setActionTargetC
       >
         {buttonText + " " + content.length}
       </Button>
-      <InspectDialog open={open} setOpen={setOpen} title={ownerName + "'s " + zoneName} zoneName={zoneName} content={content} setActionTargetCard={setActionTargetCard} setOpenMoveDialog={setOpenMoveDialog} setOpenCounterDialog={setOpenCounterDialog}/>
+      <InspectDialog open={open} setOpen={setOpen} title={ownerName + "'s " + zoneName} zoneName={zoneName} content={content} setActionTargetCard={setActionTargetCard} setOpenMoveDialog={setOpenMoveDialog} setOpenCounterDialog={setOpenCounterDialog} setOpenAnnotationDialog={setOpenAnnotationDialog} />
     </>
   )
 }

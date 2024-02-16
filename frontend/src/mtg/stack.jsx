@@ -5,7 +5,7 @@ import Typography from '@mui/material/Typography'
 import { ItemTypes } from './constants'
 import { Card } from './card'
 
-export function Stack({stack, setBoardData, map, setSelectedCard, setDndMsg, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, ...props}) {
+export function Stack({stack, setBoardData, map, setSelectedCard, setDndMsg, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, ...props}) {
   const [toShow, setToShow] = useState([]);
 
   useEffect(() => {
@@ -59,13 +59,19 @@ export function Stack({stack, setBoardData, map, setSelectedCard, setDndMsg, set
         const handleMove = () => {
           setActionTargetCard(card);
           setOpenMoveDialog(true);
-        }
+        };
+        const setCounter = () => {
+          setActionTargetCard(card);
+          setOpenCounterDialog(true);
+        };
+        const setAnnotation = () => {
+          setActionTargetCard(card);
+          setOpenAnnotationDialog(true);
+        };
         const functions = [
           {name: "move", _function: handleMove},
-          {name: "set counter", _function: () => {
-            setActionTargetCard(card);
-            setOpenCounterDialog(true);
-          }},
+          {name: "set counter", _function: setCounter},
+          {name: "set annotation", _function: setAnnotation},
         ];
         return (
           <Card

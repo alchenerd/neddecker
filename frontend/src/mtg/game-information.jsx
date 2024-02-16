@@ -5,7 +5,7 @@ import Grid from '@mui/material/Grid'
 import { Preview } from './preview'
 import { Stack } from './stack'
 
-export function GameInformation({selectedCard, setSelectedCard, boardData, setBoardData, setUserIsDone, userEndTurn, setUserEndTurn, cardImageMap, stack, setDndMsg, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, ...props}) {
+export function GameInformation({selectedCard, setSelectedCard, boardData, setBoardData, setUserIsDone, userEndTurn, setUserEndTurn, cardImageMap, stack, setDndMsg, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, ...props}) {
   const [ isResolving, setIsResolving ] = useState(false);
   const handleClickDoneButton = () => {
     setUserIsDone(true);
@@ -29,6 +29,7 @@ export function GameInformation({selectedCard, setSelectedCard, boardData, setBo
             setActionTargetCard={setActionTargetCard}
             setOpenMoveDialog={setOpenMoveDialog}
             setOpenCounterDialog={setOpenCounterDialog}
+            setOpenAnnotationDialog={setOpenAnnotationDialog}
           />
         </Grid>
         <Grid item xs={6} sx={{height: "10%"}}>

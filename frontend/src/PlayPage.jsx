@@ -11,6 +11,8 @@ import { GameInformation } from './mtg/game-information';
 import { ChatRoom } from './mtg/chat-room';
 import MoveDialog from './mtg/move-dialog';
 import CounterDialog from './mtg/counter-dialog';
+import AnnotationDialog from './mtg/annotation-dialog';
+import { useNavigate } from 'react-router-dom';
 
 import './play.css';
 
@@ -57,7 +59,14 @@ function mulliganToTwo(send, data) {
 }
 
 export default function PlayPage() {
-  const playData = JSON.parse(sessionStorage.getItem('playData'));
+  const navigate = useNavigate();
+  let playData = JSON.parse(sessionStorage.getItem('playData'));
+  useEffect(() => {
+    playData = JSON.parse(sessionStorage.getItem('playData'));
+    if (!playData) {
+      navigate("/");
+    }
+  }, []);
   const wsUrl = 'ws://localhost:8000/ws/play/';
   const { sendMessage, lastMessage, readyState } = useWebSocket(wsUrl);
   // For mulligan
@@ -85,7 +94,7 @@ export default function PlayPage() {
   const [ actionTargetCard, setActionTargetCard ] = useState(null);
   const [ openMoveDialog, setOpenMoveDialog] = useState(false);
   const [ openCounterDialog, setOpenCounterDialog] = useState(false);
-  const [ cardCounter, setCardCounter ] = useState({});
+  const [ openAnnotationDialog, setOpenAnnotationDialog] = useState(false);
 
   useEffect(() => {
     console.log("Connection state changed");
@@ -247,6 +256,19 @@ export default function PlayPage() {
     setActionQueue((prev) => [...prev, newAction]);
   }
 
+  const registerSetAnnotationAction = (id, key, value) => {
+    if (key === null || value === null) {
+      return;
+    }
+    const newAction = {
+      type: "set_annotation",
+      targetId: id,
+      annotationKey: key,
+      annotationValue: value,
+    };
+    setActionQueue((prev) => [...prev, newAction]);
+  }
+
   useEffect(() => {
     if (dndMsg && dndMsg.to && dndMsg.id) {
       registerMoveAction(dndMsg.id, dndMsg.to);
@@ -381,6 +403,26 @@ export default function PlayPage() {
             targetZone.splice(idx, 1, newCard);
           }
           break;
+        case "set_annotation":
+          {
+            let updatedAnnotations = {}
+            if (foundCard.annotations) {
+              let foundAnnotation = false;
+              updatedAnnotations = {
+                ...foundCard.annotations,
+              };
+            }
+            updatedAnnotations[action.annotationKey] = action.annotationValue;
+            console.log(updatedAnnotations);
+            const newCard = {
+              ...foundCard,
+              annotations: updatedAnnotations,
+            };
+            const targetZone = _.get(tempBoardData, foundPath, []);
+            const idx = targetZone.findIndex((card) => card.id === action.targetId);
+            targetZone.splice(idx, 1, newCard);
+          }
+          break;
       }
     });
     console.log(tempBoardData)
@@ -448,98 +490,109 @@ export default function PlayPage() {
     }
   }, [whoRequestShuffle])
 
-  return (
-    <>
-      <Grid 
-        container
-        direction='row'
-        alignItems='center'
-        justifyContent='center'
-        spacing={0}
-        style={{
-          minWidth: '100vw',
-          maxWidth: '100vw',
-          minHeight: '100vh',
-          maxHeight: '100vh',
-        }}
-      >
-        <Grid item xs={8}>
-          <MtgBoard
-            boardData={boardData}
-            ned={ned}
-            setNed={setNed}
-            user={user}
-            setUser={setUser}
-            cardImageMap={playData.card_image_map}
-            setSelectedCard={setSelectedCard}
-            setDndMsg={setDndMsg}
-            setDblClkMsg={setDblClkMsg}
-            setWhoRequestShuffle={setWhoRequestShuffle}
-            setActionTargetCard={setActionTargetCard}
-            setOpenMoveDialog={setOpenMoveDialog}
-            setOpenCounterDialog={setOpenCounterDialog}
-          />
-        </Grid>
-        <Grid item xs={4} width='100%'>
-          <Grid container
-            direction='column'
-            alignItems='center'
-            justifyContent='center'
-            spacing={0}
-            width='100%'
-            height='100vh'
-            wrap='nowrap'
-          >
-            <Grid item width='100%' height='40vh'>
-              <GameInformation
-                selectedCard={selectedCard}
-                setSelectedCard={setSelectedCard}
-                boardData={boardData}
-                setBoardData={setBoardData}
-                setUserIsDone={setUserIsDone}
-                userEndTurn={userEndTurn}
-                setUserEndTurn={setUserEndTurn}
-                cardImageMap={playData.card_image_map}
-                stack={boardData.board_state.stack}
-                setDndMsg={setDndMsg}
-                setActionTargetCard={setActionTargetCard}
-                setOpenMoveDialog={setOpenMoveDialog}
-                setOpenCounterDialog={setOpenCounterDialog}
-              />
-            </Grid>
-            <Grid item width='100%' height='60vh'>
-              <ChatRoom
-                lastMessage={lastMessage}
-                actionQueue={actionQueue}
-                setActionQueue={setActionQueue}
-              />
+  if (playData) {
+    return (
+      <>
+        <Grid 
+          container
+          direction='row'
+          alignItems='center'
+          justifyContent='center'
+          spacing={0}
+          style={{
+            minWidth: '100vw',
+            maxWidth: '100vw',
+            minHeight: '100vh',
+            maxHeight: '100vh',
+          }}
+        >
+          <Grid item xs={8}>
+            <MtgBoard
+              boardData={boardData}
+              ned={ned}
+              setNed={setNed}
+              user={user}
+              setUser={setUser}
+              cardImageMap={playData.card_image_map}
+              setSelectedCard={setSelectedCard}
+              setDndMsg={setDndMsg}
+              setDblClkMsg={setDblClkMsg}
+              setWhoRequestShuffle={setWhoRequestShuffle}
+              setActionTargetCard={setActionTargetCard}
+              setOpenMoveDialog={setOpenMoveDialog}
+              setOpenCounterDialog={setOpenCounterDialog}
+              setOpenAnnotationDialog={setOpenAnnotationDialog}
+            />
+          </Grid>
+          <Grid item xs={4} width='100%'>
+            <Grid container
+              direction='column'
+              alignItems='center'
+              justifyContent='center'
+              spacing={0}
+              width='100%'
+              height='100vh'
+              wrap='nowrap'
+            >
+              <Grid item width='100%' height='40vh'>
+                <GameInformation
+                  selectedCard={selectedCard}
+                  setSelectedCard={setSelectedCard}
+                  boardData={boardData}
+                  setBoardData={setBoardData}
+                  setUserIsDone={setUserIsDone}
+                  userEndTurn={userEndTurn}
+                  setUserEndTurn={setUserEndTurn}
+                  cardImageMap={playData.card_image_map}
+                  stack={boardData.board_state.stack}
+                  setDndMsg={setDndMsg}
+                  setActionTargetCard={setActionTargetCard}
+                  setOpenMoveDialog={setOpenMoveDialog}
+                  setOpenCounterDialog={setOpenCounterDialog}
+                  setOpenAnnotationDialog={setOpenAnnotationDialog}
+                />
+              </Grid>
+              <Grid item width='100%' height='60vh'>
+                <ChatRoom
+                  lastMessage={lastMessage}
+                  actionQueue={actionQueue}
+                  setActionQueue={setActionQueue}
+                />
+              </Grid>
             </Grid>
           </Grid>
         </Grid>
-      </Grid>
-      <MulliganDialog
-        open={openMulliganDialog}
-        setOpen={setOpenMulliganDialog}
-        data={mulliganData}
-        cardImageMap={playData.card_image_map}
-        setToBottom={setToBottom}
-        setRequestMulligan={setRequestMulligan}
-        setRequestKeepHand={setRequestKeepHand}
-      />
-      <MoveDialog
-        open={openMoveDialog}
-        setOpen={setOpenMoveDialog}
-        card={actionTargetCard}
-        userIndex={findPlayerIndexByName(boardData, "user")}
-        registerMoveAction={registerMoveAction}
-      />
-      <CounterDialog
-        open={openCounterDialog}
-        setOpen={setOpenCounterDialog}
-        card={actionTargetCard}
-        setCardCounter={setCardCounter}
-        registerCounterAction={registerCounterAction}
-      />
-    </>
-  );
+        <MulliganDialog
+          open={openMulliganDialog}
+          setOpen={setOpenMulliganDialog}
+          data={mulliganData}
+          cardImageMap={playData.card_image_map}
+          setToBottom={setToBottom}
+          setRequestMulligan={setRequestMulligan}
+          setRequestKeepHand={setRequestKeepHand}
+        />
+        <MoveDialog
+          open={openMoveDialog}
+          setOpen={setOpenMoveDialog}
+          card={actionTargetCard}
+          userIndex={findPlayerIndexByName(boardData, "user")}
+          registerMoveAction={registerMoveAction}
+        />
+        <CounterDialog
+          open={openCounterDialog}
+          setOpen={setOpenCounterDialog}
+          card={actionTargetCard}
+          registerCounterAction={registerCounterAction}
+        />
+        <AnnotationDialog
+          open={openAnnotationDialog}
+          setOpen={setOpenAnnotationDialog}
+          card={actionTargetCard}
+          registerSetAnnotationAction={registerSetAnnotationAction}
+        />
+      </>
+    )
+  } else {
+    return null;
+  }
 }

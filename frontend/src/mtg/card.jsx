@@ -149,7 +149,7 @@ export function Card({
         <CardContextMenu {...{contextMenu, setContextMenu}} functions={contextMenuFunctions}/>
       </Box>
       <Popover id="counter-annotation-popover"
-        open={openCAPopover && (counters?.length > 0 || annotations?.length > 0)}
+        open={openCAPopover && (counters?.length > 0 || Object.keys(annotations || {}).length > 0)}
         anchorEl={anchorEl}
         sx={{
           pointerEvents: 'none',

@@ -11,7 +11,7 @@ import { useState, useEffect } from 'react';
 
 const filter = createFilterOptions();
 
-function CounterDialog({open, setOpen, card, setCardCounter, registerCounterAction}) {
+function CounterDialog({open, setOpen, card, registerCounterAction}) {
   const [counterTypes, setCounterTypes] = useState(null);
   useEffect(() => {
     if (card && card.counters && card.counters.length) {
@@ -43,7 +43,6 @@ function CounterDialog({open, setOpen, card, setCardCounter, registerCounterActi
   };
   const handleSubmit = () => {
     setOpen(false);
-    setCardCounter({type: counterType, amount: counterAmount});
     registerCounterAction(card.id, counterType, counterAmount);
   };
   useEffect(() => {
@@ -93,7 +92,7 @@ function CounterDialog({open, setOpen, card, setCardCounter, registerCounterActi
                   const filtered = filter(options, params);
                   const { inputValue } = params;
                   // Suggest the creation of a new value
-                  const isExisting = options.some((option) => inputValue === option.title);
+                  const isExisting = options.some((option) => inputValue === option);
                   if (inputValue !== '' && !isExisting) {
                     filtered.push(`${inputValue}`);
                   }
