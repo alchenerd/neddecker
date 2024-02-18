@@ -39,6 +39,8 @@ INSTALLED_APPS = [
     'play.apps.PlayConfig',
     'daphne',
     'channels',
+    'corsheaders',
+    'rest_framework',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -55,6 +57,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'neddecker.urls'
@@ -78,6 +81,9 @@ TEMPLATES = [
 WSGI_APPLICATION = 'neddecker.wsgi.application'
 ASGI_APPLICATION = 'neddecker.asgi.application'
 
+CORS_ORIGIN_WHITELIST = [
+     'http://localhost:5173'
+]
 
 CHANNEL_LAYERS = {
     'default': {
@@ -86,6 +92,11 @@ CHANNEL_LAYERS = {
             'hosts': [('127.0.0.1', 6379)],
         }
     }
+}
+
+REST_FRAMEWORK = {
+        'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+        'PAGE_SIZE': 300,
 }
 
 # Database

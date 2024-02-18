@@ -1,20 +1,25 @@
 import random
 from typing import List, Dict, Tuple
 from django.shortcuts import render
-from django.http import HttpResponse
+from django.http import JsonResponse
 from django.db.models import Sum
 from django.db.models.functions import Length
 from django.contrib.postgres.search import TrigramSimilarity
 from django.views.decorators.http import require_POST
 from .models import Deck, Card, Face
-from .forms import DecklistForm
+from .models import get_card_by_name
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts.chat import ChatPromptTemplate
 from langchain.schema.messages import SystemMessage
 from langchain.agents import load_tools, initialize_agent, AgentType
+from rest_framework import viewsets
+from rest_framework.decorators import api_view
+from rest_framework.parsers import JSONParser
+from .serializers import DeckSerializer
 from dotenv import load_dotenv
 
 load_dotenv()
+
 
 def ned_talks_about(name, main, side, cards, faces):
     llm = ChatOpenAI(model_name='gpt-3.5-turbo-16k', temperature=0.8, max_tokens=1024)
@@ -71,7 +76,7 @@ def index(request):
     return render(request, 'play/index.html', context)
 
 def parse_decklist(decklist) -> List[Dict[str, int]]:
-    lines = decklist.split('\r\n')
+    lines = [entry.strip('\r') for entry in decklist.split('\n')]
     maindeck, sideboard = {}, {}
     tofill = maindeck
     for line in lines:
@@ -89,29 +94,42 @@ def get_random_deck() -> Deck:
     weighted_meta = [deck.meta / total_meta for deck in Deck.objects.all()]
     return random.choices(Deck.objects.all(), weights=weighted_meta)[0]
 
-def get_card_by_name(name) -> Card:
-    return Card.objects.filter(name=name).order_by().first()
-
 def get_cards_and_faces(maindeck, sideboard) -> Tuple[List[Card], List[Face], List[Card], List[Face]]:
+    maindeck_count = 0
+    bad_lines = []
     main_cards, main_faces, side_cards, side_faces = [], [], [], []
-    for name in maindeck:
-        card = get_card_by_name(name)
+    for name, count in maindeck.items():
+        maindeck_count += count
+        try:
+            card = get_card_by_name(name)
+        except:
+            bad_lines.append(name)
+            continue
         _faces = Face.objects.filter(card=card) if card else []
         main_cards.append(card)
         main_faces.extend(_faces)
     for name in sideboard:
-        card = get_card_by_name(name)
+        try:
+            card = get_card_by_name(name)
+        except:
+            bad_lines.append(name)
+            continue
         _faces = Face.objects.filter(card=card) if card else []
         side_cards.append(card)
         side_faces.extend(_faces)
+
+    if maindeck_count < 60:
+        raise ValueError(f'Not enough cards: {maindeck_count} is less than 60.')
+    if bad_lines:
+        raise ValueError(', '.join(bad_lines))
     return main_cards, main_faces, side_cards, side_faces
 
 def get_card_image_map(*args):
     card_image_map = {}
     for arg in args:
         for item in arg:
-            if hasattr(item, 'card_image') and item.card_image:
-                card_image_map[item.name] = item.card_image
+            if hasattr(item, 'card_image_uri') and item.card_image_uri:
+                card_image_map[item.name] = item.card_image_uri
     return card_image_map
 
 def get_type_line_map(*args):
@@ -122,25 +140,35 @@ def get_type_line_map(*args):
                 type_line_map[item.name] = item.type_line
     return type_line_map
 
-@require_POST
-def play(request):
-    neds_deck = get_random_deck()
-    neds_main, neds_side = parse_decklist(neds_deck.decklist)
-    neds_main_cards, neds_main_faces, neds_side_cards, neds_side_faces = get_cards_and_faces(neds_main, neds_side)
-    users_main, users_side = parse_decklist(request.POST['decklist'])
-    users_main_cards, users_main_faces, users_side_cards, users_side_faces = get_cards_and_faces(users_main, users_side)
-    to_process = neds_main_cards + neds_side_faces + neds_main_cards + neds_side_faces + users_main_cards + users_main_faces + users_side_cards + users_side_faces
-    card_image_map = get_card_image_map(to_process)
-    type_line_map = get_type_line_map(to_process)
-    context = {
-               'users_main': users_main,
-               'users_side': users_side,
-               'neds_main': neds_main,
-               'neds_side': neds_side,
-               'card_image_map': card_image_map,
-               'type_line_map': type_line_map,}
-    return render(request, 'play/play.html', context)
-
+"""
 def chat(request, deck_name: str):
     context = {'deck_name': deck_name}
     return render(request, 'play/chat.html', context)
+"""
+
+class TopFiveMetaDecksViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Deck.objects.all().order_by('-meta')[:5]
+    serializer_class = DeckSerializer
+
+@api_view(['POST'])
+def play(request):
+    users_decklist = JSONParser().parse(request).get('decklist')
+    users_main, users_side = parse_decklist(users_decklist)
+    try:
+        users_main_cards, users_main_faces, users_side_cards, users_side_faces = get_cards_and_faces(users_main, users_side)
+    except ValueError as e:
+        error_context = { 'status': 'error', 'message': str(e) }
+        return JsonResponse(error_context, status=400)
+    neds_deck = get_random_deck()
+    neds_main, neds_side = parse_decklist(neds_deck.decklist)
+    neds_main_cards, neds_main_faces, neds_side_cards, neds_side_faces = get_cards_and_faces(neds_main, neds_side)
+    to_process = neds_main_cards + neds_main_faces + neds_side_cards + neds_side_faces + users_main_cards + users_main_faces + users_side_cards + users_side_faces
+    card_image_map = get_card_image_map(to_process)
+    context = {
+            'users_main': users_main,
+            'users_side': users_side,
+            'neds_main': neds_main,
+            'neds_side': neds_side,
+            'card_image_map': card_image_map,
+    }
+    return JsonResponse(context)
