@@ -7,25 +7,23 @@ import Popover from '@mui/material/Popover';
 import Typography from '@mui/material/Typography';
 
 export function Card({
-  id,
-  name,
-  imageUrl,
-  backImageUrl,
+  card,
   backgroundColor,
-  setSelectedCard,
-  typeLine,
-  manaCost,
-  counters,
-  annotations,
-  isFlipped,
+  setFocusedCard,
   contextMenuFunctions,
   ...props
 }) {
+  const isFlipped = card?.annotations?.flipped || false;
+  const typeLine = isFlipped ? (card?.faces?.back.type_line || "")
+                             : (card?.faces?.front.type_line || card?.type_line || "");
+  const manaCost = isFlipped ? (card?.faces?.back.mana_cost || "")
+                             : (card?.faces?.front.mana_cost || card?.mana_cost || "");
   const [isFocused, setIsFocused] = useState(false);
   const [contextMenu, setContextMenu] = useState(null);
   const [anchorEl, setAnchorEl] = useState(null);
   const openCAPopover = Boolean(anchorEl);
-  const imageSource = isFlipped ? backImageUrl : imageUrl;
+  const imageSource = isFlipped ? (card?.faces?.back.card_image_uri || "")
+                                : (card?.card_image_uri || card?.faces?.front.card_image_uri || "");
   const handleContextMenu = (e) => {
     e.preventDefault();
     setContextMenu(
@@ -54,7 +52,7 @@ export function Card({
   const [{ isDragging }, drag] = useDrag(() => ({
     type: getItemTypeByTypeLine() || ItemTypes.MTG_CARD,
     item: {
-      id: id,
+      in_game_id: card?.in_game_id,
       typeLine: typeLine,
       type: getItemTypeByTypeLine(),
     },
@@ -70,14 +68,12 @@ export function Card({
 
   useEffect(() => {
     if (isFocused) {
-      setSelectedCard?.(imageSource);
+      setFocusedCard?.(card);
     }
     setIsFocused(false);
   }, [isFocused]);
 
   const handlePopoverOpen = (event) => {
-    console.log(counters);
-    console.log(annotations);
     setAnchorEl(event.currentTarget);
   };
 
@@ -86,11 +82,11 @@ export function Card({
   };
 
   const ListCounters = () => {
-    if (counters && counters.length) {
+    if (card?.counters && card?.counters.length) {
       return (
         <>
           <Typography>Counters</Typography>
-          {counters.map((counter) => (
+          {card?.counters.map((counter) => (
             <Typography key={counter.type}>
               {counter.type}: {counter.amount}
             </Typography>
@@ -101,14 +97,14 @@ export function Card({
   }
 
   const ListAnnotations = () => {
-    console.log(annotations)
-    if (annotations && Object.keys(annotations).length) {
+    console.log(card?.annotations)
+    if (card?.annotations && Object.keys(card?.annotations).length) {
       return (
         <>
           <Typography>Annotations</Typography>
-          {Object.keys(annotations).map((key) => (
+          {Object.keys(card?.annotations).map((key) => (
             <Typography key={key}>
-              {key}: {String(annotations[key])}
+              {key}: {String(card?.annotations[key])}
             </Typography>
           ))}
         </>
@@ -126,10 +122,10 @@ export function Card({
           overflow: 'hidden',
           backgroundColor: backgroundColor || 'transparent',
           borderRadius: "4%",
-          transform: annotations?.isTapped ? "rotate(90deg)" : "",
+          transform: card?.annotations?.isTapped ? "rotate(90deg)" : "",
           ...props.sx,
         }}
-        id={id}
+        id={card?.in_game_id}
         ref={drag}
         onMouseOver={registerFocus}
         onDoubleClick={props?.onDoubleClick}
@@ -138,8 +134,8 @@ export function Card({
         onMouseLeave={handlePopoverClose}
       >
         <img
-          src={isFlipped? backImageUrl : imageUrl}
-          alt={name}
+          src={imageSource}
+          alt={card?.name}
           height='100%'
           style={{
             opacity: isDragging? 0.5 : 1,
@@ -149,7 +145,7 @@ export function Card({
         <CardContextMenu {...{contextMenu, setContextMenu}} functions={contextMenuFunctions}/>
       </Box>
       <Popover id="counter-annotation-popover"
-        open={openCAPopover && (counters?.length > 0 || Object.keys(annotations || {}).length > 0)}
+        open={openCAPopover && (card?.counters?.length > 0 || Object.keys(card?.annotations || {}).length > 0)}
         anchorEl={anchorEl}
         sx={{
           pointerEvents: 'none',

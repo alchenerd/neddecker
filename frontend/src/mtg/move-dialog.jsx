@@ -29,7 +29,7 @@ function MoveDialog({open, setOpen, card, userIndex, registerMoveAction}) {
   ];
   const handleSubmit = () => {
     handleClose();
-    registerMoveAction(card.id, selectedZone);
+    registerMoveAction(card.in_game_id, selectedZone);
   };
   const handleChange = (e) => {
     setSelectedZone(e.target.value);

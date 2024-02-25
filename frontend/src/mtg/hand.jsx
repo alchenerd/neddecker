@@ -1,30 +1,22 @@
-import { useState, useEffect } from 'react'
-import Box from '@mui/material/Box'
-import { useDrop } from 'react-dnd'
-import { HTML5Backend } from 'react-dnd-html5-backend'
-import { ItemTypes } from './constants'
-import { Card } from './card'
+import { useState, useEffect } from 'react';
+import Box from '@mui/material/Box';
+import { useDrop } from 'react-dnd';
+import { useSelector } from 'react-redux';
+import { ItemTypes } from './constants';
+import { Card } from './card';
+import store from './../store/store';
+import { useAffectedGameDataSelector } from './../store/slice';
 
-export function Hand({map, setSelectedCard, owner, ownerIndex, setDndMsg, setActionTargetCard, setOpenMoveDialog, ...props}) {
-  const [toShow, setToShow] = useState([]);
-
-  useEffect(() => {
-    if (owner.hand) {
-      setToShow(owner.hand.map((card) => ({
-        id: card.id,
-        name: card.name,
-        imageUrl: map[card.name] || map[card.name.split(" // ")[0]],
-        backImageUrl: map[card.name.split(" // ")[1]] || "",
-        isFlipped: card?.isFlipped || false,
-        typeLine: card?.isFlipped ?
-          (card?.faces?.back.type_line || "") :
-          (card?.faces?.front.type_line || card.type_line || ""),
-        manaCost: card.mana_cost,
-      })));
-    } else {
-      setToShow([]);
-    }
-  }, [owner.hand]);
+const Hand = ({
+  ownerName,
+  setFocusedCard,
+  setDndMsg,
+  setActionTargetCard,
+  setOpenMoveDialog
+}) => {
+  const gameData = useAffectedGameDataSelector();
+  const owner = gameData.board_state?.players.find((player) => player.player_name === ownerName);
+  const ownerIndex = gameData.board_state?.players.indexOf(owner);
 
   const [, drop] = useDrop(
     () => ({
@@ -35,10 +27,10 @@ export function Hand({map, setSelectedCard, owner, ownerIndex, setDndMsg, setAct
         ItemTypes.MTG_SORCERY_CARD,
       ],
       drop: (item) => {
-        console.log("Detected", item.type, "moving to", owner.player_name, "'s hand");
+        console.log("Detected", item.type, "moving to", owner?.player_name, "'s hand");
         setDndMsg(
           {
-            id: item.id,
+            id: item.in_game_id,
             to: "board_state.players[" + ownerIndex + "].hand",
           }
         );
@@ -59,9 +51,9 @@ export function Hand({map, setSelectedCard, owner, ownerIndex, setDndMsg, setAct
         justifyContent: "start",
       }}
     >
-      {toShow.map(card => {
+      {owner?.hand.map((card) => {
         const handleMove = () => {
-          setActionTargetCard({id: card.id, name: card.name});
+          setActionTargetCard(card);
           setOpenMoveDialog(true);
         }
         const functions = [
@@ -69,14 +61,9 @@ export function Hand({map, setSelectedCard, owner, ownerIndex, setDndMsg, setAct
         ];
         return (
           <Card
-            key={card.id}
-            id={card.id}
-            name={card.name}
-            imageUrl={card.imageUrl}
-            backImageUrl={card.backImageUrl}
-            setSelectedCard={setSelectedCard}
-            typeLine={card.typeLine}
-            manaCost={card.manaCost}
+            key={card.in_game_id}
+            card={card}
+            setFocusedCard={setFocusedCard}
             contextMenuFunctions={functions}
           />
         )
@@ -84,3 +71,5 @@ export function Hand({map, setSelectedCard, owner, ownerIndex, setDndMsg, setAct
     </Box>
   );
 }
+
+export default Hand;

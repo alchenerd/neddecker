@@ -43,7 +43,7 @@ function CounterDialog({open, setOpen, card, registerCounterAction}) {
   };
   const handleSubmit = () => {
     setOpen(false);
-    registerCounterAction(card.id, counterType, counterAmount);
+    registerCounterAction(card.in_game_id, counterType, counterAmount);
   };
   useEffect(() => {
     if (counterType && card && card.counters && card.counters.length) {
@@ -69,8 +69,7 @@ function CounterDialog({open, setOpen, card, registerCounterAction}) {
               <Card
                 id="card-preview"
                 canDrag="false"
-                imageUrl={card?.imageUrl || ''}
-                name={card?.name || "Undefined"}
+                card={card}
                 backgroundColor="maroon"
               />
             </Grid>

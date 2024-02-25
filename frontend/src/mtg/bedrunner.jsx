@@ -1,7 +1,11 @@
-import Paper from '@mui/material/Paper'
-import Typography from '@mui/material/Typography'
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
+import { useAffectedGameDataSelector } from './../store/slice';
 
-export function Bedrunner({whoseTurn, phase, ...props}) {
+export function Bedrunner() {
+  const affectedGameData = useAffectedGameDataSelector();
+  const whoseTurn = affectedGameData.whose_turn;
+  const phase = affectedGameData.phase;
   const phaseMap = {
     "start of game phase": "Start of Game Phase",
     "beginning phase": "Beginning Phase",

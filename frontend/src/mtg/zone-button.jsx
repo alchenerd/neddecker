@@ -14,7 +14,7 @@ function ZoneButton ({zoneName, buttonText, ownerName, content, setActionTargetC
         onClick={handleClick}
         sx={sx}
       >
-        {buttonText + " " + content.length}
+        {buttonText + " " + (content?.length || 0)}
       </Button>
       <InspectDialog open={open} setOpen={setOpen} title={ownerName + "'s " + zoneName} zoneName={zoneName} content={content} setActionTargetCard={setActionTargetCard} setOpenMoveDialog={setOpenMoveDialog} setOpenCounterDialog={setOpenCounterDialog} setOpenAnnotationDialog={setOpenAnnotationDialog} />
     </>

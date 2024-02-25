@@ -132,6 +132,7 @@ class PlayConsumer(WebsocketConsumer):
         self.send_to_player(player=player, text_data=json.dumps(payload))
 
     def player_keep_hand(self, data):
+        print(data)
         players = self.mtg_match.game.players
         [i] = [i for i, p in enumerate(players) if p.player_name == data['who']]
         player = players[i]

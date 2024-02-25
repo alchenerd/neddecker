@@ -50,7 +50,10 @@ class Card(models.Model):
         )
         return json.dumps(json.loads(serializers.serialize('json', (self,), fields=fields))[-1]['fields'])
 
-def get_card_by_name(name) -> Card:
+def get_card_by_name_as_dict(name) -> Card:
+    return Card.objects.filter(name=name).order_by().values().first()
+
+def get_card_orm_by_name(name) -> Card:
     return Card.objects.filter(name=name).order_by().first()
 
 class Face(models.Model):
@@ -85,7 +88,19 @@ class Face(models.Model):
                 )
         return json.dumps(json.loads(serializers.serialize('json', (self,), fields=fields))[-1]['fields'])
 
-def get_faces_by_name(name) -> Tuple[Face, Face]:
+def get_faces_by_name_as_dict(name) -> Tuple[Face, Face]:
+    if ' // ' not in name:
+        return None, None
+    f, b = name.split(' // ')
+    front, back = None, None
+    try:
+        front = Face.objects.filter(name=f).order_by().values().first()
+        back = Face.objects.filter(name=b).order_by().values().first()
+    except:
+        pass
+    return front, back
+
+def get_faces_orm_by_name(name) -> Tuple[Face, Face]:
     if ' // ' not in name:
         return None, None
     f, b = name.split(' // ')

@@ -1,7 +1,7 @@
 import { Card } from './card';
 import Box from '@mui/material/Box';
 
-function Permanent({id, card, backgroundColor, setSelectedCard, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, ...props}) {
+function Permanent({id, card, backgroundColor, setFocusedCard, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, ...props}) {
   const handleMove = () => {
     setActionTargetCard(card);
     setOpenMoveDialog(true);
@@ -20,7 +20,7 @@ function Permanent({id, card, backgroundColor, setSelectedCard, setActionTargetC
     {name: "set annotation", _function: setAnnotation},
   ];
   return (
-      <Card {...card} tappable={true} contextMenuFunctions={permanentFunctions} {...props} />
+      <Card card={card} tappable={true} contextMenuFunctions={permanentFunctions} {...props} />
   );
 }
 export default Permanent;

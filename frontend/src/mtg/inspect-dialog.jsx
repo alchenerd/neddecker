@@ -15,7 +15,7 @@ function InspectDialog({open, setOpen, zoneName, title, content, setActionTarget
       <DialogContent>
         {
           content?.map((card) => (
-            <CardListItem key={card.id} card={card} zoneName={zoneName} setActionTargetCard={setActionTargetCard} setOpenMoveDialog={setOpenMoveDialog} setOpenCounterDialog={setOpenCounterDialog} setOpenAnnotationDialog={setOpenAnnotationDialog}/>
+            <CardListItem key={card.in_game_id} card={card} zoneName={zoneName} setActionTargetCard={setActionTargetCard} setOpenMoveDialog={setOpenMoveDialog} setOpenCounterDialog={setOpenCounterDialog} setOpenAnnotationDialog={setOpenAnnotationDialog}/>
           ))
         }
       </DialogContent>

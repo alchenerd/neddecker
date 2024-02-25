@@ -1,6 +1,7 @@
 import { Card } from './card'
 
-function Exile({owner, content, setSelectedCard}) {
+function Exile({owner, setFocusedCard}) {
+  const content = owner?.exile;
   return (
     <>
       <Card
@@ -13,8 +14,8 @@ function Exile({owner, content, setSelectedCard}) {
           height: "100%",
           transform: "rotate(90deg)",
         }}
-        imageUrl={(content && content.length) ? content[content.length - 1].imageUrl : ""}
-        setSelectedCard={(content && content.length) ? setSelectedCard : null}
+        card={content ? content[0] : null}
+        setFocusedCard={(content && content.length) ? setFocusedCard : null}
       />
     </>
   );

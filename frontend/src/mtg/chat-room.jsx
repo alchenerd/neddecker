@@ -8,10 +8,15 @@ import MicIcon from '@mui/icons-material/Mic';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
+import _ from 'lodash';
+import store from '../store/store';
+import { rollbackGameAction } from '../store/slice';
+import { useSelector } from 'react-redux';
 
-export function ChatRoom({lastMessage, actionQueue, setActionQueue, ...props}) {
+export function ChatRoom({lastMessage, ...props}) {
   const [chatHistory, setChatHistory] = useState([]);
   const [actionHistory, setActionHistory] = useState([]);
+  const actionQueue = useSelector((state) => state.gameState.actions);
   const chatroomRef = useRef(null);
 
   useEffect(() => {
@@ -43,7 +48,7 @@ export function ChatRoom({lastMessage, actionQueue, setActionQueue, ...props}) {
       setActionHistory(actionQueue.map((action) => ({
         user_action: {
           action: "[" + action.type + "]",
-          description: JSON.stringify(action),
+          description: JSON.stringify(_.omit(action, "shuffleResult")),
         }
       })));
     }
@@ -56,9 +61,7 @@ export function ChatRoom({lastMessage, actionQueue, setActionQueue, ...props}) {
   }, [chatroomRef, chatHistory, actionHistory]);
 
   const handleCloseActionButtonClick = () => {
-    if (actionQueue && actionQueue.length) {
-      setActionQueue(actionQueue.filter((action, index) => index < actionQueue.length - 1));
-    }
+    store.dispatch(rollbackGameAction());
   }
 
   return (

@@ -1,6 +1,7 @@
 from random import shuffle
 import json
-from .models import Card, Face, get_card_by_name, get_faces_by_name
+from dataclasses import dataclass
+from .models import Card, Face, get_card_by_name_as_dict, get_faces_by_name_as_dict
 from .ned import Ned
 from .iterables import MtgTurnsAndPhases as MTGTNPS
 
@@ -130,21 +131,15 @@ class Game:
                 card = dict()
                 _id = rev_map[name] + '#' + str(visited[name])
                 visited[name] += 1
-                card['id'] = _id
+                card['in_game_id'] = _id
                 card['name'] = name
-                card_orm = get_card_by_name(card['name'])
-                front_orm, back_orm = get_faces_by_name(card['name'])
-                if front_orm and back_orm:
+                card |= get_card_by_name_as_dict(card['name'])
+                front, back = get_faces_by_name_as_dict(card['name'])
+                if front and back:
                     card['faces'] = dict()
-                    card['faces']['front'] = dict()
-                    card['faces']['front']['type_line'] = front_orm.type_line
-                    card['faces']['front']['mana_cost'] = front_orm.mana_cost
-                    card['faces']['back'] = dict()
-                    card['faces']['back']['type_line'] = back_orm.type_line
-                    card['faces']['back']['mana_cost'] = back_orm.mana_cost
-                else:
-                    card['type_line'] = card_orm.type_line
-                    card['mana_cost'] = card_orm.mana_cost
+                    card['faces'] |= {'front': front, 'back': back}
+                card['counters'] = list()
+                card['annotations'] = dict()
                 player.library.append(card)
         for name in side.keys():
             visited[name] = 1
@@ -153,21 +148,15 @@ class Game:
                 card = dict()
                 _id = rev_map[name] + '#' + str(visited[name])
                 visited[name] += 1
-                card['id'] = _id
+                card['in_game_id'] = _id
                 card['name'] = name
-                card_orm = get_card_by_name(card['name'])
-                front_orm, back_orm = get_faces_by_name(card['name'])
-                if front_orm and back_orm:
+                card |= get_card_by_name_as_dict(card['name'])
+                front, back = get_faces_by_name_as_dict(card['name'])
+                if front and back:
                     card['faces'] = dict()
-                    card['faces']['front'] = dict()
-                    card['faces']['front']['type_line'] = front_orm.type_line
-                    card['faces']['front']['mana_cost'] = front_orm.mana_cost
-                    card['faces']['back'] = dict()
-                    card['faces']['back']['type_line'] = back_orm.type_line
-                    card['faces']['back']['mana_cost'] = back_orm.mana_cost
-                else:
-                    card['type_line'] = card_orm.type_line
-                    card['mana_cost'] = card_orm.mana_cost
+                    card['faces'] |= {'front': front, 'back': back}
+                card['counters'] = list()
+                card['annotations'] = dict()
                 player.sideboard.append(card)
 
     def start(self):
