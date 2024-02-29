@@ -12,11 +12,12 @@ const Hand = ({
   setFocusedCard,
   setDndMsg,
   setActionTargetCard,
-  setOpenMoveDialog
+  setOpenMoveDialog,
+  setOpenCreateTriggerDialog,
 }) => {
   const gameData = useAffectedGameDataSelector();
-  const owner = gameData.board_state?.players.find((player) => player.player_name === ownerName);
-  const ownerIndex = gameData.board_state?.players.indexOf(owner);
+  const owner = gameData?.board_state?.players.find((player) => player.player_name === ownerName);
+  const ownerIndex = gameData?.board_state?.players.indexOf(owner);
 
   const [, drop] = useDrop(
     () => ({
@@ -56,8 +57,13 @@ const Hand = ({
           setActionTargetCard(card);
           setOpenMoveDialog(true);
         }
+        const handleCreateTrigger = () => {
+          setActionTargetCard(card);
+          setOpenCreateTriggerDialog(true);
+        }
         const functions = [
           {name: "move", _function: handleMove},
+          {name: "create trigger", _function: handleCreateTrigger},
         ];
         return (
           <Card

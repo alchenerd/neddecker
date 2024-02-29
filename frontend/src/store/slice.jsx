@@ -1,4 +1,5 @@
 import { createSlice, current } from "@reduxjs/toolkit";
+import { createSelector } from "reselect";
 import { useSelector } from "react-redux";
 import _ from 'lodash';
 import { cloneDeep } from 'lodash';
@@ -35,8 +36,6 @@ export const gameSlice = createSlice({
     receivedNewGameAction: (state, action) => {
       if (action.payload.type === "shuffle") {
         const shuffled = shuffle(_.get(current(state).gameData, action.payload.who + ".library"));
-        console.log(shuffled);
-          //.sort(() => Math.random() - 0.5);
         return { ...state, actions: [ ...state.actions, { ...action.payload, shuffleResult: shuffled } ] };
       }
       return { ...state, actions: [ ...state.actions, { ...action.payload } ] };
@@ -59,10 +58,12 @@ export const {
   rollbackGameAction
 } = gameSlice.actions;
 
-const selectAffectedGameData = (store) => {
-  const affectedGameData = cloneDeep(store.gameState.gameData);
-  const actions = store.gameState.actions;
-  actions.forEach((action) => {
+const selectGameData = (store) => store.gameState.gameData;
+const selectActions = (store) => store.gameState.actions;
+
+const selectAffectedGameData = (gameData, actions) => {
+  const affectedGameData = cloneDeep(gameData);
+  actions?.forEach((action) => {
     const found = findCardById(affectedGameData, action.targetId);
     switch (action.type) {
       case "move":
@@ -97,13 +98,35 @@ const selectAffectedGameData = (store) => {
           _.set(affectedGameData, found.path, newZone);
         }
         break;
+      case "create_trigger":
+        const stack = _.get(affectedGameData, "board_state.stack");
+        const FilteredStackIds = stack.map((card) => card.in_game_id).filter((id) => id.endsWith(found.card.in_game_id));
+        let availableTriggerSerialNumber = 1;
+        for (const id of FilteredStackIds) {
+          if (id.startsWith("t" + availableTriggerSerialNumber)) {
+            availableTriggerSerialNumber++;
+          }
+        }
+        const pseudoCard = cloneDeep(found.card);
+        _.set(pseudoCard, "in_game_id", "t" + availableTriggerSerialNumber + found.card.in_game_id);
+        _.set(pseudoCard, "triggerContent", "t" + action.triggerContent);
+        const newStack = [ ..._.get(affectedGameData, "board_state.stack"), pseudoCard ];
+        _.set(affectedGameData, "board_state.stack", newStack);
+        break;
     }
   });
   return affectedGameData;
 };
 
 export const useAffectedGameDataSelector = () => {
-  return useSelector(selectAffectedGameData);
+  return useSelector(createSelector([selectGameData, selectActions], selectAffectedGameData));
+}
+
+const selectPlayerByName = (name) => {
+  return (gameData) => gameData?.board_state?.players.find(player => player.player_name === name);
+};
+export const usePlayerSelector = (name) => {
+  return useSelector(createSelector([selectGameData], selectPlayerByName(name)));
 };
 
 export default gameSlice.reducer;

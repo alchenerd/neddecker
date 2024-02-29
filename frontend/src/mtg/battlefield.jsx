@@ -23,12 +23,9 @@ const Battlefield = ({
   setOpenCounterDialog,
   setOpenAnnotationDialog,
 }) => {
-  const [creatureCards, setCreatureCards] = useState([]);
-  const [landCards, setLandCards] = useState([]);
-  const [otherCards, setOtherCards] = useState([]);
   const gameData = useAffectedGameDataSelector();
-  const owner = gameData.board_state?.players.find((player) => player.player_name === ownerName);
-  const ownerIndex = gameData.board_state?.players.indexOf(owner);
+  const owner = gameData?.board_state?.players.find((player) => player.player_name === ownerName);
+  const ownerIndex = gameData?.board_state?.players.indexOf(owner);
 
   const concatTextThatMightHaveCardType = (card) => {
     const majorTypeLine = card.type_line;
@@ -40,23 +37,15 @@ const Battlefield = ({
            annotationsString) || "").toLowerCase()
   }
 
-  useEffect(() => {
-    setCreatureCards([]);
-    setLandCards([]);
-    setOtherCards([]);
-    if (owner) {
-      owner?.battlefield?.map((card) => {
-        const concatLine = concatTextThatMightHaveCardType(card);
-        if (concatLine.includes("creature")) {
-          setCreatureCards((prev) => [...prev, card]);
-        } else if (concatLine.includes("land")) {
-          setLandCards((prev) => [...prev, card]);
-        } else {
-          setOtherCards((prev) => [...prev, card]);
-        }
-      });
-    }
-  }, [owner?.battlefield]);
+  const creatureCards = owner?.battlefield.filter(card => concatTextThatMightHaveCardType(card).includes("creature"));
+  const landCards = owner?.battlefield.filter(card => {
+    const text = concatTextThatMightHaveCardType(card);
+    return !text.includes("creature") && text.includes("land");
+  });
+  const otherCards = owner?.battlefield.filter(card => {
+    const text = concatTextThatMightHaveCardType(card);
+    return !text.includes("creature") && !text.includes("land");
+  });
 
   const [, drop] = useDrop(
     () => ({

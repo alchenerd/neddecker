@@ -5,8 +5,8 @@ import { useAffectedGameDataSelector } from './../store/slice';
 
 export function PlayerInformation({ownerName, fullName}) {
   const affectedGameData = useAffectedGameDataSelector();
-  const hasTurn = affectedGameData.whose_turn === ownerName;
-  const owner = affectedGameData.board_state?.players.find((player) => player.player_name === ownerName);
+  const hasTurn = affectedGameData?.whose_turn === ownerName;
+  const owner = affectedGameData?.board_state?.players.find((player) => player.player_name === ownerName);
   const hp = owner?.hp;
   const infect = owner?.infect;
   return (

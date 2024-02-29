@@ -36,6 +36,9 @@ export function Card({
     )
   };
   const getItemTypeByTypeLine = () => {
+    if (card?.triggerContent) {
+      return ItemTypes.MTG_TRIGGER;
+    }
     if (!typeLine) {
       return null;
     }
@@ -96,6 +99,9 @@ export function Card({
     }
   }
 
+  const removeFromStack = () => { console.log("new feature called!"); };
+  const triggerFunctions = [ { name: "remove from stack", _function: removeFromStack, }, ];
+
   const ListAnnotations = () => {
     console.log(card?.annotations)
     if (card?.annotations && Object.keys(card?.annotations).length) {
@@ -112,12 +118,42 @@ export function Card({
     }
   }
 
+  const TriggerOverlay = () => {
+    if (card?.triggerContent) {
+      return (
+        <Box
+          sx={{
+            position: "absolute",
+            backgroundColor: "rgba(0,0,0,0.5)",
+            height: "100%",
+            width: "100%",
+            overflow: "hidden",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Box
+            sx={{
+              backgroundColor: "black"
+            }}
+          >
+            <Typography>
+              {card.triggerContent}
+            </Typography>
+          </Box>
+        </Box>
+      );
+    }
+  };
+
   return (
     <>
       <Box
         sx={{
           height: '100%',
           display: "inline-block",
+          position: "relative",
           aspectRatio: 2.5 / 3.5,
           overflow: 'hidden',
           backgroundColor: backgroundColor || 'transparent',
@@ -133,16 +169,23 @@ export function Card({
         onMouseEnter={handlePopoverOpen}
         onMouseLeave={handlePopoverClose}
       >
-        <img
-          src={imageSource}
-          alt={card?.name}
-          height='100%'
-          style={{
-            opacity: isDragging? 0.5 : 1,
-            aspectRatio: 2.5 / 3.5,
+        <TriggerOverlay />
+          <img
+            src={imageSource}
+            alt={card?.name}
+            height='100%'
+            style={{
+              opacity: isDragging? 0.5 : 1,
+              aspectRatio: 2.5 / 3.5,
+            }}
+          />
+        <CardContextMenu {
+          ...{
+            contextMenu,
+            setContextMenu
           }}
+          functions={ card?.triggerContent ? triggerFunctions : contextMenuFunctions }
         />
-        <CardContextMenu {...{contextMenu, setContextMenu}} functions={contextMenuFunctions}/>
       </Box>
       <Popover id="counter-annotation-popover"
         open={openCAPopover && (card?.counters?.length > 0 || Object.keys(card?.annotations || {}).length > 0)}

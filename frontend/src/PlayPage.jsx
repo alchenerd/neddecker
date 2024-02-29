@@ -16,6 +16,7 @@ import store from './store/store'
 import { useAffectedGameDataSelector, receivedNewGameData, receivedNewGameAction, initialize } from './store/slice';
 import { findCardById } from './mtg/find-card';
 import { useSelector } from 'react-redux';
+import CreateTriggerDialog from './mtg/create-trigger-dialog';
 
 import './play.css';
 
@@ -101,6 +102,7 @@ export default function PlayPage() {
   const [ openAnnotationDialog, setOpenAnnotationDialog] = useState(false);
   const gameData = useSelector((state) => state.gameState.gameData);
   const affectedGameData = useAffectedGameDataSelector();
+  const [ openCreateTriggerDialog, setOpenCreateTriggerDialog ] = useState(false);
 
   useEffect(() => {
     console.log("Connection state changed");
@@ -348,6 +350,7 @@ export default function PlayPage() {
               setOpenMoveDialog={setOpenMoveDialog}
               setOpenCounterDialog={setOpenCounterDialog}
               setOpenAnnotationDialog={setOpenAnnotationDialog}
+              setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
             />
           </Grid>
           <Grid item xs={4} width='100%'>
@@ -408,6 +411,11 @@ export default function PlayPage() {
           setOpen={setOpenAnnotationDialog}
           card={actionTargetCard}
           registerSetAnnotationAction={registerSetAnnotationAction}
+        />
+        <CreateTriggerDialog
+          open={openCreateTriggerDialog}
+          setOpen={setOpenCreateTriggerDialog}
+          card={actionTargetCard}
         />
       </>
     )

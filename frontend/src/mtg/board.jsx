@@ -15,6 +15,7 @@ export function Board({
   setOpenMoveDialog,
   setOpenCounterDialog,
   setOpenAnnotationDialog,
+  setOpenCreateTriggerDialog,
 }) {
   return (
     /* Should see neither magenta nor white */
@@ -33,10 +34,12 @@ export function Board({
             setDndMsg={setDndMsg}
             setActionTargetCard={setActionTargetCard}
             setOpenMoveDialog={setOpenMoveDialog}
+            setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
           />
         </Grid>
         <Grid item xs={12} sx={{backgroundColor: "Magenta", height: "32vh"}}>
           <Battlefield
+            key="ned-battlefield"
             ownerName="ned"
             setFocusedCard={setFocusedCard}
             setDndMsg={setDndMsg}
@@ -54,6 +57,7 @@ export function Board({
         </Grid>
         <Grid item xs={12} sx={{backgroundColor: "Magenta", height: "32vh"}}>
           <Battlefield
+            key="user-battlefield"
             ownerName="user"
             setFocusedCard={setFocusedCard}
             setDndMsg={setDndMsg}
@@ -78,6 +82,7 @@ export function Board({
             setDndMsg={setDndMsg}
             setActionTargetCard={setActionTargetCard}
             setOpenMoveDialog={setOpenMoveDialog}
+            setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
           />
         </Grid>
       </Grid>
