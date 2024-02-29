@@ -5,6 +5,8 @@ import { ItemTypes } from './constants';
 import CardContextMenu from './card-context-menu';
 import Popover from '@mui/material/Popover';
 import Typography from '@mui/material/Typography';
+import { receivedNewGameAction } from './../store/slice';
+import store from './../store/store';
 
 export function Card({
   card,
@@ -99,7 +101,9 @@ export function Card({
     }
   }
 
-  const removeFromStack = () => { console.log("new feature called!"); };
+  const removeFromStack = () => {
+    store.dispatch(receivedNewGameAction({type: "remove_trigger", targetId: card.in_game_id}));
+  };
   const triggerFunctions = [ { name: "remove from stack", _function: removeFromStack, }, ];
 
   const ListAnnotations = () => {

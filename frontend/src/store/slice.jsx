@@ -99,20 +99,28 @@ const selectAffectedGameData = (gameData, actions) => {
         }
         break;
       case "create_trigger":
-        const stack = _.get(affectedGameData, "board_state.stack");
-        const FilteredStackIds = stack.map((card) => card.in_game_id).filter((id) => id.endsWith(found.card.in_game_id));
-        let availableTriggerSerialNumber = 1;
-        for (const id of FilteredStackIds) {
-          if (id.startsWith("t" + availableTriggerSerialNumber)) {
-            availableTriggerSerialNumber++;
+        {
+          const stack = _.get(affectedGameData, "board_state.stack");
+          const FilteredStackIds = stack.map((card) => card.in_game_id).filter((id) => id.endsWith(found.card.in_game_id));
+          let availableTriggerSerialNumber = 1;
+          for (const id of FilteredStackIds) {
+            if (id.startsWith("t" + availableTriggerSerialNumber)) {
+              availableTriggerSerialNumber++;
+            }
           }
+          const pseudoCard = cloneDeep(found.card);
+          _.set(pseudoCard, "in_game_id", "t" + availableTriggerSerialNumber + found.card.in_game_id);
+          _.set(pseudoCard, "triggerContent", action.triggerContent);
+          const newStack = [ ..._.get(affectedGameData, "board_state.stack"), pseudoCard ];
+          _.set(affectedGameData, "board_state.stack", newStack);
+          break;
         }
-        const pseudoCard = cloneDeep(found.card);
-        _.set(pseudoCard, "in_game_id", "t" + availableTriggerSerialNumber + found.card.in_game_id);
-        _.set(pseudoCard, "triggerContent", "t" + action.triggerContent);
-        const newStack = [ ..._.get(affectedGameData, "board_state.stack"), pseudoCard ];
-        _.set(affectedGameData, "board_state.stack", newStack);
-        break;
+      case "remove_trigger":
+        {
+          const stack = _.get(affectedGameData, "board_state.stack");
+          const newStack = stack.filter(card => card.in_game_id !== found.card.in_game_id);
+          _.set(affectedGameData, "board_state.stack", newStack);
+        }
     }
   });
   return affectedGameData;
