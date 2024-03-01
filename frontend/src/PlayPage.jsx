@@ -375,6 +375,7 @@ export default function PlayPage() {
                   setOpenMoveDialog={setOpenMoveDialog}
                   setOpenCounterDialog={setOpenCounterDialog}
                   setOpenAnnotationDialog={setOpenAnnotationDialog}
+                  setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
                 />
               </Grid>
               <Grid item width='100%' height='60vh'>

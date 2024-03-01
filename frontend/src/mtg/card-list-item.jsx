@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import CardContextMenu from './card-context-menu';
 import './card-list-item.css';
 
-function CardListItem ({id, card, zoneName, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog}) {
+function CardListItem ({id, card, zoneName, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, setOpenCreateTriggerDialog}) {
   const [contextMenu, setContextMenu] = useState(null);
   const [showString, setShowString] = useState(null);
   const handleContextMenu = (e) => {
@@ -28,15 +28,22 @@ function CardListItem ({id, card, zoneName, setActionTargetCard, setOpenMoveDial
     setActionTargetCard(card)
     setOpenAnnotationDialog(true);
   }
+  const handleCreateTrigger = () => {
+    setActionTargetCard(card);
+    setOpenCreateTriggerDialog(true);
+  }
+
   const functions =
     (zoneName === "graveyard" || zoneName === "exile") ?
     [
       {name: "move", _function: handleMove},
       {name: "set counter", _function: handleSetCounter},
       {name: "set annotation", _function: handleSetAnnotation},
+      {name: "create trigger", _function: handleCreateTrigger},
     ] :
     [
       {name: "move", _function: handleMove},
+      {name: "create trigger", _function: handleCreateTrigger},
     ];
   useEffect(() => {
     if (card && card.name) {

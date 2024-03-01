@@ -6,7 +6,7 @@ import { ItemTypes } from './constants'
 import { Card } from './card'
 import { useAffectedGameDataSelector } from './../store/slice';
 
-export function Stack({setFocusedCard, setDndMsg, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog}) {
+export function Stack({setFocusedCard, setDndMsg, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, setOpenCreateTriggerDialog}) {
   const stack = useAffectedGameDataSelector()?.board_state?.stack || [];
 
   const [, drop] = useDrop(
@@ -57,10 +57,15 @@ export function Stack({setFocusedCard, setDndMsg, setActionTargetCard, setOpenMo
           setActionTargetCard(card);
           setOpenAnnotationDialog(true);
         };
+        const createTrigger = () => {
+          setActionTargetCard(card);
+          setOpenCreateTriggerDialog(true);
+        };
         const functions = [
           {name: "move", _function: handleMove},
           {name: "set counter", _function: setCounter},
           {name: "set annotation", _function: setAnnotation},
+          {name: "create trigger", _function: createTrigger},
         ];
         return (
           <Card

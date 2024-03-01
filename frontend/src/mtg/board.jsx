@@ -49,6 +49,7 @@ export function Board({
             setOpenMoveDialog={setOpenMoveDialog}
             setOpenCounterDialog={setOpenCounterDialog}
             setOpenAnnotationDialog={setOpenAnnotationDialog}
+            setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
           />
         </Grid>
         <Grid item xs={12} sx={{backgroundColor: "Magenta", height: "4vh",
@@ -67,6 +68,7 @@ export function Board({
             setOpenMoveDialog={setOpenMoveDialog}
             setOpenCounterDialog={setOpenCounterDialog}
             setOpenAnnotationDialog={setOpenAnnotationDialog}
+            setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
           />
         </Grid>
         <Grid item xs={2} sx={{backgroundColor: "Magenta", height: "16vh"}} alignSelf="end">

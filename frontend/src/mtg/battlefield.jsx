@@ -22,6 +22,7 @@ const Battlefield = ({
   setOpenMoveDialog,
   setOpenCounterDialog,
   setOpenAnnotationDialog,
+  setOpenCreateTriggerDialog,
 }) => {
   const gameData = useAffectedGameDataSelector();
   const owner = gameData?.board_state?.players.find((player) => player.player_name === ownerName);
@@ -114,6 +115,7 @@ const Battlefield = ({
                 setOpenMoveDialog={setOpenMoveDialog}
                 setOpenCounterDialog={setOpenCounterDialog}
                 setOpenAnnotationDialog={setOpenAnnotationDialog}
+                setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
               />
             )
           })}
@@ -151,6 +153,7 @@ const Battlefield = ({
                   setOpenMoveDialog={setOpenMoveDialog}
                   setOpenCounterDialog={setOpenCounterDialog}
                   setOpenAnnotationDialog={setOpenAnnotationDialog}
+                  setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
                 />
               )
             })}
@@ -178,6 +181,7 @@ const Battlefield = ({
                   setOpenMoveDialog={setOpenMoveDialog}
                   setOpenCounterDialog={setOpenCounterDialog}
                   setOpenAnnotationDialog={setOpenAnnotationDialog}
+                  setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
                 />
               )
             })}
@@ -192,6 +196,7 @@ const Battlefield = ({
           setWhoRequestShuffle={setWhoRequestShuffle}
           setActionTargetCard={setActionTargetCard}
           setOpenMoveDialog={setOpenMoveDialog}
+          setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
         />
         <Box id="graveyardExileBox"
           sx={{
@@ -219,6 +224,7 @@ const Battlefield = ({
             setOpenMoveDialog={setOpenMoveDialog}
             setOpenCounterDialog={setOpenCounterDialog}
             setOpenAnnotationDialog={setOpenAnnotationDialog}
+            setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
             sx={{
               position: "absolute",
               top: "12px",
@@ -234,6 +240,7 @@ const Battlefield = ({
             setOpenMoveDialog={setOpenMoveDialog}
             setOpenCounterDialog={setOpenCounterDialog}
             setOpenAnnotationDialog={setOpenAnnotationDialog}
+            setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
             sx={{
               position: "absolute",
               bottom: "12px",
