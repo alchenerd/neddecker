@@ -11,37 +11,52 @@ import { receivedNewGameAction } from './../store/slice';
 import store from './../store/store';
 
 
-function CreateTriggerDialog({open, setOpen, card}) {
+function CreateDelayedTriggerDialog({open, setOpen, card}) {
 
-  const registerCreateTriggerAction = (id, triggerContent) => {
-    if (!id || !triggerContent) {
+  const registerCreateDelayedTriggerAction = (id, name, triggerWhen, triggerContent) => {
+    if (!id || !name || !triggerWhen || !triggerContent) {
       return;
     }
     const newAction = {
-      type: "create_trigger",
+      type: "create_delayed_trigger",
       targetId: id,
+      targetCardName: name,
+      triggerWhen: triggerWhen,
       triggerContent: triggerContent,
     };
     store.dispatch(receivedNewGameAction(newAction));
   }
 
+  const [triggerWhen, setTriggerWhen] = useState("");
   const [triggerContent, setTriggerContent] = useState("");
+
+  useEffect(() => {
+    if (open && triggerWhen) {
+      setTriggerWhen("");
+    }
+  }, [open]);
 
   useEffect(() => {
     if (open && triggerContent) {
       setTriggerContent("");
     }
-  }, [open])
+  }, [open]);
 
   const handleClose = () => {
     setOpen(false);
+    setTriggerWhen("");
     setTriggerContent("");
   };
 
   const handleSubmit = () => {
     setOpen(false);
-    registerCreateTriggerAction(card.in_game_id, triggerContent);
+    registerCreateDelayedTriggerAction(card.in_game_id, card.name, triggerWhen, triggerContent);
+    setTriggerWhen("");
     setTriggerContent("");
+  };
+
+  const handleTriggerWhenTextChange = (event) => {
+    setTriggerWhen(event.target.value);
   };
 
   const handleTriggerContentTextChange = (event) => {
@@ -52,7 +67,7 @@ function CreateTriggerDialog({open, setOpen, card}) {
     <>
       <Dialog open={open} onClose={handleClose} fullWidth={true} maxWidth="sm">
         <DialogTitle>
-          Create trigger for {card?.name || "Undefined"}
+          Create delayed trigger for {card?.name || "Undefined"}
         </DialogTitle>
         <DialogContent sx={{overflowY: "visible"}}>
           <Grid container spacing={2} direction="row">
@@ -66,11 +81,21 @@ function CreateTriggerDialog({open, setOpen, card}) {
             </Grid>
             <Grid container item spacing={2} xs={6} direction="column" display="flex" flexDirection="column" justifyContent="center" alignItems="stretch">
               <TextField
+                id="trigger-when"
+                label="Input when the trigger is created (Whenever...):"
+                fullWidth={true}
+                value={triggerWhen}
+                onChange={handleTriggerWhenTextChange}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+              />
+              <TextField
                 id="trigger-content"
                 label="Input desired trigger content:"
                 fullWidth={true}
                 multiline={true}
-                rows={15}
+                rows={12}
                 value={triggerContent}
                 onChange={handleTriggerContentTextChange}
                 InputLabelProps={{
@@ -93,4 +118,4 @@ function CreateTriggerDialog({open, setOpen, card}) {
   );
 }
 
-export default CreateTriggerDialog;
+export default CreateDelayedTriggerDialog;

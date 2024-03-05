@@ -23,6 +23,7 @@ const Battlefield = ({
   setOpenCounterDialog,
   setOpenAnnotationDialog,
   setOpenCreateTriggerDialog,
+  setOpenCreateDelayedTriggerDialog,
 }) => {
   const gameData = useAffectedGameDataSelector();
   const owner = gameData?.board_state?.players.find((player) => player.player_name === ownerName);
@@ -116,6 +117,7 @@ const Battlefield = ({
                 setOpenCounterDialog={setOpenCounterDialog}
                 setOpenAnnotationDialog={setOpenAnnotationDialog}
                 setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
+                setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
               />
             )
           })}
@@ -154,6 +156,7 @@ const Battlefield = ({
                   setOpenCounterDialog={setOpenCounterDialog}
                   setOpenAnnotationDialog={setOpenAnnotationDialog}
                   setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
+                  setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
                 />
               )
             })}
@@ -182,6 +185,7 @@ const Battlefield = ({
                   setOpenCounterDialog={setOpenCounterDialog}
                   setOpenAnnotationDialog={setOpenAnnotationDialog}
                   setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
+                  setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
                 />
               )
             })}
@@ -197,6 +201,7 @@ const Battlefield = ({
           setActionTargetCard={setActionTargetCard}
           setOpenMoveDialog={setOpenMoveDialog}
           setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
+          setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
         />
         <Box id="graveyardExileBox"
           sx={{
@@ -225,6 +230,7 @@ const Battlefield = ({
             setOpenCounterDialog={setOpenCounterDialog}
             setOpenAnnotationDialog={setOpenAnnotationDialog}
             setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
+            setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
             sx={{
               position: "absolute",
               top: "12px",
@@ -241,6 +247,7 @@ const Battlefield = ({
             setOpenCounterDialog={setOpenCounterDialog}
             setOpenAnnotationDialog={setOpenAnnotationDialog}
             setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
+            setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
             sx={{
               position: "absolute",
               bottom: "12px",

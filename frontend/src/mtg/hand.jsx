@@ -14,6 +14,7 @@ const Hand = ({
   setActionTargetCard,
   setOpenMoveDialog,
   setOpenCreateTriggerDialog,
+  setOpenCreateDelayedTriggerDialog,
 }) => {
   const gameData = useAffectedGameDataSelector();
   const owner = gameData?.board_state?.players.find((player) => player.player_name === ownerName);
@@ -61,9 +62,15 @@ const Hand = ({
           setActionTargetCard(card);
           setOpenCreateTriggerDialog(true);
         }
+        const handleCreateDelayedTrigger = () => {
+          setActionTargetCard(card);
+          console.log(setOpenCreateTriggerDialog);
+          setOpenCreateDelayedTriggerDialog(true);
+        }
         const functions = [
           {name: "move", _function: handleMove},
           {name: "create trigger", _function: handleCreateTrigger},
+          {name: "create delayed trigger", _function: handleCreateDelayedTrigger},
         ];
         return (
           <Card

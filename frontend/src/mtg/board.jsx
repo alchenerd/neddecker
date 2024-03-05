@@ -16,6 +16,7 @@ export function Board({
   setOpenCounterDialog,
   setOpenAnnotationDialog,
   setOpenCreateTriggerDialog,
+  setOpenCreateDelayedTriggerDialog,
 }) {
   return (
     /* Should see neither magenta nor white */
@@ -35,6 +36,7 @@ export function Board({
             setActionTargetCard={setActionTargetCard}
             setOpenMoveDialog={setOpenMoveDialog}
             setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
+            setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
           />
         </Grid>
         <Grid item xs={12} sx={{backgroundColor: "Magenta", height: "32vh"}}>
@@ -50,6 +52,7 @@ export function Board({
             setOpenCounterDialog={setOpenCounterDialog}
             setOpenAnnotationDialog={setOpenAnnotationDialog}
             setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
+            setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
           />
         </Grid>
         <Grid item xs={12} sx={{backgroundColor: "Magenta", height: "4vh",
@@ -69,6 +72,7 @@ export function Board({
             setOpenCounterDialog={setOpenCounterDialog}
             setOpenAnnotationDialog={setOpenAnnotationDialog}
             setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
+            setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
           />
         </Grid>
         <Grid item xs={2} sx={{backgroundColor: "Magenta", height: "16vh"}} alignSelf="end">
@@ -85,6 +89,7 @@ export function Board({
             setActionTargetCard={setActionTargetCard}
             setOpenMoveDialog={setOpenMoveDialog}
             setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
+            setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
           />
         </Grid>
       </Grid>

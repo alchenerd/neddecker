@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import CardContextMenu from './card-context-menu';
 import './card-list-item.css';
 
-function CardListItem ({id, card, zoneName, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, setOpenCreateTriggerDialog}) {
+function CardListItem ({id, card, zoneName, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, setOpenCreateTriggerDialog, setOpenCreateDelayedTriggerDialog}) {
   const [contextMenu, setContextMenu] = useState(null);
   const [showString, setShowString] = useState(null);
   const handleContextMenu = (e) => {
@@ -32,6 +32,10 @@ function CardListItem ({id, card, zoneName, setActionTargetCard, setOpenMoveDial
     setActionTargetCard(card);
     setOpenCreateTriggerDialog(true);
   }
+  const handleCreateDelayedTrigger = () => {
+    setActionTargetCard(card);
+    setOpenCreateDelayedTriggerDialog(true);
+  }
 
   const functions =
     (zoneName === "graveyard" || zoneName === "exile") ?
@@ -40,10 +44,12 @@ function CardListItem ({id, card, zoneName, setActionTargetCard, setOpenMoveDial
       {name: "set counter", _function: handleSetCounter},
       {name: "set annotation", _function: handleSetAnnotation},
       {name: "create trigger", _function: handleCreateTrigger},
+      {name: "create delayed trigger", _function: handleCreateDelayedTrigger},
     ] :
     [
       {name: "move", _function: handleMove},
       {name: "create trigger", _function: handleCreateTrigger},
+      {name: "create delayed trigger", _function: handleCreateDelayedTrigger},
     ];
   useEffect(() => {
     if (card && card.name) {

@@ -17,6 +17,8 @@ import { useAffectedGameDataSelector, receivedNewGameData, receivedNewGameAction
 import { findCardById } from './mtg/find-card';
 import { useSelector } from 'react-redux';
 import CreateTriggerDialog from './mtg/create-trigger-dialog';
+import CreateDelayedTriggerDialog from './mtg/create-delayed-trigger-dialog';
+import DelayedTriggerMemoDrawer from './mtg/delayed-trigger-memo-drawer';
 
 import './play.css';
 
@@ -103,6 +105,8 @@ export default function PlayPage() {
   const gameData = useSelector((state) => state.gameState.gameData);
   const affectedGameData = useAffectedGameDataSelector();
   const [ openCreateTriggerDialog, setOpenCreateTriggerDialog ] = useState(false);
+  const [ openCreateDelayedTriggerDialog, setOpenCreateDelayedTriggerDialog ] = useState(false);
+  const [ openDelayedTriggerMemoDrawer, setOpenDelayedTriggerMemoDrawer ] = useState(false);
 
   useEffect(() => {
     console.log("Connection state changed");
@@ -351,6 +355,7 @@ export default function PlayPage() {
               setOpenCounterDialog={setOpenCounterDialog}
               setOpenAnnotationDialog={setOpenAnnotationDialog}
               setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
+              setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
             />
           </Grid>
           <Grid item xs={4} width='100%'>
@@ -376,6 +381,7 @@ export default function PlayPage() {
                   setOpenCounterDialog={setOpenCounterDialog}
                   setOpenAnnotationDialog={setOpenAnnotationDialog}
                   setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
+                  setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
                 />
               </Grid>
               <Grid item width='100%' height='60vh'>
@@ -417,6 +423,15 @@ export default function PlayPage() {
           open={openCreateTriggerDialog}
           setOpen={setOpenCreateTriggerDialog}
           card={actionTargetCard}
+        />
+        <CreateDelayedTriggerDialog
+          open={openCreateDelayedTriggerDialog}
+          setOpen={setOpenCreateDelayedTriggerDialog}
+          card={actionTargetCard}
+        />
+        <DelayedTriggerMemoDrawer
+          open={openDelayedTriggerMemoDrawer}
+          setOpen={setOpenDelayedTriggerMemoDrawer}
         />
       </>
     )

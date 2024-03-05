@@ -113,14 +113,15 @@ const selectAffectedGameData = (gameData, actions) => {
           _.set(pseudoCard, "triggerContent", action.triggerContent);
           const newStack = [ ..._.get(affectedGameData, "board_state.stack"), pseudoCard ];
           _.set(affectedGameData, "board_state.stack", newStack);
-          break;
         }
+        break;
       case "remove_trigger":
         {
           const stack = _.get(affectedGameData, "board_state.stack");
           const newStack = stack.filter(card => card.in_game_id !== found.card.in_game_id);
           _.set(affectedGameData, "board_state.stack", newStack);
         }
+        break;
     }
   });
   return affectedGameData;

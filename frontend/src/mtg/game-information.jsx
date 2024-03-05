@@ -6,7 +6,7 @@ import { Preview } from './preview'
 import { Stack } from './stack'
 import { useAffectedGameDataSelector } from './../store/slice';
 
-export function GameInformation({focusedCard, setFocusedCard, setUserIsDone, userEndTurn, setUserEndTurn, setDndMsg, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, setOpenCreateTriggerDialog}) {
+export function GameInformation({focusedCard, setFocusedCard, setUserIsDone, userEndTurn, setUserEndTurn, setDndMsg, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, setOpenCreateTriggerDialog, setOpenCreateDelayedTriggerDialog}) {
   const [ isResolving, setIsResolving ] = useState(false);
   const handleClickDoneButton = () => {
     setUserIsDone(true);
@@ -31,6 +31,7 @@ export function GameInformation({focusedCard, setFocusedCard, setUserIsDone, use
             setOpenCounterDialog={setOpenCounterDialog}
             setOpenAnnotationDialog={setOpenAnnotationDialog}
             setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
+            setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
           />
         </Grid>
         <Grid item xs={6} sx={{height: "10%"}}>
