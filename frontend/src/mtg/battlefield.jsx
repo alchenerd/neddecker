@@ -6,6 +6,7 @@ import { useSelector } from 'react-redux';
 import { ItemTypes } from './constants'
 import { Card } from './card'
 import Permanent from './permanent'
+import CreaturePermanent from './creature-permanent'
 import Library from './library'
 import Graveyard from './graveyard'
 import Exile from './exile'
@@ -107,7 +108,7 @@ const Battlefield = ({
         >
           {creatureCards && creatureCards.map(card => {
             return (
-              <Permanent
+              <CreaturePermanent
                 key={card.in_game_id}
                 card={card}
                 setFocusedCard={setFocusedCard}

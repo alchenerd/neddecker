@@ -108,11 +108,11 @@ export function Card({
 
   const ListAnnotations = () => {
     console.log(card?.annotations)
-    if (card?.annotations && Object.keys(card?.annotations).length) {
+    if (card?.annotations && Object.keys(card?.annotations).filter((key) => key !== "isTapped").length) {
       return (
         <>
           <Typography>Annotations</Typography>
-          {Object.keys(card?.annotations).map((key) => (
+          {Object.keys(card?.annotations).filter((key) => key !== "isTapped").map((key) => (
             <Typography key={key}>
               {key}: {String(card?.annotations[key])}
             </Typography>
@@ -120,6 +120,7 @@ export function Card({
         </>
       )
     }
+    return null
   }
 
   const TriggerOverlay = () => {
@@ -192,7 +193,7 @@ export function Card({
         />
       </Box>
       <Popover id="counter-annotation-popover"
-        open={openCAPopover && (card?.counters?.length > 0 || Object.keys(card?.annotations || {}).length > 0)}
+        open={openCAPopover && (card?.counters?.length > 0 || Object.keys(card?.annotations || {}).filter((key) => key !== "isTapped").length > 0)}
         anchorEl={anchorEl}
         sx={{
           pointerEvents: 'none',

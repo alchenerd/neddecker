@@ -251,10 +251,12 @@ export default function PlayPage() {
         case "toggleTap":
           {
             const newAction = {
-              type: foundCard?.annotations?.isTapped ? "untap" : "tap",
+              type: "set_annotation",
               targetId: foundCard.in_game_id,
+              annotationKey: "isTapped",
+              annotationValue: foundCard?.annotations?.isTapped ? false : true,
             };
-            // setActionQueue((prev) => [...prev, newAction]);
+            store.dispatch(receivedNewGameAction(newAction));
           }
           break;
         case "drawFromLibrary":
