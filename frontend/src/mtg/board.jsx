@@ -11,6 +11,7 @@ export function Board({
   setDndMsg,
   setDblClkMsg,
   setWhoRequestShuffle,
+  actionTargetCard,
   setActionTargetCard,
   setOpenMoveDialog,
   setOpenCounterDialog,
@@ -18,6 +19,10 @@ export function Board({
   setOpenCreateTriggerDialog,
   setOpenCreateDelayedTriggerDialog,
 }) {
+  const [ whoIsAskingAttackTarget, setWhoIsAskingAttackTarget ] = useState(null);
+  const [ whoIsAskingBlockTarget, setWhoIsAskingBlockTarget ] = useState(null);
+  const [ combatTargetCard, setCombatTargetCard ] = useState(null);
+
   return (
     /* Should see neither magenta nor white */
     <Box sx={{display: 'flex', backgroundColor: 'White'}}>
@@ -53,6 +58,9 @@ export function Board({
             setOpenAnnotationDialog={setOpenAnnotationDialog}
             setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
             setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
+            {...{whoIsAskingAttackTarget, setWhoIsAskingAttackTarget}}
+            {...{whoIsAskingBlockTarget, setWhoIsAskingBlockTarget}}
+            {...{combatTargetCard, setCombatTargetCard}}
           />
         </Grid>
         <Grid item xs={12} sx={{backgroundColor: "Magenta", height: "4vh",
@@ -73,6 +81,9 @@ export function Board({
             setOpenAnnotationDialog={setOpenAnnotationDialog}
             setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
             setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
+            {...{whoIsAskingAttackTarget, setWhoIsAskingAttackTarget}}
+            {...{whoIsAskingBlockTarget, setWhoIsAskingBlockTarget}}
+            {...{combatTargetCard, setCombatTargetCard}}
           />
         </Grid>
         <Grid item xs={2} sx={{backgroundColor: "Magenta", height: "16vh"}} alignSelf="end">

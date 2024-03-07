@@ -1,7 +1,7 @@
 import { Card } from './card';
 import Box from '@mui/material/Box';
 
-function Permanent({id, card, backgroundColor, setFocusedCard, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, setOpenCreateTriggerDialog, setOpenCreateDelayedTriggerDialog, ...props}) {
+function Permanent({id, card, backgroundColor, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, setOpenCreateTriggerDialog, setOpenCreateDelayedTriggerDialog, ...props}) {
   const handleMove = () => {
     setActionTargetCard(card);
     setOpenMoveDialog(true);

@@ -107,7 +107,6 @@ export function Card({
   const triggerFunctions = [ { name: "remove from stack", _function: removeFromStack, }, ];
 
   const ListAnnotations = () => {
-    console.log(card?.annotations)
     if (card?.annotations && Object.keys(card?.annotations).filter((key) => key !== "isTapped").length) {
       return (
         <>
@@ -169,6 +168,7 @@ export function Card({
         id={card?.in_game_id}
         ref={drag}
         onMouseOver={registerFocus}
+        onClick={props?.onClick}
         onDoubleClick={props?.onDoubleClick}
         onContextMenu={handleContextMenu}
         onMouseEnter={handlePopoverOpen}

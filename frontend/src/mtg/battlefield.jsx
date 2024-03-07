@@ -1,16 +1,17 @@
-import { useState, useEffect } from 'react'
-import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
-import { useDrop } from 'react-dnd'
+import { useState, useEffect } from 'react';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import { useDrop } from 'react-dnd';
 import { useSelector } from 'react-redux';
-import { ItemTypes } from './constants'
-import { Card } from './card'
-import Permanent from './permanent'
-import CreaturePermanent from './creature-permanent'
-import Library from './library'
-import Graveyard from './graveyard'
-import Exile from './exile'
-import ZoneButton from './zone-button'
+import { ItemTypes } from './constants';
+import { Card } from './card';
+import Permanent from './permanent';
+import CreaturePermanent from './creature-permanent';
+import NonlandPermanent from './nonland-permanent';
+import Library from './library';
+import Graveyard from './graveyard';
+import Exile from './exile';
+import ZoneButton from './zone-button';
 import { useAffectedGameDataSelector } from './../store/slice';
 
 const Battlefield = ({
@@ -25,6 +26,12 @@ const Battlefield = ({
   setOpenAnnotationDialog,
   setOpenCreateTriggerDialog,
   setOpenCreateDelayedTriggerDialog,
+  whoIsAskingAttackTarget,
+  setWhoIsAskingAttackTarget,
+  whoIsAskingBlockTarget,
+  setWhoIsAskingBlockTarget,
+  combatTargetCard,
+  setCombatTargetCard,
 }) => {
   const gameData = useAffectedGameDataSelector();
   const owner = gameData?.board_state?.players.find((player) => player.player_name === ownerName);
@@ -119,6 +126,10 @@ const Battlefield = ({
                 setOpenAnnotationDialog={setOpenAnnotationDialog}
                 setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
                 setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
+                controller={ownerName}
+                {...{whoIsAskingAttackTarget, setWhoIsAskingAttackTarget}}
+                {...{whoIsAskingBlockTarget, setWhoIsAskingBlockTarget}}
+                {...{combatTargetCard, setCombatTargetCard}}
               />
             )
           })}
@@ -176,7 +187,7 @@ const Battlefield = ({
           >
             {otherCards && otherCards.map(card => {
               return (
-                <Permanent
+                <NonlandPermanent
                   key={card.in_game_id}
                   card={card}
                   setFocusedCard={setFocusedCard}
@@ -187,6 +198,9 @@ const Battlefield = ({
                   setOpenAnnotationDialog={setOpenAnnotationDialog}
                   setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
                   setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
+                  controller={ownerName}
+                  {...{whoIsAskingAttackTarget, setWhoIsAskingAttackTarget}}
+                  {...{combatTargetCard, setCombatTargetCard}}
                 />
               )
             })}

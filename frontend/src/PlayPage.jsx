@@ -352,6 +352,7 @@ export default function PlayPage() {
               setDndMsg={setDndMsg}
               setDblClkMsg={setDblClkMsg}
               setWhoRequestShuffle={setWhoRequestShuffle}
+              actionTargetCard={actionTargetCard}
               setActionTargetCard={setActionTargetCard}
               setOpenMoveDialog={setOpenMoveDialog}
               setOpenCounterDialog={setOpenCounterDialog}

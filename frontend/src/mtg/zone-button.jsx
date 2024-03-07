@@ -2,7 +2,8 @@ import { useState } from 'react';
 import Button from '@mui/material/Button';
 import InspectDialog from './inspect-dialog';
 
-function ZoneButton ({zoneName, buttonText, ownerName, content, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, setOpenCreateTriggerDialog, setOpenCreateDelayedTriggerDialog, sx}) {
+function ZoneButton ({zoneName, buttonText, owner, content, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, setOpenCreateTriggerDialog, setOpenCreateDelayedTriggerDialog, sx}) {
+  const ownerName = owner?.player_name;
   const [open, setOpen] = useState(false);
   const handleClick = (e) => {
     setOpen(true);
