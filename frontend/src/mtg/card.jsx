@@ -184,11 +184,8 @@ export function Card({
               aspectRatio: 2.5 / 3.5,
             }}
           />
-        <CardContextMenu {
-          ...{
-            contextMenu,
-            setContextMenu
-          }}
+        <CardContextMenu
+          {...{ contextMenu, setContextMenu }}
           functions={ card?.triggerContent ? triggerFunctions : contextMenuFunctions }
         />
       </Box>

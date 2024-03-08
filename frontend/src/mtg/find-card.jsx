@@ -20,6 +20,8 @@ export const findCardById = (gameData, cardId) => {
     "board_state.players[1].library",
     "board_state.players[0].exile",
     "board_state.players[1].exile",
+    "board_state.players[0].sideboard",
+    "board_state.players[1].sideboard",
   ];
   let foundCard = undefined;
   for (const path of pathsToCheck) {

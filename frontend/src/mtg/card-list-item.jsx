@@ -37,20 +37,25 @@ function CardListItem ({id, card, zoneName, setActionTargetCard, setOpenMoveDial
     setOpenCreateDelayedTriggerDialog(true);
   }
 
-  const functions =
-    (zoneName === "graveyard" || zoneName === "exile") ?
-    [
-      {name: "move", _function: handleMove},
+  let functions = [
+    {name: "move", _function: handleMove},
+    {name: "create trigger", _function: handleCreateTrigger},
+    {name: "create delayed trigger", _function: handleCreateDelayedTrigger},
+  ];
+  switch (zoneName) {
+    case "graveyard":
+    case "exile":
+      functions.push(
       {name: "set counter", _function: handleSetCounter},
-      {name: "set annotation", _function: handleSetAnnotation},
-      {name: "create trigger", _function: handleCreateTrigger},
-      {name: "create delayed trigger", _function: handleCreateDelayedTrigger},
-    ] :
-    [
-      {name: "move", _function: handleMove},
-      {name: "create trigger", _function: handleCreateTrigger},
-      {name: "create delayed trigger", _function: handleCreateDelayedTrigger},
-    ];
+      );
+    case "sideboard":
+      // graveyard and exile can reach here
+      functions.push(
+        {name: "set annotation", _function: handleSetAnnotation},
+      );
+      break;
+  }
+
   useEffect(() => {
     if (card && card.name) {
       setShowString(card.name);

@@ -27,13 +27,19 @@ export function Board({
     /* Should see neither magenta nor white */
     <Box sx={{display: 'flex', backgroundColor: 'White'}}>
       <Grid container direction="row" justifyContent="center" alignItems="stretch">
-        <Grid item xs={2} sx={{backgroundColor: "Magenta", height: "16vh"}}>
+        <Grid item xs={3} sx={{backgroundColor: "Magenta", height: "16vh"}}>
           <PlayerInformation
             ownerName="ned"
             fullName="Ned Decker"
+            setActionTargetCard={setActionTargetCard}
+            setOpenMoveDialog={setOpenMoveDialog}
+            setOpenCounterDialog={setOpenCounterDialog}
+            setOpenAnnotationDialog={setOpenAnnotationDialog}
+            setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
+            setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
           />
         </Grid>
-        <Grid item xs={10} sx={{backgroundColor: "Magenta", height: "16vh"}}>
+        <Grid item xs={9} sx={{backgroundColor: "Magenta", height: "16vh"}}>
           <Hand
             ownerName="ned"
             setFocusedCard={setFocusedCard}
@@ -86,13 +92,19 @@ export function Board({
             {...{combatTargetCard, setCombatTargetCard}}
           />
         </Grid>
-        <Grid item xs={2} sx={{backgroundColor: "Magenta", height: "16vh"}} alignSelf="end">
+        <Grid item xs={3} sx={{backgroundColor: "Magenta", height: "16vh"}} alignSelf="end">
           <PlayerInformation
             ownerName="user"
             fullName="User"
+            setActionTargetCard={setActionTargetCard}
+            setOpenMoveDialog={setOpenMoveDialog}
+            setOpenCounterDialog={setOpenCounterDialog}
+            setOpenAnnotationDialog={setOpenAnnotationDialog}
+            setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
+            setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
           />
         </Grid>
-        <Grid item xs={10} sx={{backgroundColor: "Magenta", height: "16vh"}} alignSelf="end">
+        <Grid item xs={9} sx={{backgroundColor: "Magenta", height: "16vh"}} alignSelf="end">
           <Hand
             ownerName="user"
             setFocusedCard={setFocusedCard}

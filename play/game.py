@@ -15,6 +15,7 @@ class Player:
         self.hand = [] # {id, name, typeline, mana}
         self.graveyard = [] # {id, name}
         self.exile = [] # {id, name}
+        self.mana_pool = {'W': 0, 'U': 0, 'B': 0, 'R': 0, 'G': 0, 'C': 0}
         self.hp = 20
         self.infect = 0
 
@@ -75,6 +76,8 @@ class Player:
         board_state['exile'] = self.exile
         board_state['hp'] = self.hp
         board_state['infect'] = self.infect
+        board_state['sideboard'] = self.sideboard
+        board_state['mana_pool'] = self.mana_pool
         return board_state
 
     def __str__(self):

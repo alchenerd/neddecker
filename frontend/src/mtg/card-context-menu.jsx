@@ -15,9 +15,7 @@ function CardContextMenu({contextMenu, setContextMenu, functions, setActionTarge
           onClose={handleClose}
           anchorReference="anchorPosition"
           anchorPosition={
-            contextMenu !== null
-              ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
-              : undefined
+            contextMenu ? { top: contextMenu.mouseY, left: contextMenu.mouseX } : undefined
           }
         >
           {functions && functions.map((item) => {
