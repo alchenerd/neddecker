@@ -10,7 +10,7 @@ const PlayerContextMenu = ({ contextMenu, setContextMenu, functions }) => {
     return (
       <>
         <Menu
-          open={contextMenu}
+          open={Boolean(contextMenu)}
           onClose={handleClose}
           anchorReference="anchorPosition"
           anchorPosition={

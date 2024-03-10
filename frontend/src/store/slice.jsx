@@ -38,6 +38,12 @@ export const gameSlice = createSlice({
         const shuffled = shuffle(_.get(current(state).gameData, action.payload.who + ".library"));
         return { ...state, actions: [ ...state.actions, { ...action.payload, shuffleResult: shuffled } ] };
       }
+      if (action.payload.type === "set_mana") {
+        const latestAction = current(state).actions.slice(-1)[0];
+        if (latestAction && latestAction.type === "set_mana" && latestAction.targetId === action.payload.targetId) {
+          return { ...state, actions: [ ...state.actions.slice(0, -1), action.payload ] };
+        }
+      }
       return { ...state, actions: [ ...state.actions, { ...action.payload } ] };
     },
     rollbackGameAction: (state) => {
@@ -120,6 +126,11 @@ const selectAffectedGameData = (gameData, actions) => {
           const stack = _.get(affectedGameData, "board_state.stack");
           const newStack = stack.filter(card => card.in_game_id !== found.card.in_game_id);
           _.set(affectedGameData, "board_state.stack", newStack);
+        }
+        break;
+      case "set_mana":
+        {
+          _.set(affectedGameData, "board_state.players[" + action.targetId + "].mana_pool", action.manaPool);
         }
         break;
     }

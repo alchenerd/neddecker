@@ -24,6 +24,7 @@ export function PlayerInformation({
   const affectedGameData = useAffectedGameDataSelector();
   const hasTurn = affectedGameData?.whose_turn === ownerName;
   const owner = affectedGameData?.board_state?.players.find((player) => player.player_name === ownerName);
+  const ownerId = affectedGameData?.board_state?.players.findIndex(player => player.player_name === ownerName);
   const hp = owner?.hp;
   const infect = owner?.infect;
   const manaPool = owner?.mana_pool;
@@ -39,7 +40,6 @@ export function PlayerInformation({
     <>
       <Box
         justifyContent='center'
-        onContextMenu={handleContextMenu}
         sx={{
           display: 'flex', flexDirection: 'column',
           width: '100%', height: '100%',
@@ -53,7 +53,7 @@ export function PlayerInformation({
             <Typography>HP: {hp}</Typography>
             <Typography>Infect: {infect}</Typography>
           </Grid>
-          <ManaPool {...{manaPool}}/>
+          <ManaPool {...{manaPool, ownerId}}/>
         </Grid>
         <Box
           display="flex"
