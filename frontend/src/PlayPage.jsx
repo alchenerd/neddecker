@@ -210,27 +210,27 @@ export default function PlayPage() {
   }
 
   const registerCounterAction = (id, type, amount) => {
-    if (type === null || amount === null) {
+    if (type === null) {
       return;
     }
     const newAction = {
       type: "set_counter",
       targetId: id,
       counterType: type,
-      counterAmount: amount,
+      counterAmount: amount || 0,
     };
     store.dispatch(receivedNewGameAction(newAction));
   }
 
   const registerSetAnnotationAction = (id, key, value) => {
-    if (key === null || value === null) {
+    if (key === null) {
       return;
     }
     const newAction = {
       type: "set_annotation",
       targetId: id,
       annotationKey: key,
-      annotationValue: value,
+      annotationValue: value || "",
     };
     store.dispatch(receivedNewGameAction(newAction));
   }

@@ -39,7 +39,7 @@ function CounterDialog({open, setOpen, card, registerCounterAction}) {
   };
   const handleChangeAmount = (event) => {
     //console.log(event.target.value);
-    setCounterAmount(event.target.value);
+    setCounterAmount(parseInt(event.target.value));
   };
   const handleSubmit = () => {
     setOpen(false);
@@ -47,14 +47,11 @@ function CounterDialog({open, setOpen, card, registerCounterAction}) {
   };
   useEffect(() => {
     if (counterType && card && card.counters && card.counters.length) {
-      setCounterAmount(0);
       card.counters?.forEach((counter) => {
         if (counter.type === counterType) {
-          setCounterAmount(counter.amount);
+          setCounterAmount(parseInt(counter.amount));
         }
       });
-    } else {
-      setCounterAmount(0);
     }
   }, [counterType])
   return (

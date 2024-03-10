@@ -84,20 +84,23 @@ const selectAffectedGameData = (gameData, actions) => {
         _.set(affectedGameData, action.who + ".library", action.shuffleResult);
         break;
       case "set_counter":
-        const newCounter = { type: action.counterType, amount: action.counterAmount };
-        const updatedCounters = [
-          ...found.card.counters.filter((counter) => counter.type !== newCounter.type),
-          newCounter,
-        ];
+        let newCounter = { type: action.counterType, amount: action.counterAmount };
+        let updatedCounters = [ ...found.card.counters.filter((counter) => counter.type !== newCounter.type) ];
+        if (action.counterAmount) {
+          updatedCounters = [...updatedCounters, newCounter];
+        }
         {
           const newZone = [ ..._.get(affectedGameData, found.path, []).filter((card) => card.in_game_id !== found.card.in_game_id), { ...found.card, counters: updatedCounters } ];
           _.set(affectedGameData, found.path, newZone);
         }
         break;
       case "set_annotation":
-        const updatedAnnotations = {
+        let updatedAnnotations = {
           ...found.card.annotations,
           [ action.annotationKey ]: action.annotationValue,
+        }
+        if (!action.annotationValue) {
+          delete updatedAnnotations[action.annotationKey];
         }
         {
           const newZone = [..._.get(affectedGameData, found.path, []).filter((card) => card.in_game_id !== found.card.in_game_id), { ...found.card, annotations: updatedAnnotations } ];
