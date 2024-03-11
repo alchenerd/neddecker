@@ -9,6 +9,7 @@ import ZoneButton from './zone-button';
 import PlayerContextMenu from './player-context-menu';
 import InspectDialog from './inspect-dialog';
 import ManaPool from './mana-pool';
+import SetHitpointDialog from './set-hitpoint-dialog';
 
 export function PlayerInformation({
   ownerName, fullName,
@@ -20,7 +21,8 @@ export function PlayerInformation({
   setOpenCreateDelayedTriggerDialog,
 }) {
   const [ contextMenu, setContextMenu ] = useState(null);
-  const [ openInspectSideboard, setOpenInspectSideboard ] = useState(false);
+  const [ openInspectSideboardDialog, setOpenInspectSideboardDialog ] = useState(false);
+  const [ openSetHitpointDialog, setOpenSetHitpointDialog ] = useState(true);
   const affectedGameData = useAffectedGameDataSelector();
   const hasTurn = affectedGameData?.whose_turn === ownerName;
   const owner = affectedGameData?.board_state?.players.find((player) => player.player_name === ownerName);
@@ -72,16 +74,22 @@ export function PlayerInformation({
         {...{ contextMenu, setContextMenu }}
         functions={[
           {
-            name: "inspect sideboard",
+            name: "sideboard",
             _function: () => {
-              setOpenInspectSideboard(true);
+              setOpenInspectSideboardDialog(true);
+            }
+          },
+          {
+            name: "set hitpoint",
+            _function: () => {
+              setOpenSetHitpointDialog(true);
             }
           },
         ]}
       />
       <InspectDialog
-        open={openInspectSideboard}
-        setOpen={setOpenInspectSideboard}
+        open={openInspectSideboardDialog}
+        setOpen={setOpenInspectSideboardDialog}
         title={ownerName + "'s " + "sideboard"}
         zoneName={"sideboard"}
         content={owner?.sideboard}
@@ -91,6 +99,13 @@ export function PlayerInformation({
         setOpenAnnotationDialog={setOpenAnnotationDialog}
         setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
         setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
+      />
+      <SetHitpointDialog
+        open={openSetHitpointDialog}
+        setOpen={setOpenSetHitpointDialog}
+        title={"Set " + ownerName + "'s HP"}
+        owner={owner}
+        ownerId={ownerId}
       />
     </>
   );

@@ -99,16 +99,15 @@ const Battlefield = ({
 
   return (
     <>
-      <Box sx={{display: "flex", flexDirection: "column", width: "100%", height: "100%", background: "navy", position: "relative", alignItems: "center"}} ref={drop}>
-        <Typography sx={{alignSelf: "flex-start"}}>Battlefield</Typography>
+      <Box sx={{display: "flex", flexDirection: "column", width: "100%", height: "100%", background: "navy", position: "relative", alignItems: "center", justifyContent: "center"}} ref={drop}>
         <Box id="creatureZone"
           sx={{
             display: "flex",
             borderStyle: "solid",
             boarderWidth: "1px",
             borderColor: "red",
-            height: "40%",
-            width: "89%",
+            height: "45%",
+            width: "88.55%",
             alignSelf: "flex-start",
             justifyContent: "space-around",
           }}
@@ -138,7 +137,7 @@ const Battlefield = ({
           sx={{
             display: "flex",
             flexDirection: "row",
-            height: "40%",
+            height: "45%",
             width: "100%",
             alignSelf: "flex-end",
             justifyContent: "flex-start",

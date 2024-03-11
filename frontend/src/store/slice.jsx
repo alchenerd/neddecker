@@ -132,9 +132,10 @@ const selectAffectedGameData = (gameData, actions) => {
         }
         break;
       case "set_mana":
-        {
           _.set(affectedGameData, "board_state.players[" + action.targetId + "].mana_pool", action.manaPool);
-        }
+        break;
+      case "set_hp":
+          _.set(affectedGameData, "board_state.players[" + action.targetId + "].hp", action.value);
         break;
     }
   });
