@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -12,9 +12,15 @@ import { receivedNewGameAction } from './../store/slice';
 const filter = createFilterOptions();
 
 const PlayerCounterDialog = ({open, setOpen, owner, ownerId}) => {
-  const [counterTypes, setCounterTypes] = useState(owner?.counters);
+  const counterTypes = owner?.counters.map(counter => counter.type);
   const [counterType, setCounterType] = useState("");
   const [counterAmount, setCounterAmount] = useState(0);
+  useEffect(() => {
+    if (open) {
+      setCounterType("");
+      setCounterAmount(0);
+    }
+  }, [open]);
   const handleChangeType = (event, newValue) => {
     console.log(newValue);
     if (newValue && newValue.inputValue) {
@@ -60,7 +66,7 @@ const PlayerCounterDialog = ({open, setOpen, owner, ownerId}) => {
           clearOnBlur
           handleHomeEndKeys
           options={
-            counterTypes.toString() || []
+            counterTypes || []
           }
           onChange={handleChangeType}
           filterOptions={(options, params) => {
