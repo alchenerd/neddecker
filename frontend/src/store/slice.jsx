@@ -84,12 +84,12 @@ const selectAffectedGameData = (gameData, actions) => {
         _.set(affectedGameData, action.who + ".library", action.shuffleResult);
         break;
       case "set_counter":
-        let newCounter = { type: action.counterType, amount: action.counterAmount };
-        let updatedCounters = [ ...found.card.counters.filter((counter) => counter.type !== newCounter.type) ];
-        if (action.counterAmount) {
-          updatedCounters = [...updatedCounters, newCounter];
-        }
         {
+          let newCounter = { type: action.counterType, amount: action.counterAmount };
+          let updatedCounters = [ ...found.card.counters.filter((counter) => counter.type !== newCounter.type) ];
+          if (action.counterAmount) {
+            updatedCounters = [...updatedCounters, newCounter];
+          }
           const newZone = [ ..._.get(affectedGameData, found.path, []).filter((card) => card.in_game_id !== found.card.in_game_id), { ...found.card, counters: updatedCounters } ];
           _.set(affectedGameData, found.path, newZone);
         }
@@ -132,10 +132,21 @@ const selectAffectedGameData = (gameData, actions) => {
         }
         break;
       case "set_mana":
-          _.set(affectedGameData, "board_state.players[" + action.targetId + "].mana_pool", action.manaPool);
+        _.set(affectedGameData, "board_state.players[" + action.targetId + "].mana_pool", action.manaPool);
         break;
       case "set_hp":
-          _.set(affectedGameData, "board_state.players[" + action.targetId + "].hp", action.value);
+        _.set(affectedGameData, "board_state.players[" + action.targetId + "].hp", action.value);
+        break;
+      case "set_player_counter":
+        {
+          const newCounter = { type: action.counterType, amount: action.counterAmount };
+          const oldPlayerCounters = _.get(affectedGameData, "board_state.players[" + action.targetId + "].counters");
+          let updatedCounters = [ ...oldPlayerCounters.filter((counter) => counter.type !== newCounter.type) ];
+          if (action.counterAmount) {
+            updatedCounters = [...updatedCounters, newCounter];
+          }
+          _.set(affectedGameData, "board_state.players[" + action.targetId + "].counters", updatedCounters);
+        }
         break;
     }
   });

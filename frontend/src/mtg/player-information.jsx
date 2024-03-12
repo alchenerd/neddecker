@@ -4,12 +4,45 @@ import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import Popover from '@mui/material/Popover';
 import { useAffectedGameDataSelector } from './../store/slice';
 import ZoneButton from './zone-button';
 import PlayerContextMenu from './player-context-menu';
 import InspectDialog from './inspect-dialog';
 import ManaPool from './mana-pool';
 import SetHitpointDialog from './set-hitpoint-dialog';
+import PlayerCounterDialog from './player-counter-dialog';
+
+const ListCounters = ({target}) => {
+  if (target?.counters && target?.counters.length) {
+    return (
+      <>
+        <Typography>Counters</Typography>
+        {target?.counters.map((counter) => (
+          <Typography key={counter.type}>
+            {counter.type}: {counter.amount}
+          </Typography>
+        ))}
+      </>
+    )
+  }
+};
+
+const ListAnnotations = ({target}) => {
+  if (target?.annotations && Object.keys(target?.annotations).filter((key) => key !== "isTapped").length) {
+    return (
+      <>
+        <Typography>Annotations</Typography>
+        {Object.keys(target?.annotations).filter((key) => key !== "isTapped").map((key) => (
+          <Typography key={key}>
+            {key}: {String(target?.annotations[key])}
+          </Typography>
+        ))}
+      </>
+    )
+  }
+  return null
+};
 
 export function PlayerInformation({
   ownerName, fullName,
@@ -23,6 +56,9 @@ export function PlayerInformation({
   const [ contextMenu, setContextMenu ] = useState(null);
   const [ openInspectSideboardDialog, setOpenInspectSideboardDialog ] = useState(false);
   const [ openSetHitpointDialog, setOpenSetHitpointDialog ] = useState(false);
+  const [ openPlayerCounterDialog, setOpenPlayerCounterDialog ] = useState(true);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const openCAPopover = Boolean(anchorEl);
   const affectedGameData = useAffectedGameDataSelector();
   const hasTurn = affectedGameData?.whose_turn === ownerName;
   const owner = affectedGameData?.board_state?.players.find((player) => player.player_name === ownerName);
@@ -38,6 +74,12 @@ export function PlayerInformation({
                            : null
     );
   };
+  const handlePopoverOpen = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+  const handlePopoverClose = (event) => {
+    setAnchorEl(null);
+  };
   return (
     <>
       <Box
@@ -48,6 +90,8 @@ export function PlayerInformation({
           background: "red"
         }}
         position="relative"
+        onMouseEnter={handlePopoverOpen}
+        onMouseLeave={handlePopoverClose}
       >
         <Grid container direction='row' justifyContent='space-around' alignItems='center'>
           <Grid container direction='column' item xs={12}>
@@ -85,6 +129,19 @@ export function PlayerInformation({
               setOpenSetHitpointDialog(true);
             }
           },
+          {
+            name: "set player counter",
+            _function: () => {
+              setOpenPlayerCounterDialog(true);
+            }
+          },
+          {
+            name: "set player annotation",
+            _function: () => {
+              console.log("TODO: set player annotation");
+              // setOpenSetPlayerAnnotationDialog(true);
+            }
+          },
         ]}
       />
       <InspectDialog
@@ -107,6 +164,32 @@ export function PlayerInformation({
         owner={owner}
         ownerId={ownerId}
       />
+      <PlayerCounterDialog
+        open={openPlayerCounterDialog}
+        setOpen={setOpenPlayerCounterDialog}
+        owner={owner}
+        ownerId={ownerId}
+      />
+      <Popover id="player-counter-annotation-popover"
+        open={openCAPopover && (owner?.counters?.length > 0 || Object.keys(owner?.annotations || {}).filter((key) => key !== "isTapped").length > 0)}
+        anchorEl={anchorEl}
+        sx={{
+          pointerEvents: 'none',
+        }}
+        anchorOrigin={{
+          vertical: 'center',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'center',
+          horizontal: 'left',
+        }}
+        onClose={handlePopoverClose}
+        disableRestoreFocus
+      >
+        <ListCounters target={owner} />
+        <ListAnnotations target={owner} />
+      </Popover>
     </>
   );
 }
