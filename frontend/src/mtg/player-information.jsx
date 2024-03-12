@@ -22,7 +22,7 @@ export function PlayerInformation({
 }) {
   const [ contextMenu, setContextMenu ] = useState(null);
   const [ openInspectSideboardDialog, setOpenInspectSideboardDialog ] = useState(false);
-  const [ openSetHitpointDialog, setOpenSetHitpointDialog ] = useState(true);
+  const [ openSetHitpointDialog, setOpenSetHitpointDialog ] = useState(false);
   const affectedGameData = useAffectedGameDataSelector();
   const hasTurn = affectedGameData?.whose_turn === ownerName;
   const owner = affectedGameData?.board_state?.players.find((player) => player.player_name === ownerName);

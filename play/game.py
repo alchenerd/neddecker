@@ -19,7 +19,7 @@ class Player:
         self.hp = 20
         self.infect = 0
         self.counters = []
-        seld.annotations = []
+        self.annotations = []
 
     def set_player_name(self, name):
         self.player_name = name
