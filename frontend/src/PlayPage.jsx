@@ -103,7 +103,7 @@ export default function PlayPage() {
   const [ openCounterDialog, setOpenCounterDialog] = useState(false);
   const [ openAnnotationDialog, setOpenAnnotationDialog] = useState(false);
   const gameData = useSelector((state) => state.gameState.gameData);
-  const affectedGameData = selectAffectedGameData(store.getState());
+  const affectedGameData = useSelector(selectAffectedGameData);
   const [ openCreateTriggerDialog, setOpenCreateTriggerDialog ] = useState(false);
   const [ openCreateDelayedTriggerDialog, setOpenCreateDelayedTriggerDialog ] = useState(false);
   const [ openDelayedTriggerMemoDrawer, setOpenDelayedTriggerMemoDrawer ] = useState(false);
