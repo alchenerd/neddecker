@@ -1,10 +1,11 @@
-import { useState } from 'react'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Grid from '@mui/material/Grid'
-import { Preview } from './preview'
-import { Stack } from './stack'
-import { useAffectedGameDataSelector } from './../store/slice';
+import { useState } from 'react';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Grid from '@mui/material/Grid';
+import { Preview } from './preview';
+import { Stack } from './stack';
+import store from './../store/store';
+import { selectAffectedGameData } from './../store/slice';
 
 export function GameInformation({focusedCard, setFocusedCard, setUserIsDone, userEndTurn, setUserEndTurn, setDndMsg, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, setOpenCreateTriggerDialog, setOpenCreateDelayedTriggerDialog}) {
   const [ isResolving, setIsResolving ] = useState(false);
@@ -14,8 +15,9 @@ export function GameInformation({focusedCard, setFocusedCard, setUserIsDone, use
   const handleClickEndTurnButton = () => {
     setUserEndTurn(true);
   }
-  const whoseTurn = useAffectedGameDataSelector()?.whose_turn || "";
-  const stack = useAffectedGameDataSelector()?.board_state?.stack || [];
+  const _agd = selectAffectedGameData(store.getState())
+  const whoseTurn = _agd?.whose_turn || "";
+  const stack = _agd?.board_state?.stack || [];
   return (
     <Box sx={{display: "flex", alignItems: "space-between", height: "100%", width: "100%", backgroundColor: "cyan"}}>
       <Grid container sx={{height: "100%"}}>

@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { createSlice, current } from "@reduxjs/toolkit";
 import { createSelector } from "reselect";
 import { useSelector } from "react-redux";
@@ -67,7 +68,7 @@ export const {
 const selectGameData = (store) => store.gameState.gameData;
 const selectActions = (store) => store.gameState.actions;
 
-const selectAffectedGameData = (gameData, actions) => {
+const calculateAffectedGameData = (gameData, actions) => {
   const affectedGameData = cloneDeep(gameData);
   actions?.forEach((action) => {
     const found = findCardById(affectedGameData, action.targetId);
@@ -153,9 +154,7 @@ const selectAffectedGameData = (gameData, actions) => {
   return affectedGameData;
 };
 
-export const useAffectedGameDataSelector = () => {
-  return useSelector(createSelector([selectGameData, selectActions], selectAffectedGameData));
-}
+export const selectAffectedGameData = createSelector([selectGameData, selectActions], calculateAffectedGameData);
 
 const selectPlayerByName = (name) => {
   return (gameData) => gameData?.board_state?.players.find(player => player.player_name === name);

@@ -4,10 +4,11 @@ import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import { ItemTypes } from './constants'
 import { Card } from './card'
-import { useAffectedGameDataSelector } from './../store/slice';
+import store from './../store/store';
+import { selectAffectedGameData } from './../store/slice';
 
 export function Stack({setFocusedCard, setDndMsg, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, setOpenCreateTriggerDialog, setOpenCreateDelayedTriggerDialog}) {
-  const stack = useAffectedGameDataSelector()?.board_state?.stack || [];
+  const stack = selectAffectedGameData(store.getState())?.board_state?.stack || [];
 
   const [, drop] = useDrop(
     () => ({

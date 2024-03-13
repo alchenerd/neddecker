@@ -12,7 +12,8 @@ import Library from './library';
 import Graveyard from './graveyard';
 import Exile from './exile';
 import ZoneButton from './zone-button';
-import { useAffectedGameDataSelector } from './../store/slice';
+import { selectAffectedGameData } from './../store/slice';
+import store from './../store/store';
 
 const Battlefield = ({
   ownerName,
@@ -33,7 +34,7 @@ const Battlefield = ({
   combatTargetCard,
   setCombatTargetCard,
 }) => {
-  const gameData = useAffectedGameDataSelector();
+  const gameData = selectAffectedGameData(store.getState());
   const owner = gameData?.board_state?.players.find((player) => player.player_name === ownerName);
   const ownerIndex = gameData?.board_state?.players.indexOf(owner);
 

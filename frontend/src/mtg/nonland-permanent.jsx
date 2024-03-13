@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { cloneDeep } from 'lodash';
 import Permanent from './permanent';
-import { receivedNewGameAction, useAffectedGameDataSelector } from './../store/slice';
+import { receivedNewGameAction, selectAffectedGameData } from './../store/slice';
 import store from './../store/store';
 
 const NonlandPermanent = ({
@@ -9,7 +9,7 @@ const NonlandPermanent = ({
   whoIsAskingAttackTarget, setWhoIsAskingAttackTarget,
   ...props
 }) => {
-  const gameData = useAffectedGameDataSelector();
+  const gameData = selectAffectedGameData(store.getState());
   const typeLine = props.card.isFlipped ? (props.card.faces?.back.type_line || "")
                                         : (props.card.faces?.front.type_line || props.card.type_line || "");
   const canBeAttacked = gameData.phase.includes("declare attackers step") &&

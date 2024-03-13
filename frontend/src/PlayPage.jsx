@@ -12,8 +12,8 @@ import MoveDialog from './mtg/move-dialog';
 import CounterDialog from './mtg/counter-dialog';
 import AnnotationDialog from './mtg/annotation-dialog';
 import { useNavigate } from 'react-router-dom';
-import store from './store/store'
-import { useAffectedGameDataSelector, receivedNewGameData, receivedNewGameAction, initialize } from './store/slice';
+import store from './store/store';
+import { selectAffectedGameData, receivedNewGameData, receivedNewGameAction, initialize } from './store/slice';
 import { findCardById } from './mtg/find-card';
 import { useSelector } from 'react-redux';
 import CreateTriggerDialog from './mtg/create-trigger-dialog';
@@ -103,7 +103,7 @@ export default function PlayPage() {
   const [ openCounterDialog, setOpenCounterDialog] = useState(false);
   const [ openAnnotationDialog, setOpenAnnotationDialog] = useState(false);
   const gameData = useSelector((state) => state.gameState.gameData);
-  const affectedGameData = useAffectedGameDataSelector();
+  const affectedGameData = selectAffectedGameData(store.getState());
   const [ openCreateTriggerDialog, setOpenCreateTriggerDialog ] = useState(false);
   const [ openCreateDelayedTriggerDialog, setOpenCreateDelayedTriggerDialog ] = useState(false);
   const [ openDelayedTriggerMemoDrawer, setOpenDelayedTriggerMemoDrawer ] = useState(false);

@@ -1,9 +1,10 @@
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
-import { useAffectedGameDataSelector } from './../store/slice';
+import { selectAffectedGameData } from './../store/slice';
+import store from './../store/store';
 
 export function Bedrunner() {
-  const affectedGameData = useAffectedGameDataSelector();
+  const affectedGameData = selectAffectedGameData(store.getState());
   const whoseTurn = affectedGameData?.whose_turn;
   const phase = affectedGameData?.phase;
   const phaseMap = {

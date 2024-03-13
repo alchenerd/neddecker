@@ -5,7 +5,7 @@ import { useSelector } from 'react-redux';
 import { ItemTypes } from './constants';
 import { Card } from './card';
 import store from './../store/store';
-import { useAffectedGameDataSelector } from './../store/slice';
+import { selectAffectedGameData } from './../store/slice';
 
 const Hand = ({
   ownerName,
@@ -16,7 +16,7 @@ const Hand = ({
   setOpenCreateTriggerDialog,
   setOpenCreateDelayedTriggerDialog,
 }) => {
-  const gameData = useAffectedGameDataSelector();
+  const gameData = selectAffectedGameData(store.getState());
   const owner = gameData?.board_state?.players.find((player) => player.player_name === ownerName);
   const ownerIndex = gameData?.board_state?.players.indexOf(owner);
 

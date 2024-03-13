@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import Permanent from './permanent';
-import { receivedNewGameAction, useAffectedGameDataSelector } from './../store/slice';
+import { receivedNewGameAction, selectAffectedGameData } from './../store/slice';
 import store from './../store/store';
 
 const CreaturePermanent = ({
@@ -10,7 +10,7 @@ const CreaturePermanent = ({
   combatTargetCard, setCombatTargetCard,
   ...props
 }) => {
-  const gameData = useAffectedGameDataSelector();
+  const gameData = selectAffectedGameData(store.getState());
   const canAttack = gameData.phase.includes("declare attackers step") &&
                     gameData.whose_turn === controller &&
                     controller === "user" &&
