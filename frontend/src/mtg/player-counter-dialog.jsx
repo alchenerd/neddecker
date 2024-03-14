@@ -52,6 +52,12 @@ const PlayerCounterDialog = ({open, setOpen, owner, ownerId}) => {
   const handleClose = () => {
     setOpen(false);
   };
+  useEffect(() => {
+    const existingCounter = owner?.counters?.find(counter => counter.type === counterType);
+    if (existingCounter) {
+      setCounterAmount(parseInt(existingCounter.amount));
+    }
+  }, [counterType]);
   return (
     <Dialog open={open} onClose={handleClose}>
       <DialogTitle>

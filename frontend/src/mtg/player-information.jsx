@@ -57,7 +57,7 @@ export function PlayerInformation({
   const [ contextMenu, setContextMenu ] = useState(null);
   const [ openInspectSideboardDialog, setOpenInspectSideboardDialog ] = useState(false);
   const [ openSetHitpointDialog, setOpenSetHitpointDialog ] = useState(false);
-  const [ openPlayerCounterDialog, setOpenPlayerCounterDialog ] = useState(true);
+  const [ openPlayerCounterDialog, setOpenPlayerCounterDialog ] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const openCAPopover = Boolean(anchorEl);
   const _agd = selectAffectedGameData(store.getState());
