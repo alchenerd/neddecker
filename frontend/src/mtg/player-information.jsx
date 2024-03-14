@@ -13,6 +13,7 @@ import InspectDialog from './inspect-dialog';
 import ManaPool from './mana-pool';
 import SetHitpointDialog from './set-hitpoint-dialog';
 import PlayerCounterDialog from './player-counter-dialog';
+import PlayerAnnotationDialog from './player-annotation-dialog';
 
 const ListCounters = ({target}) => {
   if (target?.counters && target?.counters.length) {
@@ -58,6 +59,7 @@ export function PlayerInformation({
   const [ openInspectSideboardDialog, setOpenInspectSideboardDialog ] = useState(false);
   const [ openSetHitpointDialog, setOpenSetHitpointDialog ] = useState(false);
   const [ openPlayerCounterDialog, setOpenPlayerCounterDialog ] = useState(false);
+  const [ openPlayerAnnotationDialog, setOpenPlayerAnnotationDialog ] = useState(true);
   const [anchorEl, setAnchorEl] = useState(null);
   const openCAPopover = Boolean(anchorEl);
   const _agd = selectAffectedGameData(store.getState());
@@ -139,8 +141,7 @@ export function PlayerInformation({
           {
             name: "set player annotation",
             _function: () => {
-              console.log("TODO: set player annotation");
-              // setOpenSetPlayerAnnotationDialog(true);
+              setOpenPlayerAnnotationDialog(true);
             }
           },
         ]}
@@ -168,6 +169,12 @@ export function PlayerInformation({
       <PlayerCounterDialog
         open={openPlayerCounterDialog}
         setOpen={setOpenPlayerCounterDialog}
+        owner={owner}
+        ownerId={ownerId}
+      />
+      <PlayerAnnotationDialog
+        open={openPlayerAnnotationDialog}
+        setOpen={setOpenPlayerAnnotationDialog}
         owner={owner}
         ownerId={ownerId}
       />

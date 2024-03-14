@@ -149,6 +149,16 @@ const calculateAffectedGameData = (gameData, actions) => {
           _.set(affectedGameData, "board_state.players[" + action.targetId + "].counters", updatedCounters);
         }
         break;
+      case "set_player_annotation":
+        {
+          const oldPlayerAnnotations = _.get(affectedGameData, "board_state.players[" + action.targetId + "].annotations");
+          let updatedAnnotations = { ...oldPlayerAnnotations, [action.annotationKey]: action.annotationValue, };
+          if (!action.annotationValue) {
+            delete updatedAnnotations[action.annotationKey];
+          }
+          _.set(affectedGameData, "board_state.players[" + action.targetId + "].annotations", updatedAnnotations);
+        }
+        break;
     }
   });
   return affectedGameData;
