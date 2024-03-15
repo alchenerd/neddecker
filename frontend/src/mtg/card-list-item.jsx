@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import Box from '@mui/material/Box';
 import CardContextMenu from './card-context-menu';
 import './card-list-item.css';
 
@@ -7,6 +8,7 @@ function CardListItem ({id, card, zoneName, setActionTargetCard, setOpenMoveDial
   const [showString, setShowString] = useState(null);
   const handleContextMenu = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     setContextMenu(
       contextMenu === null
       ? {
@@ -78,17 +80,15 @@ function CardListItem ({id, card, zoneName, setActionTargetCard, setOpenMoveDial
   }, [card, card?.counters, card?.annotations]);
 
   return (
-    <>
-      <li className="card-list-item" style={{"listStyleType": "none"}}
-        onContextMenu={handleContextMenu}
-      >
+    <Box onContextMenu={handleContextMenu}>
+      <li className="card-list-item" style={{"listStyleType": "none"}}>
         {showString}
       </li>
       <CardContextMenu
         {...{contextMenu, setContextMenu}}
         functions={functions}
       />
-    </>
+    </Box>
   )
 }
 
