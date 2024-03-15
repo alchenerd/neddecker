@@ -12,6 +12,8 @@ import Library from './library';
 import Graveyard from './graveyard';
 import Exile from './exile';
 import ZoneButton from './zone-button';
+import BattlefieldContextMenu from './battlefield-context-menu';
+import CreateTokenDialog from './create-token-dialog';
 import { selectAffectedGameData } from './../store/slice';
 import store from './../store/store';
 
@@ -98,9 +100,24 @@ const Battlefield = ({
     );
   }
 
+  const [ contextMenu, setContextMenu ] = useState(null);
+  const handleBattlefieldContext = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setContextMenu(
+      contextMenu === null ? { mouseX: event.clientX + 2, mouseY: event.clientY - 6, }
+                           : null
+    );
+  }
+
+  const battlefieldFunctions = [
+    {name: "create token", _function: () => {setOpenCreateTokenDialog(true);}, },
+  ];
+  const [ openCreateTokenDialog, setOpenCreateTokenDialog ] = useState(false);
+
   return (
     <>
-      <Box sx={{display: "flex", flexDirection: "column", width: "100%", height: "100%", background: "navy", position: "relative", alignItems: "center", justifyContent: "center"}} ref={drop}>
+      <Box sx={{display: "flex", flexDirection: "column", width: "100%", height: "100%", background: "navy", position: "relative", alignItems: "center", justifyContent: "center"}} ref={drop} onContextMenu={handleBattlefieldContext}>
         <Box id="creatureZone"
           sx={{
             display: "flex",
@@ -271,6 +288,8 @@ const Battlefield = ({
           />
         </Box>
       </Box>
+      <BattlefieldContextMenu contextMenu={contextMenu} setContextMenu={setContextMenu} functions={battlefieldFunctions}/>
+      <CreateTokenDialog open={openCreateTokenDialog} setOpen={setOpenCreateTokenDialog} />
     </>
   )
 }

@@ -114,12 +114,12 @@ const calculateAffectedGameData = (gameData, actions) => {
           const FilteredStackIds = stack.map((card) => card.in_game_id).filter((id) => id.endsWith(found.card.in_game_id));
           let availableTriggerSerialNumber = 1;
           for (const id of FilteredStackIds) {
-            if (id.startsWith("t" + availableTriggerSerialNumber)) {
+            if (id.startsWith("trigger" + availableTriggerSerialNumber)) {
               availableTriggerSerialNumber++;
             }
           }
           const pseudoCard = cloneDeep(found.card);
-          _.set(pseudoCard, "in_game_id", "t" + availableTriggerSerialNumber + found.card.in_game_id);
+          _.set(pseudoCard, "in_game_id", "trigger" + availableTriggerSerialNumber + "@" + found.card.in_game_id);
           _.set(pseudoCard, "triggerContent", action.triggerContent);
           const newStack = [ ..._.get(affectedGameData, "board_state.stack"), pseudoCard ];
           _.set(affectedGameData, "board_state.stack", newStack);

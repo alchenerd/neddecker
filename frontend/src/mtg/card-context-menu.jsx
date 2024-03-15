@@ -1,7 +1,5 @@
-import { useState } from 'react';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import Typography from '@mui/material/Typography';
 
 function CardContextMenu({contextMenu, setContextMenu, functions, setActionTargetCard, setOpenMoveDialog}) {
   const handleClose = () => {

@@ -28,6 +28,7 @@ export function Card({
                                 : (card?.card_image_uri || card?.faces?.front.card_image_uri || "");
   const handleContextMenu = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     setContextMenu(
       contextMenu === null
       ? {
