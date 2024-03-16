@@ -159,6 +159,22 @@ const calculateAffectedGameData = (gameData, actions) => {
           _.set(affectedGameData, "board_state.players[" + action.targetId + "].annotations", updatedAnnotations);
         }
         break;
+      case "create_token":
+        {
+          const newBattlefield = [
+            ..._.get(affectedGameData, "board_state.players[" + action.controllerPlayerId + "].battlefield"),
+            action.card,
+          ];
+          _.set(affectedGameData, "board_state.players[" + action.controllerPlayerId + "].battlefield", newBattlefield);
+        }
+        break;
+      case "remove_token":
+        {
+          const battlefield = _.get(affectedGameData, found.path);
+          const newBattlefield = battlefield.filter(card => card.in_game_id !== found.card.in_game_id);
+          _.set(affectedGameData, found.path, newBattlefield);
+        }
+        break;
     }
   });
   return affectedGameData;

@@ -14,7 +14,7 @@ export function Preview({focusedCard, ...props}) {
         sx={{
           height: "95%",
           borderRadius: "12px",
-          backgroundColor: "transparent",
+          backgroundColor: focusedCard?.in_game_id.startsWith("token") ? "white": "transparent",
         }}
       />
     </Box>

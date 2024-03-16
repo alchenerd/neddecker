@@ -39,6 +39,9 @@ export function Card({
     )
   };
   const getItemTypeByTypeLine = () => {
+    if (card?.in_game_id.startsWith("token")) {
+      return ItemTypes.MTG_TOKEN;
+    }
     if (card?.triggerContent) {
       return ItemTypes.MTG_TRIGGER;
     }
@@ -102,10 +105,28 @@ export function Card({
     }
   }
 
-  const removeFromStack = () => {
+  const removeTrigger = () => {
     store.dispatch(receivedNewGameAction({type: "remove_trigger", targetId: card.in_game_id}));
   };
-  const triggerFunctions = [ { name: "remove from stack", _function: removeFromStack, }, ];
+  const triggerFunctions = [ { name: "remove trigger", _function: removeTrigger, }, ];
+
+  const removeToken = () => {
+    store.dispatch(receivedNewGameAction({type: "remove_token", targetId: card.in_game_id}));
+  };
+  const tokenFunctions = [ { name: "remove token", _function: removeToken, }, ];
+
+  const getContextmenuFunctionsByType = (cardType) => {
+    switch (cardType) {
+      case ItemTypes.MTG_TOKEN:
+        return tokenFunctions;
+        break;
+      case ItemTypes.MTG_TRIGGER:
+        return triggerFunctions;
+        break;
+      default:
+        return contextMenuFunctions;
+    }
+  }
 
   const ListAnnotations = () => {
     if (card?.annotations && Object.keys(card?.annotations).filter((key) => key !== "isTapped").length) {
@@ -152,6 +173,32 @@ export function Card({
     }
   };
 
+  const TokenOverlay = () => {
+    if (card?.in_game_id?.startsWith("token")) {
+      console.log("rendering token overlay")
+      return (
+        <Box
+          sx={{
+            position: "absolute",
+            height: "100%",
+            width: "100%",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Typography color="black" variant="caption"> {card?.name} </Typography> 
+          <Typography color="black" variant="caption"> {"color: " + card?.colors} </Typography> 
+          <Typography color="black" variant="caption"> {card?.type_line} </Typography> 
+          <Typography color="black" variant="caption"> {card?.oracle_text} </Typography> 
+          <Typography color="black" variant="caption"> {card?.power + "/" + card?.toughness} </Typography> 
+        </Box>
+      );
+    }
+  };
+
   return (
     <>
       <Box
@@ -176,9 +223,10 @@ export function Card({
         onMouseLeave={handlePopoverClose}
       >
         <TriggerOverlay />
+        <TokenOverlay />
           <img
             src={imageSource}
-            alt={card?.name}
+            alt={card?.in_game_id.startsWith("token") ? "" : card?.name}
             height='100%'
             style={{
               opacity: isDragging? 0.5 : 1,
@@ -187,7 +235,7 @@ export function Card({
           />
         <CardContextMenu
           {...{ contextMenu, setContextMenu }}
-          functions={ card?.triggerContent ? triggerFunctions : contextMenuFunctions }
+          functions={ getContextmenuFunctionsByType(getItemTypeByTypeLine(card)) }
         />
       </Box>
       <Popover id="counter-annotation-popover"

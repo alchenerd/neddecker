@@ -289,7 +289,7 @@ const Battlefield = ({
         </Box>
       </Box>
       <BattlefieldContextMenu contextMenu={contextMenu} setContextMenu={setContextMenu} functions={battlefieldFunctions}/>
-      <CreateTokenDialog open={openCreateTokenDialog} setOpen={setOpenCreateTokenDialog} />
+      <CreateTokenDialog owner={owner} ownerId={ownerIndex} open={openCreateTokenDialog} setOpen={setOpenCreateTokenDialog} />
     </>
   )
 }

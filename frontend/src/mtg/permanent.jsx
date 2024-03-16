@@ -31,7 +31,14 @@ function Permanent({id, card, backgroundColor, setActionTargetCard, setOpenMoveD
     {name: "create delayed trigger", _function: createDelayedTrigger},
   ];
   return (
-      <Card card={card} tappable={true} contextMenuFunctions={permanentFunctions} {...props} />
+      <Card
+        card={card}
+        tappable={true}
+        contextMenuFunctions={permanentFunctions}
+        backgroundColor={card.in_game_id.startsWith("token") ? "white"
+                                                             : props?.sx?.backgroundColor || "transparent"}
+        {...props}
+      />
   );
 }
 export default Permanent;

@@ -15,7 +15,7 @@ import { receivedNewGameAction } from './../store/slice';
 import store from './../store/store';
 
 
-function CreateTokenDialog({ owner, open, setOpen, actionTargetCard }) {
+function CreateTokenDialog({ owner, ownerId, open, setOpen, actionTargetCard }) {
   const [ name, setName ] = useState("Cool Guy");
   const [ colors, setColors ] = useState([]);
   const [ type_line, setTypeLine ] = useState("Legendary Creature - Human");
@@ -61,9 +61,9 @@ function CreateTokenDialog({ owner, open, setOpen, actionTargetCard }) {
     }
     card = {
       ...card,
-      in_game_id: "token@" + (owner?.playerName[0] || "?") + "#" + uuidv4(),
+      in_game_id: "token@" + (owner?.player_name[0] || "?") + "#" + uuidv4(),
     };
-    registerCreateTokenAction(card);
+    registerCreateTokenAction(card, ownerId);
   };
 
   useEffect(() => {
