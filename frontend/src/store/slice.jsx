@@ -161,11 +161,11 @@ const calculateAffectedGameData = (gameData, actions) => {
         break;
       case "create_token":
         {
-          const newBattlefield = [
-            ..._.get(affectedGameData, "board_state.players[" + action.controllerPlayerId + "].battlefield"),
+          const newZone = [
+            ..._.get(affectedGameData, action.destination),
             action.card,
           ];
-          _.set(affectedGameData, "board_state.players[" + action.controllerPlayerId + "].battlefield", newBattlefield);
+          _.set(affectedGameData, action.destination, newZone);
         }
         break;
       case "remove_token":

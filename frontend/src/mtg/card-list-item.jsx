@@ -3,7 +3,7 @@ import Box from '@mui/material/Box';
 import CardContextMenu from './card-context-menu';
 import './card-list-item.css';
 
-function CardListItem ({id, card, zoneName, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, setOpenCreateTriggerDialog, setOpenCreateDelayedTriggerDialog}) {
+function CardListItem ({id, card, zoneName, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, setOpenCreateTriggerDialog, setOpenCreateDelayedTriggerDialog, setOpenCreateTokenDialog}) {
   const [contextMenu, setContextMenu] = useState(null);
   const [showString, setShowString] = useState(null);
   const handleContextMenu = (e) => {
@@ -38,11 +38,16 @@ function CardListItem ({id, card, zoneName, setActionTargetCard, setOpenMoveDial
     setActionTargetCard(card);
     setOpenCreateDelayedTriggerDialog(true);
   }
+  const createTokenCopy = () => {
+    setActionTargetCard(card);
+    setOpenCreateTokenDialog(true);
+  }
 
   let functions = [
     {name: "move", _function: handleMove},
     {name: "create trigger", _function: handleCreateTrigger},
     {name: "create delayed trigger", _function: handleCreateDelayedTrigger},
+    {name: "create token copy", _function: createTokenCopy},
   ];
   switch (zoneName) {
     case "graveyard":

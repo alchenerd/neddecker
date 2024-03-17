@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card } from './card';
 import InspectDialog from './inspect-dialog';
 
-function Library({owner, content, setDndMsg, setDblClkMsg, setFocusedCard, setWhoRequestShuffle, setActionTargetCard, setOpenMoveDialog, setOpenCreateTriggerDialog, setOpenCreateDelayedTriggerDialog}) {
+function Library({owner, content, setDndMsg, setDblClkMsg, setFocusedCard, setWhoRequestShuffle, setActionTargetCard, setOpenMoveDialog, setOpenCreateTriggerDialog, setOpenCreateDelayedTriggerDialog, setOpenCreateTokenDialog}) {
   const [openInspectDialog, setOpenInspectDialog] = useState(false);
 
   const drawFromTop = (e) => {
@@ -56,6 +56,7 @@ function Library({owner, content, setDndMsg, setDblClkMsg, setFocusedCard, setWh
         setOpenMoveDialog={setOpenMoveDialog}
         setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
         setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
+        setOpenCreateTokenDialog={setOpenCreateTokenDialog}
       />
     </>
   ); 

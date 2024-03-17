@@ -19,6 +19,7 @@ import { useSelector } from 'react-redux';
 import CreateTriggerDialog from './mtg/create-trigger-dialog';
 import CreateDelayedTriggerDialog from './mtg/create-delayed-trigger-dialog';
 import DelayedTriggerMemoDrawer from './mtg/delayed-trigger-memo-drawer';
+import CreateTokenDialog from './mtg/create-token-dialog';
 
 import './play.css';
 
@@ -107,6 +108,7 @@ export default function PlayPage() {
   const [ openCreateTriggerDialog, setOpenCreateTriggerDialog ] = useState(false);
   const [ openCreateDelayedTriggerDialog, setOpenCreateDelayedTriggerDialog ] = useState(false);
   const [ openDelayedTriggerMemoDrawer, setOpenDelayedTriggerMemoDrawer ] = useState(false);
+  const [ openCreateTokenDialog, setOpenCreateTokenDialog ] = useState(false);
 
   useEffect(() => {
     console.log("Connection state changed");
@@ -359,6 +361,7 @@ export default function PlayPage() {
               setOpenAnnotationDialog={setOpenAnnotationDialog}
               setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
               setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
+              setOpenCreateTokenDialog={setOpenCreateTokenDialog}
             />
           </Grid>
           <Grid item xs={4} width='100%'>
@@ -435,6 +438,10 @@ export default function PlayPage() {
         <DelayedTriggerMemoDrawer
           open={openDelayedTriggerMemoDrawer}
           setOpen={setOpenDelayedTriggerMemoDrawer}
+        />
+        <CreateTokenDialog
+          open={openCreateTokenDialog} setOpen={setOpenCreateTokenDialog}
+          actionTargetCard={actionTargetCard}
         />
       </>
     )

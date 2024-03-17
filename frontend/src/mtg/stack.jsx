@@ -79,6 +79,9 @@ export function Stack({setFocusedCard, setDndMsg, setActionTargetCard, setOpenMo
             card={card}
             setFocusedCard={setFocusedCard}
             contextMenuFunctions={functions}
+            sx={{
+              backgroundColor: card?.in_game_id.startsWith("token") ? "white": "transparent",
+            }}
           />
         )
       })}

@@ -54,6 +54,7 @@ export function PlayerInformation({
   setOpenAnnotationDialog,
   setOpenCreateTriggerDialog,
   setOpenCreateDelayedTriggerDialog,
+  setOpenCreateTokenDialog,
 }) {
   const [ contextMenu, setContextMenu ] = useState(null);
   const [ openInspectSideboardDialog, setOpenInspectSideboardDialog ] = useState(false);
@@ -158,6 +159,7 @@ export function PlayerInformation({
         setOpenAnnotationDialog={setOpenAnnotationDialog}
         setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
         setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
+        setOpenCreateTokenDialog={setOpenCreateTokenDialog}
       />
       <SetHitpointDialog
         open={openSetHitpointDialog}

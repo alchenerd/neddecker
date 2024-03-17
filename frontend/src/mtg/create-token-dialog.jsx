@@ -5,33 +5,40 @@ import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import Grid from '@mui/material/Grid';
 import TextField from '@mui/material/TextField';
+import Select from '@mui/material/Select';
 import FormGroup from '@mui/material/FormGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
+import MenuItem from '@mui/material/MenuItem';
 import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { cloneDeep } from 'lodash';
-import { receivedNewGameAction } from './../store/slice';
+import { receivedNewGameAction, selectAffectedGameData } from './../store/slice';
 import store from './../store/store';
+import { useSelector } from "react-redux";
 
 
-function CreateTokenDialog({ owner, ownerId, open, setOpen, actionTargetCard }) {
+function CreateTokenDialog({ open, setOpen, actionTargetCard }) {
   const [ name, setName ] = useState("Cool Guy");
   const [ colors, setColors ] = useState([]);
   const [ type_line, setTypeLine ] = useState("Legendary Creature - Human");
   const [ oracle_text, setOracleText ] = useState("Cool Guy is very cool\nCool Guy's power and toughness is the coolness of Cool Guy (Usually infinity).");
   const [ power, setPower ] = useState("*");
   const [ toughness, setToughness ] = useState("*");
+  const [ destination, setDestination ] = useState("");
 
-  const registerCreateTokenAction = (card, playerId) => {
+  const gameData = selectAffectedGameData(store.getState());
+  const players = gameData?.board_state?.players;
+
+  const registerCreateTokenAction = (card, destination) => {
     if (!card) {
       return;
     }
     const newAction = {
       type: "create_token",
       targetId: card.in_game_id,
-      card: card,
-      controllerPlayerId: playerId,
+      card,
+      destination,
     };
     store.dispatch(receivedNewGameAction(newAction));
   }
@@ -46,6 +53,10 @@ function CreateTokenDialog({ owner, ownerId, open, setOpen, actionTargetCard }) 
     const colorString = [ ...colors ].sort((x, y) => {return "WUBRG".indexOf(x) - "WUBRG".indexOf(y);}).join("");
     if (actionTargetCard) {
       card = cloneDeep(actionTargetCard);
+      card["annotations"] = {
+        ...card?.annotations,
+        isTokenCopyOf: card?.name
+      };
     } else {
       card = {
         ...card,
@@ -61,21 +72,22 @@ function CreateTokenDialog({ owner, ownerId, open, setOpen, actionTargetCard }) 
     }
     card = {
       ...card,
-      in_game_id: "token@" + (owner?.player_name[0] || "?") + "#" + uuidv4(),
+      in_game_id: "token#" + uuidv4(),
     };
-    registerCreateTokenAction(card, ownerId);
+    registerCreateTokenAction(card, destination);
   };
 
   useEffect(() => {
     if (open) {
-      setName("");
-      setColors([]);
-      setTypeLine("");
-      setOracleText("");
-      setPower("");
-      setToughness("");
+      setName(actionTargetCard?.name || "");
+      setColors(actionTargetCard?.colors || []);
+      setTypeLine(actionTargetCard?.type_line || "");
+      setOracleText(actionTargetCard?.oracle_text || "");
+      setPower(actionTargetCard?.power || "");
+      setToughness(actionTargetCard?.toughness || "");
+      setDestination("board_state.stack");
     }
-  }, [open]);
+  }, [open, actionTargetCard]);
 
   return (
     <>
@@ -93,7 +105,7 @@ function CreateTokenDialog({ owner, ownerId, open, setOpen, actionTargetCard }) 
                 fullWidth={true}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid item xs={12} sx={{display: "flex", justifyContent: "space-around"}}>
               <FormGroup row>
                 <FormControlLabel control={<Checkbox checked={colors.includes("W")}/>} onChange={e => {setColors(prev => e.target.checked ? [...prev, "W"] : [...prev.filter(c => c !== "W")])}} label="White" labelPlacement="top" />
                 <FormControlLabel control={<Checkbox checked={colors.includes("U")}/>} onChange={e => {setColors(prev => e.target.checked ? [...prev, "U"] : [...prev.filter(c => c !== "U")])}} label="Blue" labelPlacement="top" />
@@ -135,6 +147,20 @@ function CreateTokenDialog({ owner, ownerId, open, setOpen, actionTargetCard }) 
                 onChange={(e) => {setToughness(e.target.value);}}
                 fullWidth={true}
               />
+            </Grid>
+            <Grid item xs={12}>
+              <Select
+                value={destination}
+                fullWidth={true}
+                onChange={(e) => {setDestination(e.target.value)}}
+              >
+                {players?.map((player, index) => (
+                  <MenuItem key={player.player_name} value={"board_state.players[" + index + "].battlefield"}>
+                    {"Player[" + index + "]: " + player.player_name}
+                  </MenuItem>
+                ))}
+                <MenuItem value="board_state.stack">stack</MenuItem>
+              </Select>
             </Grid>
           </Grid>
         </DialogContent>

@@ -1,7 +1,7 @@
 import { Card } from './card';
 import Box from '@mui/material/Box';
 
-function Permanent({id, card, backgroundColor, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, setOpenCreateTriggerDialog, setOpenCreateDelayedTriggerDialog, ...props}) {
+function Permanent({id, card, backgroundColor, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, setOpenCreateTriggerDialog, setOpenCreateDelayedTriggerDialog, setOpenCreateTokenDialog, ...props}) {
   const handleMove = () => {
     setActionTargetCard(card);
     setOpenMoveDialog(true);
@@ -23,12 +23,17 @@ function Permanent({id, card, backgroundColor, setActionTargetCard, setOpenMoveD
     console.log(setOpenCreateTriggerDialog);
     setOpenCreateDelayedTriggerDialog(true);
   }
+  const createTokenCopy = () => {
+    setActionTargetCard(card);
+    setOpenCreateTokenDialog(true);
+  }
   const permanentFunctions = [
     {name: "move", _function: handleMove},
     {name: "set counter", _function: setCounter},
     {name: "set annotation", _function: setAnnotation},
     {name: "create trigger", _function: createTrigger},
     {name: "create delayed trigger", _function: createDelayedTrigger},
+    {name: "create token copy", _function: createTokenCopy},
   ];
   return (
       <Card

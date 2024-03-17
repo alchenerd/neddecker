@@ -18,6 +18,7 @@ export function Board({
   setOpenAnnotationDialog,
   setOpenCreateTriggerDialog,
   setOpenCreateDelayedTriggerDialog,
+  setOpenCreateTokenDialog,
 }) {
   const [ whoIsAskingAttackTarget, setWhoIsAskingAttackTarget ] = useState(null);
   const [ whoIsAskingBlockTarget, setWhoIsAskingBlockTarget ] = useState(null);
@@ -48,6 +49,7 @@ export function Board({
             setOpenMoveDialog={setOpenMoveDialog}
             setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
             setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
+            setOpenCreateTokenDialog={setOpenCreateTokenDialog}
           />
         </Grid>
         <Grid item xs={12} sx={{backgroundColor: "Magenta", height: "32vh"}}>
@@ -58,6 +60,7 @@ export function Board({
             setDndMsg={setDndMsg}
             setDblClkMsg={setDblClkMsg}
             setWhoRequestShuffle={setWhoRequestShuffle}
+            actionTargetCard={actionTargetCard}
             setActionTargetCard={setActionTargetCard}
             setOpenMoveDialog={setOpenMoveDialog}
             setOpenCounterDialog={setOpenCounterDialog}
@@ -67,6 +70,7 @@ export function Board({
             {...{whoIsAskingAttackTarget, setWhoIsAskingAttackTarget}}
             {...{whoIsAskingBlockTarget, setWhoIsAskingBlockTarget}}
             {...{combatTargetCard, setCombatTargetCard}}
+            setOpenCreateTokenDialog={setOpenCreateTokenDialog}
           />
         </Grid>
         <Grid item xs={12} sx={{backgroundColor: "Magenta", height: "4vh",
@@ -81,6 +85,7 @@ export function Board({
             setDndMsg={setDndMsg}
             setDblClkMsg={setDblClkMsg}
             setWhoRequestShuffle={setWhoRequestShuffle}
+            actionTargetCard={actionTargetCard}
             setActionTargetCard={setActionTargetCard}
             setOpenMoveDialog={setOpenMoveDialog}
             setOpenCounterDialog={setOpenCounterDialog}
@@ -90,6 +95,7 @@ export function Board({
             {...{whoIsAskingAttackTarget, setWhoIsAskingAttackTarget}}
             {...{whoIsAskingBlockTarget, setWhoIsAskingBlockTarget}}
             {...{combatTargetCard, setCombatTargetCard}}
+            setOpenCreateTokenDialog={setOpenCreateTokenDialog}
           />
         </Grid>
         <Grid item xs={3} sx={{backgroundColor: "Magenta", height: "16vh"}} alignSelf="end">
@@ -102,6 +108,7 @@ export function Board({
             setOpenAnnotationDialog={setOpenAnnotationDialog}
             setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
             setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
+            setOpenCreateTokenDialog={setOpenCreateTokenDialog}
           />
         </Grid>
         <Grid item xs={9} sx={{backgroundColor: "Magenta", height: "16vh"}} alignSelf="end">
@@ -113,6 +120,7 @@ export function Board({
             setOpenMoveDialog={setOpenMoveDialog}
             setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
             setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
+            setOpenCreateTokenDialog={setOpenCreateTokenDialog}
           />
         </Grid>
       </Grid>

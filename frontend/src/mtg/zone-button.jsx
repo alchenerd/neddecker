@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Button from '@mui/material/Button';
 import InspectDialog from './inspect-dialog';
 
-function ZoneButton ({zoneName, buttonText, owner, content, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, setOpenCreateTriggerDialog, setOpenCreateDelayedTriggerDialog, sx}) {
+function ZoneButton ({zoneName, buttonText, owner, content, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, setOpenCreateTriggerDialog, setOpenCreateDelayedTriggerDialog, setOpenCreateTokenDialog, sx}) {
   const ownerName = owner?.player_name;
   const [open, setOpen] = useState(false);
   const handleClick = (e) => {
@@ -14,6 +14,7 @@ function ZoneButton ({zoneName, buttonText, owner, content, setActionTargetCard,
         variant="contained"
         onClick={handleClick}
         sx={sx}
+        onContextMenu={(e) => {e.stopPropagation();}}
       >
         {buttonText + " " + (content?.length || 0)}
       </Button>
@@ -29,6 +30,7 @@ function ZoneButton ({zoneName, buttonText, owner, content, setActionTargetCard,
         setOpenAnnotationDialog={setOpenAnnotationDialog}
         setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
         setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
+        setOpenCreateTokenDialog={setOpenCreateTokenDialog}
       />
     </>
   )

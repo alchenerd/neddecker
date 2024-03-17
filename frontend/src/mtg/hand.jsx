@@ -15,6 +15,7 @@ const Hand = ({
   setOpenMoveDialog,
   setOpenCreateTriggerDialog,
   setOpenCreateDelayedTriggerDialog,
+  setOpenCreateTokenDialog,
 }) => {
   const gameData = selectAffectedGameData(store.getState());
   const owner = gameData?.board_state?.players.find((player) => player.player_name === ownerName);
@@ -67,10 +68,15 @@ const Hand = ({
           console.log(setOpenCreateTriggerDialog);
           setOpenCreateDelayedTriggerDialog(true);
         }
+        const createTokenCopy = () => {
+          setActionTargetCard(card);
+          setOpenCreateTokenDialog(true);
+        }
         const functions = [
           {name: "move", _function: handleMove},
           {name: "create trigger", _function: handleCreateTrigger},
           {name: "create delayed trigger", _function: handleCreateDelayedTrigger},
+          {name: "create token copy", _function: createTokenCopy},
         ];
         return (
           <Card

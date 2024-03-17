@@ -113,7 +113,7 @@ export function Card({
   const removeToken = () => {
     store.dispatch(receivedNewGameAction({type: "remove_token", targetId: card.in_game_id}));
   };
-  const tokenFunctions = [ { name: "remove token", _function: removeToken, }, ];
+  const tokenFunctions = [ ...(contextMenuFunctions || []), { name: "remove token", _function: removeToken, }, ];
 
   const getContextmenuFunctionsByType = (cardType) => {
     switch (cardType) {
@@ -182,6 +182,7 @@ export function Card({
             position: "absolute",
             height: "100%",
             width: "100%",
+            backgroundColor: "rgba(255,255,255,0.3)",
             overflow: "hidden",
             display: "flex",
             flexDirection: "column",
@@ -189,11 +190,25 @@ export function Card({
             justifyContent: "center",
           }}
         >
-          <Typography color="black" variant="caption"> {card?.name} </Typography> 
-          <Typography color="black" variant="caption"> {"color: " + card?.colors} </Typography> 
-          <Typography color="black" variant="caption"> {card?.type_line} </Typography> 
-          <Typography color="black" variant="caption"> {card?.oracle_text} </Typography> 
-          <Typography color="black" variant="caption"> {card?.power + "/" + card?.toughness} </Typography> 
+          <Box sx={{
+            backgroundColor: "rgba(255,255,255,0.5)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+          }}>
+            {Object.keys(card?.annotations).includes("isTokenCopyOf") ? (
+              <Typography color="black" variant="caption"> Token Copy </Typography> 
+            ) : (
+              <>
+                <Typography color="black" variant="caption"> {card?.name} </Typography> 
+                <Typography color="black" variant="caption"> {"color: " + card?.colors} </Typography> 
+                <Typography color="black" variant="caption"> {card?.type_line} </Typography> 
+                <Typography color="black" variant="caption"> {card?.oracle_text} </Typography> 
+                <Typography color="black" variant="caption"> {card?.power + "/" + card?.toughness} </Typography> 
+              </>
+            )}
+          </Box>
         </Box>
       );
     }

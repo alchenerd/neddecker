@@ -13,7 +13,6 @@ import Graveyard from './graveyard';
 import Exile from './exile';
 import ZoneButton from './zone-button';
 import BattlefieldContextMenu from './battlefield-context-menu';
-import CreateTokenDialog from './create-token-dialog';
 import { selectAffectedGameData } from './../store/slice';
 import store from './../store/store';
 
@@ -23,6 +22,7 @@ const Battlefield = ({
   setDndMsg,
   setDblClkMsg,
   setWhoRequestShuffle,
+  actionTargetCard,
   setActionTargetCard,
   setOpenMoveDialog,
   setOpenCounterDialog,
@@ -35,6 +35,7 @@ const Battlefield = ({
   setWhoIsAskingBlockTarget,
   combatTargetCard,
   setCombatTargetCard,
+  setOpenCreateTokenDialog,
 }) => {
   const gameData = selectAffectedGameData(store.getState());
   const owner = gameData?.board_state?.players.find((player) => player.player_name === ownerName);
@@ -111,9 +112,13 @@ const Battlefield = ({
   }
 
   const battlefieldFunctions = [
-    {name: "create token", _function: () => {setOpenCreateTokenDialog(true);}, },
+    {
+      name: "create token", _function: () => {
+        setActionTargetCard(null);
+        setOpenCreateTokenDialog(true);
+      },
+    },
   ];
-  const [ openCreateTokenDialog, setOpenCreateTokenDialog ] = useState(false);
 
   return (
     <>
@@ -147,6 +152,7 @@ const Battlefield = ({
                 {...{whoIsAskingAttackTarget, setWhoIsAskingAttackTarget}}
                 {...{whoIsAskingBlockTarget, setWhoIsAskingBlockTarget}}
                 {...{combatTargetCard, setCombatTargetCard}}
+                setOpenCreateTokenDialog={setOpenCreateTokenDialog}
               />
             )
           })}
@@ -186,6 +192,7 @@ const Battlefield = ({
                   setOpenAnnotationDialog={setOpenAnnotationDialog}
                   setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
                   setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
+                  setOpenCreateTokenDialog={setOpenCreateTokenDialog}
                 />
               )
             })}
@@ -218,6 +225,7 @@ const Battlefield = ({
                   controller={ownerName}
                   {...{whoIsAskingAttackTarget, setWhoIsAskingAttackTarget}}
                   {...{combatTargetCard, setCombatTargetCard}}
+                  setOpenCreateTokenDialog={setOpenCreateTokenDialog}
                 />
               )
             })}
@@ -234,6 +242,7 @@ const Battlefield = ({
           setOpenMoveDialog={setOpenMoveDialog}
           setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
           setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
+          setOpenCreateTokenDialog={setOpenCreateTokenDialog}
         />
         <Box id="graveyardExileBox"
           sx={{
@@ -263,6 +272,7 @@ const Battlefield = ({
             setOpenAnnotationDialog={setOpenAnnotationDialog}
             setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
             setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
+            setOpenCreateTokenDialog={setOpenCreateTokenDialog}
             sx={{
               position: "absolute",
               top: "12px",
@@ -280,6 +290,7 @@ const Battlefield = ({
             setOpenAnnotationDialog={setOpenAnnotationDialog}
             setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
             setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
+            setOpenCreateTokenDialog={setOpenCreateTokenDialog}
             sx={{
               position: "absolute",
               bottom: "12px",
@@ -289,7 +300,6 @@ const Battlefield = ({
         </Box>
       </Box>
       <BattlefieldContextMenu contextMenu={contextMenu} setContextMenu={setContextMenu} functions={battlefieldFunctions}/>
-      <CreateTokenDialog owner={owner} ownerId={ownerIndex} open={openCreateTokenDialog} setOpen={setOpenCreateTokenDialog} />
     </>
   )
 }
