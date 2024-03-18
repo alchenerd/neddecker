@@ -4,20 +4,11 @@ import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import { ItemTypes } from './constants'
 import { Card } from './card'
+import store from './../store/store';
+import { selectAffectedGameData } from './../store/slice';
 
-export function Stack({stack, setBoardData, map, setSelectedCard, setDndMsg, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, ...props}) {
-  const [toShow, setToShow] = useState([]);
-
-  useEffect(() => {
-    if (stack) {
-      setToShow(stack.map((card) => ({
-        ...card,
-        imageUrl: map[card.name] || map[card.name.split(" // ")[0]],
-        backImageUrl: map[card.name.split(" // ")[1]] || "",
-        typeLine: card.faces ? card.faces.front.type_line + " // " + card.faces.back.type_line: card.type_line,
-      })));
-    }
-  }, [stack]);
+export function Stack({setFocusedCard, setDndMsg, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, setOpenCreateTriggerDialog, setOpenCreateDelayedTriggerDialog}) {
+  const stack = selectAffectedGameData(store.getState())?.board_state?.stack || [];
 
   const [, drop] = useDrop(
     () => ({
@@ -29,10 +20,9 @@ export function Stack({stack, setBoardData, map, setSelectedCard, setDndMsg, set
       ],
       drop: (item) => {
         console.log("Detected", item.type, "moving to the stack");
-        console.log(stack)
         setDndMsg(
           {
-            id: item.id,
+            id: item.in_game_id,
             to: "board_state.stack",
           }
         );
@@ -55,7 +45,7 @@ export function Stack({stack, setBoardData, map, setSelectedCard, setDndMsg, set
       <Typography variant="h5" color="Black">
         Stack
       </Typography>
-      {toShow.map(card => {
+      {stack.map(card => {
         const handleMove = () => {
           setActionTargetCard(card);
           setOpenMoveDialog(true);
@@ -68,17 +58,30 @@ export function Stack({stack, setBoardData, map, setSelectedCard, setDndMsg, set
           setActionTargetCard(card);
           setOpenAnnotationDialog(true);
         };
+        const createTrigger = () => {
+          setActionTargetCard(card);
+          setOpenCreateTriggerDialog(true);
+        };
+        const createDelayedTrigger = () => {
+          setActionTargetCard(card);
+          setOpenCreateDelayedTriggerDialog(true);
+        };
         const functions = [
           {name: "move", _function: handleMove},
           {name: "set counter", _function: setCounter},
           {name: "set annotation", _function: setAnnotation},
+          {name: "create trigger", _function: createTrigger},
+          {name: "create delayed trigger", _function: createDelayedTrigger},
         ];
         return (
           <Card
-            key={card.id}
-            {...card}
-            setSelectedCard={setSelectedCard}
+            key={card.in_game_id}
+            card={card}
+            setFocusedCard={setFocusedCard}
             contextMenuFunctions={functions}
+            sx={{
+              backgroundColor: card?.in_game_id.startsWith("token") ? "white": "transparent",
+            }}
           />
         )
       })}

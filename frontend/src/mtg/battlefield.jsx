@@ -1,84 +1,65 @@
-import { useState, useEffect } from 'react'
-import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
-import { useDrop } from 'react-dnd'
-import { HTML5Backend } from 'react-dnd-html5-backend'
-import { ItemTypes } from './constants'
-import { Card } from './card'
-import Permanent from './permanent'
-import Library from './library'
-import Graveyard from './graveyard'
-import Exile from './exile'
-import ZoneButton from './zone-button'
+import { useState, useEffect } from 'react';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import { useDrop } from 'react-dnd';
+import { useSelector } from 'react-redux';
+import { ItemTypes } from './constants';
+import { Card } from './card';
+import Permanent from './permanent';
+import CreaturePermanent from './creature-permanent';
+import NonlandPermanent from './nonland-permanent';
+import Library from './library';
+import Graveyard from './graveyard';
+import Exile from './exile';
+import ZoneButton from './zone-button';
+import BattlefieldContextMenu from './battlefield-context-menu';
+import { selectAffectedGameData } from './../store/slice';
+import store from './../store/store';
 
-export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg, setDblClkMsg, setWhoRequestShuffle, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, ...props}) {
-  const [toShow, setToShow] = useState([]);
-  const [creatureCards, setCreatureCards] = useState([]);
-  const [landCards, setLandCards] = useState([]);
-  const [otherCards, setOtherCards] = useState([]);
-  const [libraryCards, setLibraryCards] = useState([]);
-  const [graveyardCards, setGraveyardCards] = useState([]);
-  const [exileCards, setExileCards] = useState([]);
+const Battlefield = ({
+  ownerName,
+  setFocusedCard,
+  setDndMsg,
+  setDblClkMsg,
+  setWhoRequestShuffle,
+  actionTargetCard,
+  setActionTargetCard,
+  setOpenMoveDialog,
+  setOpenCounterDialog,
+  setOpenAnnotationDialog,
+  setOpenCreateTriggerDialog,
+  setOpenCreateDelayedTriggerDialog,
+  whoIsAskingAttackTarget,
+  setWhoIsAskingAttackTarget,
+  whoIsAskingBlockTarget,
+  setWhoIsAskingBlockTarget,
+  combatTargetCard,
+  setCombatTargetCard,
+  setOpenCreateTokenDialog,
+}) => {
+  const gameData = selectAffectedGameData(store.getState());
+  const owner = gameData?.board_state?.players.find((player) => player.player_name === ownerName);
+  const ownerIndex = gameData?.board_state?.players.indexOf(owner);
 
-  const processCard = (card) => {
-    const processedCard = {
-      id: card.id,
-      name: card.name,
-      imageUrl: map[card.name] || map[card.name.split(" // ")[0]],
-      backImageUrl: map[card.name.split(" // ")[1]] || "",
-      isFlipped: card?.isFlipped || false,
-      typeLine: card?.isFlipped ?
-        (card?.faces?.back.type_line || "") :
-        (card?.faces?.front.type_line || card.type_line || ""),
-      manaCost: card.mana_cost,
-      counters: card.counters ?? {},
-      annotations: card.annotations ?? {},
-    }
-    return {...processedCard};
+  const concatTextThatMightHaveCardType = (card) => {
+    const majorTypeLine = card.type_line;
+    const frontTypeLine = card.faces?.front.type_line;
+    const backTypeLine = card.faces?.back.type_line;
+    const annotationsString = JSON.stringify(card.annotations);
+    return ((majorTypeLine +
+           (card.isFlipped ? backTypeLine : frontTypeLine) +
+           annotationsString) || "").toLowerCase()
   }
 
-  useEffect(() => {
-    setCreatureCards([]);
-    setLandCards([]);
-    setOtherCards([]);
-    owner.battlefield?.map((card) => {
-      const processedCard = processCard(card);
-      const couldHaveCardType =
-        JSON.stringify(processedCard.typeLine).toLowerCase() +
-        (JSON.stringify(processedCard?.annotations).toLowerCase() || "");
-      if (couldHaveCardType.includes("creature")) {
-        setCreatureCards((prev) => [...prev, processedCard]);
-      } else if (couldHaveCardType.includes("land")) {
-        setLandCards((prev) => [...prev, processedCard]);
-      } else {
-        setOtherCards((prev) => [...prev, processedCard]);
-      }
-    });
-  }, [owner.battlefield]);
-
-  useEffect(() => {
-    setLibraryCards([]);
-    owner.library?.map((card) => {
-      const processedCard = processCard(card);
-      setLibraryCards((prev) => [...prev, processedCard]);
-    });
-  }, [owner.library]);
-
-  useEffect(() => {
-    setGraveyardCards([]);
-    owner.graveyard?.map((card) => {
-      const processedCard = processCard(card);
-      setGraveyardCards((prev) => [...prev, processedCard]);
-    });
-  }, [owner.graveyard]);
-
-  useEffect(() => {
-    setExileCards([]);
-    owner.exile?.map((card) => {
-      const processedCard = processCard(card);
-      setExileCards((prev) => [...prev, processedCard]);
-    });
-  }, [owner.exile]);
+  const creatureCards = owner?.battlefield.filter(card => concatTextThatMightHaveCardType(card).includes("creature"));
+  const landCards = owner?.battlefield.filter(card => {
+    const text = concatTextThatMightHaveCardType(card);
+    return !text.includes("creature") && text.includes("land");
+  });
+  const otherCards = owner?.battlefield.filter(card => {
+    const text = concatTextThatMightHaveCardType(card);
+    return !text.includes("creature") && !text.includes("land");
+  });
 
   const [, drop] = useDrop(
     () => ({
@@ -91,7 +72,7 @@ export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg,
         console.log("Detected", item.type, "moving to", owner.player_name, "'s battlefield");
         setDndMsg(
           {
-            id: item.id,
+            id: item.in_game_id,
             to: "board_state.players[" + ownerIndex + "].battlefield",
           }
         );
@@ -120,33 +101,58 @@ export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg,
     );
   }
 
+  const [ contextMenu, setContextMenu ] = useState(null);
+  const handleBattlefieldContext = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setContextMenu(
+      contextMenu === null ? { mouseX: event.clientX + 2, mouseY: event.clientY - 6, }
+                           : null
+    );
+  }
+
+  const battlefieldFunctions = [
+    {
+      name: "create token", _function: () => {
+        setActionTargetCard(null);
+        setOpenCreateTokenDialog(true);
+      },
+    },
+  ];
+
   return (
     <>
-      <Box sx={{display: "flex", flexDirection: "column", width: "100%", height: "100%", background: "navy", position: "relative", alignItems: "center"}} ref={drop}>
-        <Typography sx={{alignSelf: "flex-start"}}>Battlefield</Typography>
+      <Box sx={{display: "flex", flexDirection: "column", width: "100%", height: "100%", background: "navy", position: "relative", alignItems: "center", justifyContent: "center"}} ref={drop} onContextMenu={handleBattlefieldContext}>
         <Box id="creatureZone"
           sx={{
             display: "flex",
             borderStyle: "solid",
             boarderWidth: "1px",
             borderColor: "red",
-            height: "40%",
-            width: "89%",
+            height: "45%",
+            width: "88.55%",
             alignSelf: "flex-start",
             justifyContent: "space-around",
           }}
         >
           {creatureCards && creatureCards.map(card => {
             return (
-              <Permanent
-                key={card.id}
+              <CreaturePermanent
+                key={card.in_game_id}
                 card={card}
-                setSelectedCard={setSelectedCard}
+                setFocusedCard={setFocusedCard}
                 onDoubleClick={toggleTap}
                 setActionTargetCard={setActionTargetCard}
                 setOpenMoveDialog={setOpenMoveDialog}
                 setOpenCounterDialog={setOpenCounterDialog}
                 setOpenAnnotationDialog={setOpenAnnotationDialog}
+                setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
+                setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
+                controller={ownerName}
+                {...{whoIsAskingAttackTarget, setWhoIsAskingAttackTarget}}
+                {...{whoIsAskingBlockTarget, setWhoIsAskingBlockTarget}}
+                {...{combatTargetCard, setCombatTargetCard}}
+                setOpenCreateTokenDialog={setOpenCreateTokenDialog}
               />
             )
           })}
@@ -155,7 +161,7 @@ export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg,
           sx={{
             display: "flex",
             flexDirection: "row",
-            height: "40%",
+            height: "45%",
             width: "100%",
             alignSelf: "flex-end",
             justifyContent: "flex-start",
@@ -176,14 +182,17 @@ export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg,
             {landCards && landCards.map(card => {
               return (
                 <Permanent
-                  key={card.id}
+                  key={card.in_game_id}
                   card={card}
-                  setSelectedCard={setSelectedCard}
+                  setFocusedCard={setFocusedCard}
                   onDoubleClick={toggleTap}
                   setActionTargetCard={setActionTargetCard}
                   setOpenMoveDialog={setOpenMoveDialog}
                   setOpenCounterDialog={setOpenCounterDialog}
                   setOpenAnnotationDialog={setOpenAnnotationDialog}
+                  setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
+                  setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
+                  setOpenCreateTokenDialog={setOpenCreateTokenDialog}
                 />
               )
             })}
@@ -202,15 +211,21 @@ export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg,
           >
             {otherCards && otherCards.map(card => {
               return (
-                <Permanent
-                  key={card.id}
+                <NonlandPermanent
+                  key={card.in_game_id}
                   card={card}
-                  setSelectedCard={setSelectedCard}
+                  setFocusedCard={setFocusedCard}
                   onDoubleClick={toggleTap}
                   setActionTargetCard={setActionTargetCard}
                   setOpenMoveDialog={setOpenMoveDialog}
                   setOpenCounterDialog={setOpenCounterDialog}
                   setOpenAnnotationDialog={setOpenAnnotationDialog}
+                  setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
+                  setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
+                  controller={ownerName}
+                  {...{whoIsAskingAttackTarget, setWhoIsAskingAttackTarget}}
+                  {...{combatTargetCard, setCombatTargetCard}}
+                  setOpenCreateTokenDialog={setOpenCreateTokenDialog}
                 />
               )
             })}
@@ -218,14 +233,16 @@ export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg,
         </Box>
         <Library
           owner={owner}
-          ownerIndex={ownerIndex}
-          content={libraryCards}
+          content={owner?.library}
           setDndMsg={setDndMsg}
           setDblClkMsg={setDblClkMsg}
-          setSelectedCard={setSelectedCard}
+          setFocusedCard={setFocusedCard}
           setWhoRequestShuffle={setWhoRequestShuffle}
           setActionTargetCard={setActionTargetCard}
           setOpenMoveDialog={setOpenMoveDialog}
+          setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
+          setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
+          setOpenCreateTokenDialog={setOpenCreateTokenDialog}
         />
         <Box id="graveyardExileBox"
           sx={{
@@ -238,23 +255,24 @@ export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg,
         >
           <Exile
             owner={owner}
-            content={exileCards}
-            setSelectedCard={setSelectedCard}
+            setFocusedCard={setFocusedCard}
           />
           <Graveyard
             owner={owner}
-            content={graveyardCards}
-            setSelectedCard={setSelectedCard}
+            setFocusedCard={setFocusedCard}
           />
           <ZoneButton id="graveyardButton"
             zoneName="graveyard"
             buttonText="💀"
-            ownerName={owner.player_name}
-            content={graveyardCards}
+            owner={owner}
+            content={owner?.graveyard}
             setActionTargetCard={setActionTargetCard}
             setOpenMoveDialog={setOpenMoveDialog}
             setOpenCounterDialog={setOpenCounterDialog}
             setOpenAnnotationDialog={setOpenAnnotationDialog}
+            setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
+            setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
+            setOpenCreateTokenDialog={setOpenCreateTokenDialog}
             sx={{
               position: "absolute",
               top: "12px",
@@ -264,12 +282,15 @@ export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg,
           <ZoneButton id="exileButton"
             zoneName="exile"
             buttonText="❌"
-            ownerName={owner.player_name}
-            content={exileCards}
+            owner={owner}
+            content={owner?.exile}
             setActionTargetCard={setActionTargetCard}
             setOpenMoveDialog={setOpenMoveDialog}
             setOpenCounterDialog={setOpenCounterDialog}
             setOpenAnnotationDialog={setOpenAnnotationDialog}
+            setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
+            setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
+            setOpenCreateTokenDialog={setOpenCreateTokenDialog}
             sx={{
               position: "absolute",
               bottom: "12px",
@@ -278,6 +299,9 @@ export function Battlefield({map, setSelectedCard, owner, ownerIndex, setDndMsg,
           />
         </Box>
       </Box>
+      <BattlefieldContextMenu contextMenu={contextMenu} setContextMenu={setContextMenu} functions={battlefieldFunctions}/>
     </>
   )
 }
+
+export default Battlefield;

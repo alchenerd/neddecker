@@ -10,7 +10,7 @@ import { HTML5Backend } from 'react-dnd-html5-backend'
 import { Card } from './card'
 import { ItemTypes } from './constants'
 
-const Placeholder = ({id, hand, content, setMoveMessage, rightmost, ...props}) => {
+const Placeholder = ({componentId, hand, content, setMoveMessage, rightmost, ...props}) => {
   let toShow = content;
 
   if (rightmost) {
@@ -20,12 +20,15 @@ const Placeholder = ({id, hand, content, setMoveMessage, rightmost, ...props}) =
   const [, drop] = useDrop(
     () => ({
       accept: [
-        ItemTypes.MTG_CARD,
+        ItemTypes.MTG_LAND_CARD,
+        ItemTypes.MTG_SORCERY_CARD,
+        ItemTypes.MTG_INSTANT_CARD,
+        ItemTypes.MTG_NONLAND_PERMANENT_CARD,
       ],
       drop: (item) => {
         setMoveMessage({
-          id: item.id,
-          to: id,
+          id: item.in_game_id,
+          to: componentId,
         });
       },
     }), []
@@ -46,12 +49,10 @@ const Placeholder = ({id, hand, content, setMoveMessage, rightmost, ...props}) =
       {toShow.map((card, index) => {
         return (
           <Card
-            key={card.id}
-            id={card.id}
-            name={card.name}
-            imageUrl={card.imageUrl}
-            backgroundColor={card.backgroundColor}
-            canDrag={card.canDrag}
+            key={card?.in_game_id}
+            card={card || null}
+            backgroundColor={card?.backgroundColor || "white"}
+            canDrag={card?.canDrag}
           />
         )
       })}
@@ -62,17 +63,22 @@ const Placeholder = ({id, hand, content, setMoveMessage, rightmost, ...props}) =
 export function MulliganDialog({
     open, setOpen,
     data,
-    cardImageMap,
     setToBottom,
     setRequestMulligan,
     setRequestKeepHand,
-    ...props}) {
+}) {
   const toBottom = data.to_bottom;
   const [mulliganHand, setMulliganHand] = useState([]);
   const [mulliganBottom, setMulliganBottom] = useState([]);
   const [moveMessage, setMoveMessage] = useState({});
   const [handSizeOK, setHandSizeOK] = useState(false);
-  const library = [{id: "library", name: "Library", imageUrl: "", backgroundColor: "#dddddd", canDrag: "false"},];
+  const library = [{
+      in_game_id: "library",
+      name: "Library",
+      imageUrl: "",
+      backgroundColor: "#dddddd",
+      canDrag: "false"
+  },];
 
   function handleMulligan() {
     setOpen(false);
@@ -93,15 +99,9 @@ export function MulliganDialog({
   }, []);
 
   useEffect(() => {
+    console.log("inspecting", data);
     if (data.hand) {
-      setMulliganHand(data.hand.map((card) => ({
-        id: card.id,
-        name: card.name,
-        imageUrl: cardImageMap[card.name] || cardImageMap[card.name.split(" // ")[0]],
-        backImageUrl: cardImageMap[card.name.split(" // ")[1]] || "",
-        typeLine: card.type_line,
-        manaCost: card.mana_cost,
-      })));
+      setMulliganHand(data.hand);
     }
   }, [data]);
 
@@ -112,17 +112,19 @@ export function MulliganDialog({
   useEffect(() => {
     const tid = moveMessage.id || "";
     const tdest = moveMessage.to || "";
-    let t = mulliganHand.find(card => card.id === tid);
+    let t = mulliganHand.find((card) => card.in_game_id === tid);
+    console.log(t, tid);
     if (!t) {
-      t = mulliganBottom.find(card => card.id === tid);
+      t = mulliganBottom.find((card) => card.in_game_id === tid);
     }
-    setMulliganHand(prev => prev.filter(card => card.id !== tid));
-    setMulliganBottom(prev => prev.filter(card => card.id !== tid));
+    setMulliganHand(prev => prev.filter(card => card.in_game_id !== tid));
+    setMulliganBottom(prev => prev.filter(card => card.in_game_id !== tid));
     if (tdest === "to_bottom") {
       setMulliganBottom(prev => [...prev, t]);
     } else if (tdest === "hand") {
       setMulliganHand(prev => [...prev, t]);
     }
+    console.log(mulliganHand, mulliganBottom);
   }, [moveMessage]);
 
   return (
@@ -133,7 +135,7 @@ export function MulliganDialog({
       <DialogTitle>Mulligan</DialogTitle>
         <DialogContent sx={{overflow: "hidden"}}>
           <Placeholder
-            id="to_bottom"
+            componentId="to_bottom"
             dir="row"
             content={mulliganBottom}
             setMoveMessage={setMoveMessage}
@@ -142,7 +144,7 @@ export function MulliganDialog({
         </DialogContent>
         <DialogContent sx={{overflow: "hidden"}}>
           <Placeholder
-            id="hand"
+            componentId="hand"
             dir="row"
             content={mulliganHand}
             setMoveMessage={setMoveMessage}

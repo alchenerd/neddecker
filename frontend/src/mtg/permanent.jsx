@@ -1,7 +1,7 @@
 import { Card } from './card';
 import Box from '@mui/material/Box';
 
-function Permanent({id, card, backgroundColor, setSelectedCard, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, ...props}) {
+function Permanent({id, card, backgroundColor, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, setOpenCreateTriggerDialog, setOpenCreateDelayedTriggerDialog, setOpenCreateTokenDialog, ...props}) {
   const handleMove = () => {
     setActionTargetCard(card);
     setOpenMoveDialog(true);
@@ -14,13 +14,36 @@ function Permanent({id, card, backgroundColor, setSelectedCard, setActionTargetC
     setActionTargetCard(card);
     setOpenAnnotationDialog(true);
   };
+  const createTrigger = () => {
+    setActionTargetCard(card);
+    setOpenCreateTriggerDialog(true);
+  }
+  const createDelayedTrigger = () => {
+    setActionTargetCard(card);
+    console.log(setOpenCreateTriggerDialog);
+    setOpenCreateDelayedTriggerDialog(true);
+  }
+  const createTokenCopy = () => {
+    setActionTargetCard(card);
+    setOpenCreateTokenDialog(true);
+  }
   const permanentFunctions = [
     {name: "move", _function: handleMove},
     {name: "set counter", _function: setCounter},
     {name: "set annotation", _function: setAnnotation},
+    {name: "create trigger", _function: createTrigger},
+    {name: "create delayed trigger", _function: createDelayedTrigger},
+    {name: "create token copy", _function: createTokenCopy},
   ];
   return (
-      <Card {...card} tappable={true} contextMenuFunctions={permanentFunctions} {...props} />
+      <Card
+        card={card}
+        tappable={true}
+        contextMenuFunctions={permanentFunctions}
+        backgroundColor={card.in_game_id.startsWith("token") ? "white"
+                                                             : props?.sx?.backgroundColor || "transparent"}
+        {...props}
+      />
   );
 }
 export default Permanent;

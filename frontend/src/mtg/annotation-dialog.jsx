@@ -60,7 +60,7 @@ function AnnotationDialog({open, setOpen, card, registerSetAnnotationAction}) {
 
   const handleSubmit = () => {
     setOpen(false);
-    registerSetAnnotationAction(card.id, annotationKey, annotationValue);
+    registerSetAnnotationAction(card.in_game_id, annotationKey, annotationValue);
   };
 
   // whenever key has changed and we can find value on the card, overwrite the field
@@ -91,8 +91,7 @@ function AnnotationDialog({open, setOpen, card, registerSetAnnotationAction}) {
               <Card
                 id="card-preview"
                 canDrag="false"
-                imageUrl={card?.imageUrl || ''}
-                name={card?.name || "Undefined"}
+                card={card}
                 backgroundColor="maroon"
               />
             </Grid>

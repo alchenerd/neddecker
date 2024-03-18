@@ -1,6 +1,6 @@
 import Box from '@mui/material/Box'
 import { Card } from './card'
-export function Preview({selectedCard, ...props}) {
+export function Preview({focusedCard, ...props}) {
   return (
     <Box backgroundColor='#123456'
       sx={{height: "100%", overflow: "hidden"}}
@@ -10,11 +10,11 @@ export function Preview({selectedCard, ...props}) {
     >
       <Card
         canDrag="false"
-        imageUrl={selectedCard || ''}
+        card={focusedCard}
         sx={{
           height: "95%",
           borderRadius: "12px",
-          backgroundColor: "transparent",
+          backgroundColor: focusedCard?.in_game_id.startsWith("token") ? "white": "transparent",
         }}
       />
     </Box>

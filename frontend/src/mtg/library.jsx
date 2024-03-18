@@ -2,27 +2,27 @@ import { useEffect, useState } from 'react';
 import { Card } from './card';
 import InspectDialog from './inspect-dialog';
 
-function Library({owner, ownerIndex, content, setDndMsg, setDblClkMsg, setSelectedCard, setWhoRequestShuffle, setActionTargetCard, setOpenMoveDialog}) {
+function Library({owner, content, setDndMsg, setDblClkMsg, setFocusedCard, setWhoRequestShuffle, setActionTargetCard, setOpenMoveDialog, setOpenCreateTriggerDialog, setOpenCreateDelayedTriggerDialog, setOpenCreateTokenDialog}) {
   const [openInspectDialog, setOpenInspectDialog] = useState(false);
 
   const drawFromTop = (e) => {
-    console.log("Detected", owner.player_name, "drawing from their library");
+    console.log("Detected", owner?.player_name, "drawing from their library");
     setDblClkMsg(
       {
         id: null,
         type: "drawFromLibrary",
-        who: owner.player_name,
+        who: owner?.player_name,
       }
     );
   }
 
   const shuffle = () => {
-    console.log("Detected", owner.player_name, "shuffling their library");
-    setWhoRequestShuffle(owner.player_name);
+    console.log("Detected", owner?.player_name, "shuffling their library");
+    setWhoRequestShuffle(owner?.player_name);
   };
 
   const inspect = () => {
-    console.log("Detected", owner.player_name, "insepecting their library");
+    console.log("Detected", owner?.player_name, "insepecting their library");
     setOpenInspectDialog(true);
   };
 
@@ -42,7 +42,7 @@ function Library({owner, ownerIndex, content, setDndMsg, setDblClkMsg, setSelect
           margin:"20px",
           height: "40%"
         }}
-        backgroundColor={(content && content.length) ? "#c0ffee" : null}
+        backgroundColor={(content?.length) ? "#c0ffee" : null}
         onDoubleClick={drawFromTop}
         contextMenuFunctions={libraryFunctions}
       />
@@ -50,10 +50,13 @@ function Library({owner, ownerIndex, content, setDndMsg, setDblClkMsg, setSelect
         open={openInspectDialog}
         setOpen={setOpenInspectDialog}
         zoneName="library"
-        title={owner.player_name + "'s library"}
-        content={content}
+        title={owner?.player_name + "'s library"}
+        content={owner?.library}
         setActionTargetCard={setActionTargetCard}
         setOpenMoveDialog={setOpenMoveDialog}
+        setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
+        setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
+        setOpenCreateTokenDialog={setOpenCreateTokenDialog}
       />
     </>
   ); 

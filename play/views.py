@@ -7,7 +7,7 @@ from django.db.models.functions import Length
 from django.contrib.postgres.search import TrigramSimilarity
 from django.views.decorators.http import require_POST
 from .models import Deck, Card, Face
-from .models import get_card_by_name
+from .models import get_card_orm_by_name
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts.chat import ChatPromptTemplate
 from langchain.schema.messages import SystemMessage
@@ -101,16 +101,17 @@ def get_cards_and_faces(maindeck, sideboard) -> Tuple[List[Card], List[Face], Li
     for name, count in maindeck.items():
         maindeck_count += count
         try:
-            card = get_card_by_name(name)
+            card = get_card_orm_by_name(name)
         except:
             bad_lines.append(name)
+            print(f'bad {name}')
             continue
         _faces = Face.objects.filter(card=card) if card else []
         main_cards.append(card)
         main_faces.extend(_faces)
     for name in sideboard:
         try:
-            card = get_card_by_name(name)
+            card = get_card_orm_by_name(name)
         except:
             bad_lines.append(name)
             continue

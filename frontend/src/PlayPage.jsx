@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useImmer } from 'use-immer';
 import Grid from '@mui/material/Grid';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 import _ from 'lodash';
 import { cloneDeep } from 'lodash';
-import { Card as MtgCard } from './mtg/card';
+import{ Card as MtgCard } from './mtg/card';
 import { Board as MtgBoard } from './mtg/board';
 import { MulliganDialog } from './mtg/mulligan-dialog';
 import { GameInformation } from './mtg/game-information';
@@ -13,6 +12,14 @@ import MoveDialog from './mtg/move-dialog';
 import CounterDialog from './mtg/counter-dialog';
 import AnnotationDialog from './mtg/annotation-dialog';
 import { useNavigate } from 'react-router-dom';
+import store from './store/store';
+import { selectAffectedGameData, receivedNewGameData, receivedNewGameAction, initialize } from './store/slice';
+import { findCardById } from './mtg/find-card';
+import { useSelector } from 'react-redux';
+import CreateTriggerDialog from './mtg/create-trigger-dialog';
+import CreateDelayedTriggerDialog from './mtg/create-delayed-trigger-dialog';
+import DelayedTriggerMemoDrawer from './mtg/delayed-trigger-memo-drawer';
+import CreateTokenDialog from './mtg/create-token-dialog';
 
 import './play.css';
 
@@ -66,6 +73,7 @@ export default function PlayPage() {
     if (!playData) {
       navigate("/");
     }
+    store.dispatch(initialize());
   }, []);
   const wsUrl = 'ws://localhost:8000/ws/play/';
   const { sendMessage, lastMessage, readyState } = useWebSocket(wsUrl);
@@ -76,12 +84,12 @@ export default function PlayPage() {
   const [ requestMulligan, setRequestMulligan ] = useState(false);
   const [ requestKeepHand, setRequestKeepHand ] = useState(false);
   // For board rendering
-  const defaultBoardData = {board_state: {stack: [], players: [ {player_name: "ned"}, {player_name: "user"}]}};
-  const [ boardData, setBoardData ] = useState(cloneDeep(defaultBoardData));
-  const [ shadowBoardData, setShadowBoardData ] = useState(cloneDeep(defaultBoardData));
-  const [ ned, setNed ] = useState({});
-  const [ user, setUser ] = useState({});
-  const [ selectedCard, setSelectedCard ] = useState("");
+  // const defaultgameData = {board_state: {stack: [], players: [ {player_name: "ned"}, {player_name: "user"}]}};
+  // const [ gameData, setBoardData ] = useState(cloneDeep(defaultBoardData));
+  // const [ shadowgameData, setShadowBoardData ] = useState(cloneDeep(defaultBoardData));
+  // const [ ned, setNed ] = useState({});
+  // const [ user, setUser ] = useState({});
+  const [ focusedCard, setFocusedCard ] = useState(null);
   // For communication
   const [ hasPriority, setHasPriority] = useState(false);
   const [ hasPseudopriority, setHasPseudopriority] = useState(false);
@@ -89,21 +97,23 @@ export default function PlayPage() {
   const [ userEndTurn, setUserEndTurn] = useState(false);
   const [ dndMsg, setDndMsg ] = useState({});
   const [ dblClkMsg, setDblClkMsg ] = useState({});
-  const [ actionQueue, setActionQueue ] = useState([]);
+  //const [ actionQueue, setActionQueue ] = useState([]);
   const [ whoRequestShuffle, setWhoRequestShuffle ] = useState("");
   const [ actionTargetCard, setActionTargetCard ] = useState(null);
   const [ openMoveDialog, setOpenMoveDialog] = useState(false);
   const [ openCounterDialog, setOpenCounterDialog] = useState(false);
   const [ openAnnotationDialog, setOpenAnnotationDialog] = useState(false);
+  const gameData = useSelector((state) => state.gameState.gameData);
+  const affectedGameData = useSelector(selectAffectedGameData);
+  const [ openCreateTriggerDialog, setOpenCreateTriggerDialog ] = useState(false);
+  const [ openCreateDelayedTriggerDialog, setOpenCreateDelayedTriggerDialog ] = useState(false);
+  const [ openDelayedTriggerMemoDrawer, setOpenDelayedTriggerMemoDrawer ] = useState(false);
+  const [ openCreateTokenDialog, setOpenCreateTokenDialog ] = useState(false);
 
   useEffect(() => {
     console.log("Connection state changed");
-    setActionQueue([]);
-    setBoardData(defaultBoardData);
-    setShadowBoardData(defaultBoardData);
     if (readyState === ReadyState.OPEN) {
       sendMessage(registerMatchPayload);
-      console.log(playData.card_image_map)
     }
   }, [readyState]);
 
@@ -113,20 +123,17 @@ export default function PlayPage() {
   }
 
   function handleReceiveStep(data) {
-    setShadowBoardData(cloneDeep(data));
-    setBoardData(data);
+    store.dispatch(receivedNewGameData({ newGameData: data }));
   }
 
   function handleReceivePriority(data) {
     setHasPriority(true);
-    setShadowBoardData(cloneDeep(data));
-    setBoardData(data);
+    store.dispatch(receivedNewGameData({ newGameData: data }));
   }
 
   function handleRequirePlayerAction(data) {
     setHasPseudopriority(true);
-    setShadowBoardData(cloneDeep(data));
-    setBoardData(data);
+    store.dispatch(receivedNewGameData({ newGameData: data }));
   }
 
   useEffect(() => {
@@ -144,12 +151,7 @@ export default function PlayPage() {
       sendMessage(JSON.stringify({
         type: "keep_hand",
         who: "user",
-        bottom: toBottom.map(card => ({
-          id: card.id,
-          name: card.name,
-          type_line: card.typeLine,
-          mana_cost: card.manaCost,
-        })),
+        bottom: toBottom,
       }));
     }
     setRequestKeepHand(false);
@@ -192,46 +194,12 @@ export default function PlayPage() {
     }
   }, [lastMessage]);
 
-  const findCardById = (board, cardId) => {
-    if (!cardId || !board) {
-      return [null, ""];
-    }
-    let cardToFind = null;
-    const zonesToCheck = [
-      "board_state.stack",
-      "board_state.players[0].battlefield",
-      "board_state.players[0].hand",
-      "board_state.players[0].graveyard",
-      "board_state.players[1].battlefield",
-      "board_state.players[1].hand",
-      "board_state.players[1].graveyard",
-      "board_state.players[0].library",
-      "board_state.players[1].library",
-      "board_state.players[0].exile",
-      "board_state.players[1].exile",
-    ];
-    for (let i = 0; i < zonesToCheck.length; i++) {
-      const path = zonesToCheck[i];
-      cardToFind = _.get(board, path).find((card) => _.get(card, "id", null) === cardId);
-      if (cardToFind) {
-        return [cardToFind, path];
-      }
-    }
-    return [cardToFind, ""];
-  };
-
-  const findPlayerIndexByName = (board, name) => {
-    if (!board || !name) {
-      return -1;
-    }
-    const players = _.get(board, "board_state.players");
-    return players.findIndex((player) => player.player_name === name);
-  }
-
   const registerMoveAction = (id, to) => {
-    console.log("registermoveaction: I am called!");
+    console.log("registermoveaction is called");
     console.log("moving", id, "to", to);
-    const [foundCard, foundPath] = findCardById(boardData, id);
+    const found = findCardById(affectedGameData, id);
+    const foundCard = found.card;
+    const foundPath = found.path;
     if (foundPath !== to) {
       const newAction = {
         type: "move",
@@ -239,37 +207,38 @@ export default function PlayPage() {
         from: foundPath,
         to: to,
       };
-      setActionQueue((prev) => [...prev, newAction]);
+      store.dispatch(receivedNewGameAction(newAction));
     }
   }
 
   const registerCounterAction = (id, type, amount) => {
-    if (type === null || amount === null) {
+    if (type === null) {
       return;
     }
     const newAction = {
       type: "set_counter",
       targetId: id,
       counterType: type,
-      counterAmount: amount,
+      counterAmount: amount || 0,
     };
-    setActionQueue((prev) => [...prev, newAction]);
+    store.dispatch(receivedNewGameAction(newAction));
   }
 
   const registerSetAnnotationAction = (id, key, value) => {
-    if (key === null || value === null) {
+    if (key === null) {
       return;
     }
     const newAction = {
       type: "set_annotation",
       targetId: id,
       annotationKey: key,
-      annotationValue: value,
+      annotationValue: value || "",
     };
-    setActionQueue((prev) => [...prev, newAction]);
+    store.dispatch(receivedNewGameAction(newAction));
   }
 
   useEffect(() => {
+    console.log("DNDMSG", dndMsg);
     if (dndMsg && dndMsg.to && dndMsg.id) {
       registerMoveAction(dndMsg.id, dndMsg.to);
     }
@@ -277,160 +246,33 @@ export default function PlayPage() {
 
   useEffect(() => {
     if (dblClkMsg) {
-      const [foundCard, foundPath] = findCardById(boardData, dblClkMsg.id);
+      const found = findCardById(affectedGameData, dblClkMsg.id);
+      const foundCard = found.card;
+      const foundPath = found.path;
       switch (dblClkMsg?.type) {
         case "toggleTap":
           {
             const newAction = {
-              type: foundCard?.annotations?.isTapped ? "untap" : "tap",
-              targetId: foundCard.id,
+              type: "set_annotation",
+              targetId: foundCard.in_game_id,
+              annotationKey: "isTapped",
+              annotationValue: foundCard?.annotations?.isTapped ? false : true,
             };
-            setActionQueue((prev) => [...prev, newAction]);
+            store.dispatch(receivedNewGameAction(newAction));
           }
           break;
         case "drawFromLibrary":
-          const ownerIndex = findPlayerIndexByName(boardData, dblClkMsg.who);
-          const cardId = _.get(boardData, "board_state.players[" + ownerIndex + "].library[0]").id;
-          {
-            const newAction = {
-              type: "move",
-              targetId: cardId,
-              from: "board_state.players[" + ownerIndex + "].library",
-              to: "board_state.players[" + ownerIndex + "].hand",
-            };
-            setActionQueue((prev) => [...prev, newAction]);
-          }
+          const players = _.get(affectedGameData, "board_state.players");
+          const ownerIndex = players.findIndex((player) => player.player_name === dblClkMsg.who);
+          const cardId = _.get(affectedGameData, "board_state.players[" + ownerIndex + "].library[0]").in_game_id;
+          registerMoveAction(cardId, "board_state.players[" + ownerIndex + "].hand");
           break;
       }
     }
   }, [dblClkMsg]);
 
-  useEffect(() => {
-    if (!actionQueue) {
-      return;
-    }
-    let tempBoardData = cloneDeep(shadowBoardData);
-    actionQueue.map((action) => {
-      console.log(action);
-      let [foundCard, foundPath] = findCardById(tempBoardData, action.targetId);
-      let newCard = null;
-      switch (action.type) {
-        case "move":
-          if (action.targetId) {
-            console.log("moving known card");
-            const annotationWhitelist = ["stickers",];
-            newCard = {
-              ...foundCard,
-              annotations: (action.to.indexOf("battlefield") < 0) ?
-              Object.keys(foundCard.annotations || {})
-                .filter((key) => annotationWhitelist.includes(key))
-                .reduce((obj, key) => {
-                  obj[key] = foundCard.annotations[key];
-                  return obj;
-                }, {}) :
-              foundCard.annotations,
-            }
-          } else { // moving unknown card, deprecated for now
-            foundPath = action.from;
-            newCard = {..._.get(tempBoardData, action.from)[0]};
-          }
-          const toPopFrom = _.get(tempBoardData, foundPath, []);
-          const toPushTo = _.get(tempBoardData, action.to, []);
-          _.set(tempBoardData, foundPath, [...toPopFrom.filter((card) => card.id !== newCard.id)]);
-          _.set(tempBoardData, action.to, [...toPushTo, newCard]);
-          break;
-        case "tap":
-          {
-            const newCard = {
-              ...foundCard,
-              annotations: foundCard?.annotations ? {...foundCard.annotations, isTapped: true} : {isTapped: true},
-            };
-            const targetZone = _.get(tempBoardData, foundPath, []);
-            const idx = targetZone.findIndex((card) => card.id === action.targetId);
-            targetZone.splice(idx, 1, newCard);
-          }
-          break;
-        case "untap":
-          {
-            const newCard = {
-              ...foundCard,
-              annotations: foundCard?.annotations || {},
-            };
-            delete newCard.annotations.isTapped;
-            const targetZone = _.get(tempBoardData, foundPath, []);
-            const idx = targetZone.findIndex((card) => card.id === action.targetId);
-            targetZone.splice(idx, 1, newCard);
-          }
-          break;
-        case "shuffle":
-          {
-            console.log(action.who + ".library");
-            const targetZone = _.get(tempBoardData, action.who + ".library");
-            targetZone.sort(() => Math.random() - 0.5);
-          }
-          break;
-        case "set_counter":
-          {
-            let updatedCounters = []
-            if (foundCard.counters) {
-              let foundCounter = false;
-              updatedCounters = foundCard.counters.map((counter) => {
-                if (action.counterType === counter.type) {
-                  foundCounter = true;
-                  return {...counter, ...{type: action.counterType, amount: action.counterAmount}};
-                } else {
-                  return counter;
-                }
-              });
-              if (!foundCounter) {
-                updatedCounters.push({type: action.counterType, amount: action.counterAmount});
-              }
-            } else {
-              updatedCounters = [
-                {
-                  type: action.counterType,
-                  amount: action.counterAmount,
-                },
-              ];
-            }
-            console.log(updatedCounters);
-            const newCard = {
-              ...foundCard,
-              counters: updatedCounters,
-            };
-            const targetZone = _.get(tempBoardData, foundPath, []);
-            const idx = targetZone.findIndex((card) => card.id === action.targetId);
-            targetZone.splice(idx, 1, newCard);
-          }
-          break;
-        case "set_annotation":
-          {
-            let updatedAnnotations = {}
-            if (foundCard.annotations) {
-              let foundAnnotation = false;
-              updatedAnnotations = {
-                ...foundCard.annotations,
-              };
-            }
-            updatedAnnotations[action.annotationKey] = action.annotationValue;
-            console.log(updatedAnnotations);
-            const newCard = {
-              ...foundCard,
-              annotations: updatedAnnotations,
-            };
-            const targetZone = _.get(tempBoardData, foundPath, []);
-            const idx = targetZone.findIndex((card) => card.id === action.targetId);
-            targetZone.splice(idx, 1, newCard);
-          }
-          break;
-      }
-    });
-    console.log(tempBoardData)
-    setBoardData(tempBoardData);
-  }, [actionQueue]);
-
   const sendPassPriority = () => {
-    console.log("Passing", boardData.phase)
+    console.log("Passing", gameData.phase)
     const payload = {
       type: "pass_priority",
       who: "user",
@@ -440,7 +282,7 @@ export default function PlayPage() {
   };
 
   const sendPassNonPriority = () => {
-    console.log("Ending", boardData.phase)
+    console.log("Ending", gameData.phase)
     const payload = {
       type: "pass_non_priority_action",
       who: "user",
@@ -462,30 +304,30 @@ export default function PlayPage() {
   }, [hasPriority, hasPseudopriority, userIsDone]);
 
   useEffect(() => {
-    if (hasPriority && userEndTurn && boardData.whose_turn === "user") {
+    if (hasPriority && userEndTurn && gameData.whose_turn === "user") {
       setHasPriority(false);
       sendPassPriority();
-    } else if (hasPseudopriority && userEndTurn && boardData.whose_turn === "user") {
+    } else if (hasPseudopriority && userEndTurn && gameData.whose_turn === "user") {
       setHasPseudopriority(false);
       sendPassNonPriority();
     }
   }, [hasPriority, hasPseudopriority, userEndTurn]);
 
   useEffect(() => {
-    if (boardData.whose_turn !== "user") {
+    if (gameData.whose_turn !== "user") {
       setUserEndTurn(false);
     }
-  }, [boardData.whose_turn]);
+  }, [gameData.whose_turn]);
 
-  useEffect(() => {
-    const ownerIndex = findPlayerIndexByName(boardData, whoRequestShuffle);
+  useEffect(() => { 
     if (whoRequestShuffle && whoRequestShuffle.length) {
+      const ownerIndex = affectedGameData.board_state.players.findIndex((player) => player.player_name === whoRequestShuffle);
       const newAction = {
         type: "shuffle",
         targetId: null,
         who: "board_state.players[" + ownerIndex + "]",
       };
-      setActionQueue((prev) => [...prev, newAction]);
+      store.dispatch(receivedNewGameAction(newAction));
       setWhoRequestShuffle("");
     }
   }, [whoRequestShuffle])
@@ -508,20 +350,18 @@ export default function PlayPage() {
         >
           <Grid item xs={8}>
             <MtgBoard
-              boardData={boardData}
-              ned={ned}
-              setNed={setNed}
-              user={user}
-              setUser={setUser}
-              cardImageMap={playData.card_image_map}
-              setSelectedCard={setSelectedCard}
+              setFocusedCard={setFocusedCard}
               setDndMsg={setDndMsg}
               setDblClkMsg={setDblClkMsg}
               setWhoRequestShuffle={setWhoRequestShuffle}
+              actionTargetCard={actionTargetCard}
               setActionTargetCard={setActionTargetCard}
               setOpenMoveDialog={setOpenMoveDialog}
               setOpenCounterDialog={setOpenCounterDialog}
               setOpenAnnotationDialog={setOpenAnnotationDialog}
+              setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
+              setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
+              setOpenCreateTokenDialog={setOpenCreateTokenDialog}
             />
           </Grid>
           <Grid item xs={4} width='100%'>
@@ -536,27 +376,23 @@ export default function PlayPage() {
             >
               <Grid item width='100%' height='40vh'>
                 <GameInformation
-                  selectedCard={selectedCard}
-                  setSelectedCard={setSelectedCard}
-                  boardData={boardData}
-                  setBoardData={setBoardData}
+                  focusedCard={focusedCard}
+                  setFocusedCard={setFocusedCard}
                   setUserIsDone={setUserIsDone}
                   userEndTurn={userEndTurn}
                   setUserEndTurn={setUserEndTurn}
-                  cardImageMap={playData.card_image_map}
-                  stack={boardData.board_state.stack}
                   setDndMsg={setDndMsg}
                   setActionTargetCard={setActionTargetCard}
                   setOpenMoveDialog={setOpenMoveDialog}
                   setOpenCounterDialog={setOpenCounterDialog}
                   setOpenAnnotationDialog={setOpenAnnotationDialog}
+                  setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
+                  setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
                 />
               </Grid>
               <Grid item width='100%' height='60vh'>
                 <ChatRoom
                   lastMessage={lastMessage}
-                  actionQueue={actionQueue}
-                  setActionQueue={setActionQueue}
                 />
               </Grid>
             </Grid>
@@ -566,7 +402,6 @@ export default function PlayPage() {
           open={openMulliganDialog}
           setOpen={setOpenMulliganDialog}
           data={mulliganData}
-          cardImageMap={playData.card_image_map}
           setToBottom={setToBottom}
           setRequestMulligan={setRequestMulligan}
           setRequestKeepHand={setRequestKeepHand}
@@ -575,7 +410,7 @@ export default function PlayPage() {
           open={openMoveDialog}
           setOpen={setOpenMoveDialog}
           card={actionTargetCard}
-          userIndex={findPlayerIndexByName(boardData, "user")}
+          userIndex={affectedGameData?.board_state?.players.findIndex(player => player.player_name === "user")}
           registerMoveAction={registerMoveAction}
         />
         <CounterDialog
@@ -589,6 +424,24 @@ export default function PlayPage() {
           setOpen={setOpenAnnotationDialog}
           card={actionTargetCard}
           registerSetAnnotationAction={registerSetAnnotationAction}
+        />
+        <CreateTriggerDialog
+          open={openCreateTriggerDialog}
+          setOpen={setOpenCreateTriggerDialog}
+          card={actionTargetCard}
+        />
+        <CreateDelayedTriggerDialog
+          open={openCreateDelayedTriggerDialog}
+          setOpen={setOpenCreateDelayedTriggerDialog}
+          card={actionTargetCard}
+        />
+        <DelayedTriggerMemoDrawer
+          open={openDelayedTriggerMemoDrawer}
+          setOpen={setOpenDelayedTriggerMemoDrawer}
+        />
+        <CreateTokenDialog
+          open={openCreateTokenDialog} setOpen={setOpenCreateTokenDialog}
+          actionTargetCard={actionTargetCard}
         />
       </>
     )

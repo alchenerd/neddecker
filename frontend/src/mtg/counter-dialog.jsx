@@ -39,22 +39,19 @@ function CounterDialog({open, setOpen, card, registerCounterAction}) {
   };
   const handleChangeAmount = (event) => {
     //console.log(event.target.value);
-    setCounterAmount(event.target.value);
+    setCounterAmount(parseInt(event.target.value));
   };
   const handleSubmit = () => {
     setOpen(false);
-    registerCounterAction(card.id, counterType, counterAmount);
+    registerCounterAction(card.in_game_id, counterType, counterAmount);
   };
   useEffect(() => {
     if (counterType && card && card.counters && card.counters.length) {
-      setCounterAmount(0);
       card.counters?.forEach((counter) => {
         if (counter.type === counterType) {
-          setCounterAmount(counter.amount);
+          setCounterAmount(parseInt(counter.amount));
         }
       });
-    } else {
-      setCounterAmount(0);
     }
   }, [counterType])
   return (
@@ -69,8 +66,7 @@ function CounterDialog({open, setOpen, card, registerCounterAction}) {
               <Card
                 id="card-preview"
                 canDrag="false"
-                imageUrl={card?.imageUrl || ''}
-                name={card?.name || "Undefined"}
+                card={card}
                 backgroundColor="maroon"
               />
             </Grid>

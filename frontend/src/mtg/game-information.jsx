@@ -1,11 +1,13 @@
-import { useState } from 'react'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Grid from '@mui/material/Grid'
-import { Preview } from './preview'
-import { Stack } from './stack'
+import { useState } from 'react';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Grid from '@mui/material/Grid';
+import { Preview } from './preview';
+import { Stack } from './stack';
+import store from './../store/store';
+import { selectAffectedGameData } from './../store/slice';
 
-export function GameInformation({selectedCard, setSelectedCard, boardData, setBoardData, setUserIsDone, userEndTurn, setUserEndTurn, cardImageMap, stack, setDndMsg, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, ...props}) {
+export function GameInformation({focusedCard, setFocusedCard, setUserIsDone, userEndTurn, setUserEndTurn, setDndMsg, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, setOpenCreateTriggerDialog, setOpenCreateDelayedTriggerDialog}) {
   const [ isResolving, setIsResolving ] = useState(false);
   const handleClickDoneButton = () => {
     setUserIsDone(true);
@@ -13,23 +15,25 @@ export function GameInformation({selectedCard, setSelectedCard, boardData, setBo
   const handleClickEndTurnButton = () => {
     setUserEndTurn(true);
   }
+  const _agd = selectAffectedGameData(store.getState())
+  const whoseTurn = _agd?.whose_turn || "";
+  const stack = _agd?.board_state?.stack || [];
   return (
     <Box sx={{display: "flex", alignItems: "space-between", height: "100%", width: "100%", backgroundColor: "cyan"}}>
       <Grid container sx={{height: "100%"}}>
         <Grid item xs={6} sx={{height: "90%"}}>
-          <Preview selectedCard={selectedCard} />
+          <Preview focusedCard={focusedCard} />
         </Grid>
         <Grid item xs={6} sx={{height: "90%"}}>
           <Stack
-            stack={boardData ? boardData.board_state.stack : []}
-            setBoardData={setBoardData}
-            map={cardImageMap}
-            setSelectedCard={setSelectedCard}
+            setFocusedCard={setFocusedCard}
             setDndMsg={setDndMsg}
             setActionTargetCard={setActionTargetCard}
             setOpenMoveDialog={setOpenMoveDialog}
             setOpenCounterDialog={setOpenCounterDialog}
             setOpenAnnotationDialog={setOpenAnnotationDialog}
+            setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
+            setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
           />
         </Grid>
         <Grid item xs={6} sx={{height: "10%"}}>
@@ -47,7 +51,7 @@ export function GameInformation({selectedCard, setSelectedCard, boardData, setBo
             variant="contained"
             color="error"
             sx={{width: "100%", height: "100%"}}
-            disabled={userEndTurn || (boardData && boardData.whose_turn !== "user") || (boardData && boardData.board_state.stack.length > 0)}
+            disabled={userEndTurn || whoseTurn !== "user" || stack.length > 0}
             onClick={handleClickEndTurnButton}
           >
             End Turn

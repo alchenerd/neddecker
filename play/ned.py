@@ -12,7 +12,7 @@ from langchain.tools.render import format_tool_to_openai_function
 from langchain.memory import ConversationBufferMemory
 from langchain.pydantic_v1 import BaseModel, Field
 from langchain_community.chat_models import ChatOpenAI
-from .models import Card, Face, get_card_by_name, get_faces_by_name
+from .models import Card, Face, get_card_orm_by_name, get_faces_orm_by_name
 from .serializers import CardSerializer, FaceSerializer
 from dotenv import load_dotenv
 
@@ -91,7 +91,7 @@ class Ned():
         lands = []
         for card in hand:
             name = card['name']
-            card_orm = self.get_card_by_name(name)
+            card_orm = self.get_card_orm_by_name(name)
             front_orm, back_orm = self.get_faces_by_name(name)
             info = dict()
             info['id'] = card['id']

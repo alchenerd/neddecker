@@ -2,7 +2,8 @@ import { useState } from 'react';
 import Button from '@mui/material/Button';
 import InspectDialog from './inspect-dialog';
 
-function ZoneButton ({zoneName, buttonText, ownerName, content, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, sx}) {
+function ZoneButton ({zoneName, buttonText, owner, content, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, setOpenCreateTriggerDialog, setOpenCreateDelayedTriggerDialog, setOpenCreateTokenDialog, sx}) {
+  const ownerName = owner?.player_name;
   const [open, setOpen] = useState(false);
   const handleClick = (e) => {
     setOpen(true);
@@ -13,10 +14,24 @@ function ZoneButton ({zoneName, buttonText, ownerName, content, setActionTargetC
         variant="contained"
         onClick={handleClick}
         sx={sx}
+        onContextMenu={(e) => {e.stopPropagation();}}
       >
-        {buttonText + " " + content.length}
+        {buttonText + " " + (content?.length || 0)}
       </Button>
-      <InspectDialog open={open} setOpen={setOpen} title={ownerName + "'s " + zoneName} zoneName={zoneName} content={content} setActionTargetCard={setActionTargetCard} setOpenMoveDialog={setOpenMoveDialog} setOpenCounterDialog={setOpenCounterDialog} setOpenAnnotationDialog={setOpenAnnotationDialog} />
+      <InspectDialog
+        open={open}
+        setOpen={setOpen}
+        title={ownerName + "'s " + zoneName}
+        zoneName={zoneName}
+        content={content}
+        setActionTargetCard={setActionTargetCard}
+        setOpenMoveDialog={setOpenMoveDialog}
+        setOpenCounterDialog={setOpenCounterDialog}
+        setOpenAnnotationDialog={setOpenAnnotationDialog}
+        setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
+        setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
+        setOpenCreateTokenDialog={setOpenCreateTokenDialog}
+      />
     </>
   )
 }

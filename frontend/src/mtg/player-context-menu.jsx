@@ -1,28 +1,31 @@
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 
-function CardContextMenu({contextMenu, setContextMenu, functions, setActionTargetCard, setOpenMoveDialog}) {
+const PlayerContextMenu = ({ contextMenu, setContextMenu, functions }) => {
   const handleClose = () => {
-    setContextMenu(null);  
+    setContextMenu(null);
   }
+
   if (functions && functions.length) {
     return (
       <>
         <Menu
-          open={contextMenu !== null}
+          open={Boolean(contextMenu)}
           onClose={handleClose}
           anchorReference="anchorPosition"
           anchorPosition={
             contextMenu ? { top: contextMenu.mouseY, left: contextMenu.mouseX } : undefined
           }
         >
-          {functions && functions.map((item) => {
-            return (
-              <MenuItem key={item.name} onClick={() => {handleClose(); item?._function();}}>
-                {item.name || "Undefined"}
-              </MenuItem>
-            )
-          })}
+          {
+            functions.map((item) => {
+              return (
+                <MenuItem key={item.name} onClick={() => {handleClose(); item?._function();}}>
+                  {item.name || "Undefined"}
+                </MenuItem>
+              )
+            })
+          }
         </Menu>
       </>
     );
@@ -31,4 +34,4 @@ function CardContextMenu({contextMenu, setContextMenu, functions, setActionTarge
   }
 }
 
-export default CardContextMenu;
+export default PlayerContextMenu;
