@@ -132,7 +132,7 @@ class PlayConsumer(WebsocketConsumer):
         self.send_to_player(player=player, text_data=json.dumps(payload))
 
     def player_keep_hand(self, data):
-        print(data)
+        # print(data)
         players = self.mtg_match.game.players
         [i] = [i for i, p in enumerate(players) if p.player_name == data['who']]
         player = players[i]
@@ -177,7 +177,8 @@ class PlayConsumer(WebsocketConsumer):
 
     # Called when a player passes priority
     def handle_pass_priority(self, data={}):
-        #print(data)
+        print(f'passed priority action {self.mtg_match.game.phase}!')
+        #print(data['actions'])
         whose_priority = self.mtg_match.game.whose_priority
         if whose_priority != self.mtg_match.game.priority_waitlist[0]:
             # not sender's priority
@@ -185,6 +186,7 @@ class PlayConsumer(WebsocketConsumer):
         self.mtg_match.game.priority_waitlist.pop(0)
         actions = data.get('actions', [])
         for action in actions:
+            print(action);
             self.mtg_match.game.apply(action)
         if len(self.mtg_match.game.priority_waitlist) > 0:
             # other players can respond
@@ -203,6 +205,7 @@ class PlayConsumer(WebsocketConsumer):
 
     def handle_non_priority_action(self, data={}):
         print(f'passed non-priority action {self.mtg_match.game.phase}!')
+        print(data)
         actions = data.get('actions', [])
         for action in actions:
             self.mtg_match.game.apply(action)

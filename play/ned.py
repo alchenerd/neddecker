@@ -61,11 +61,11 @@ class Ned():
         #self.llm = ChatOpenAI(model_name='gpt-4-1106-preview', temperature=0.8, max_tokens=1024)
 
     def receive(self, text_data):
-        print(text_data)
+        #print(text_data)
         json_data = json.loads(text_data)
         match json_data['type']:
             case 'log':
-                print(json_data['message'])
+                #print(json_data['message'])
                 return 'Ned received: ' + json_data['message'], json_data
             case 'mulligan':
                 return 'Beep boop Ned mulligans to 4', self.mulligan_to_four(json_data)
@@ -82,8 +82,8 @@ class Ned():
                 return 'Beep boop Ned does nothing on ' + json_data['phase'], {'type': 'log', 'message': 'received step ' + json_data['phase']}
             case _:
                 print('[ERROR]')
-                print(json_data)
-                print('...What?')
+                #print(json_data)
+                #print('...What?')
                 return '...What?', {'type': 'log', 'message': 'Error:\n' + text_data}
 
     def hand_to_data(self, hand):
@@ -132,8 +132,8 @@ class Ned():
                 return '\n'.join((_WHOAMI, context, data)), user_requests
 
     def ask_ned_decker(self, payload, user_requests, tools):
-        print(str(payload))
-        print(str(user_requests))
+        #print(str(payload))
+        #print(str(user_requests))
         llm_with_tools = self.llm.bind(functions=[format_tool_to_openai_function(t) for t in tools])
         prompt = ChatPromptTemplate.from_messages([
             SystemMessage(content=payload),

@@ -105,6 +105,7 @@ export default function PlayPage() {
   const [ openAnnotationDialog, setOpenAnnotationDialog] = useState(false);
   const gameData = useSelector((state) => state.gameState.gameData);
   const affectedGameData = useSelector(selectAffectedGameData);
+  const actions = useSelector((state => state.gameState.actions));
   const [ openCreateTriggerDialog, setOpenCreateTriggerDialog ] = useState(false);
   const [ openCreateDelayedTriggerDialog, setOpenCreateDelayedTriggerDialog ] = useState(false);
   const [ openDelayedTriggerMemoDrawer, setOpenDelayedTriggerMemoDrawer ] = useState(false);
@@ -272,11 +273,12 @@ export default function PlayPage() {
   }, [dblClkMsg]);
 
   const sendPassPriority = () => {
-    console.log("Passing", gameData.phase)
+    console.log("Passing", actions)
     const payload = {
       type: "pass_priority",
       who: "user",
-      actions: [],
+      gameData: affectedGameData,
+      actions: actions,
     }
     sendMessage(JSON.stringify(payload));
   };
@@ -286,7 +288,8 @@ export default function PlayPage() {
     const payload = {
       type: "pass_non_priority_action",
       who: "user",
-      actions: [],
+      gameData: affectedGameData,
+      actions: actions,
     }
     sendMessage(JSON.stringify(payload));
   };
