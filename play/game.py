@@ -182,7 +182,24 @@ class Game:
         assert(self.priority_waitlist[0] == self.whose_priority)
 
     def apply(self, action):
-        pass
+        print(action)
+
+    def apply_board_state(self, board_state):
+        if not board_state:
+            return
+        #print(board_state)
+        players = board_state.get('players', [])
+        print(players)
+        for player in players:
+            print(player.get('player_name', 'Undefined'))
+            #print(player.get('hand', []))
+            print(player.get('battlefield', []))
+            #print(player.get('library', []))
+            print(player.get('graveyard', []))
+            print(player.get('exile', []))
+            #print(player.get('sideboard', []))
+        stack = board_state.get('stack', [])
+        print(stack)
 
     def get_payload(self):
         payload = {}

@@ -55,6 +55,9 @@ export const gameSlice = createSlice({
       }
       return previousState;
     },
+    clearGameAction: (state) => {
+      return { ...state, actions: [] };
+    }
   },
 });
 
@@ -62,7 +65,8 @@ export const {
   initialize,
   receivedNewGameData,
   receivedNewGameAction,
-  rollbackGameAction
+  rollbackGameAction,
+  clearGameAction,
 } = gameSlice.actions;
 
 const selectGameData = (store) => store.gameState.gameData;

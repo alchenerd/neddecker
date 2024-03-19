@@ -13,7 +13,7 @@ import CounterDialog from './mtg/counter-dialog';
 import AnnotationDialog from './mtg/annotation-dialog';
 import { useNavigate } from 'react-router-dom';
 import store from './store/store';
-import { selectAffectedGameData, receivedNewGameData, receivedNewGameAction, initialize } from './store/slice';
+import { selectAffectedGameData, receivedNewGameData, receivedNewGameAction, initialize, clearGameAction } from './store/slice';
 import { findCardById } from './mtg/find-card';
 import { useSelector } from 'react-redux';
 import CreateTriggerDialog from './mtg/create-trigger-dialog';
@@ -280,7 +280,9 @@ export default function PlayPage() {
       gameData: affectedGameData,
       actions: actions,
     }
+    console.log("???", payload);
     sendMessage(JSON.stringify(payload));
+    store.dispatch(clearGameAction());
   };
 
   const sendPassNonPriority = () => {
@@ -291,7 +293,9 @@ export default function PlayPage() {
       gameData: affectedGameData,
       actions: actions,
     }
+    console.log("???" + JSON.stringify(payload));
     sendMessage(JSON.stringify(payload));
+    store.dispatch(clearGameAction());
   };
 
   useEffect(() => {
@@ -396,6 +400,8 @@ export default function PlayPage() {
               <Grid item width='100%' height='60vh'>
                 <ChatRoom
                   lastMessage={lastMessage}
+                  userIsDone={userIsDone}
+                  userEndTurn={userEndTurn}
                 />
               </Grid>
             </Grid>

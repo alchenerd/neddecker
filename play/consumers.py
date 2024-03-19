@@ -178,15 +178,17 @@ class PlayConsumer(WebsocketConsumer):
     # Called when a player passes priority
     def handle_pass_priority(self, data={}):
         print(f'passed priority action {self.mtg_match.game.phase}!')
-        #print(data['actions'])
         whose_priority = self.mtg_match.game.whose_priority
         if whose_priority != self.mtg_match.game.priority_waitlist[0]:
             # not sender's priority
             return
         self.mtg_match.game.priority_waitlist.pop(0)
+        board_state = data.get('gameData', {}).get('board_state', {})
+        #print(board_state)
+        self.mtg_match.game.apply_board_state(board_state)
         actions = data.get('actions', [])
         for action in actions:
-            print(action);
+            #print(action);
             self.mtg_match.game.apply(action)
         if len(self.mtg_match.game.priority_waitlist) > 0:
             # other players can respond
@@ -205,7 +207,10 @@ class PlayConsumer(WebsocketConsumer):
 
     def handle_non_priority_action(self, data={}):
         print(f'passed non-priority action {self.mtg_match.game.phase}!')
-        print(data)
+        #print(data)
+        board_state = data.get('gameData', {}).get('board_state', {})
+        #print(board_state)
+        self.mtg_match.game.apply_board_state(board_state)
         actions = data.get('actions', [])
         for action in actions:
             self.mtg_match.game.apply(action)
