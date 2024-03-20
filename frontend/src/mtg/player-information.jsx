@@ -5,7 +5,7 @@ import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import Popover from '@mui/material/Popover';
-import { selectAffectedGameData } from './../store/slice';
+import { selectAffectedGameData, receivedNewGameAction } from './../store/slice';
 import store from './../store/store';
 import ZoneButton from './zone-button';
 import PlayerContextMenu from './player-context-menu';
@@ -44,6 +44,15 @@ const ListAnnotations = ({target}) => {
     )
   }
   return null
+};
+
+const setHp = (playerId, value) => {
+  const newAction = {
+    type: "set_hp",
+    targetId: playerId,
+    value: value,
+  };
+  store.dispatch(receivedNewGameAction(newAction));
 };
 
 export function PlayerInformation({
@@ -98,9 +107,14 @@ export function PlayerInformation({
         onMouseLeave={handlePopoverClose}
       >
         <Grid container direction='row' justifyContent='space-around' alignItems='center'>
-          <Grid container direction='column' item xs={12}>
+          <Grid container item direction='column' xs={12}>
             <Typography>{fullName}{hasTurn && "(*)"}</Typography>
-            <Typography>HP: {hp}</Typography>
+            <Grid container item direction='row' xs={12}>
+              <Typography display='inline'>[HP]: </Typography>
+              <Typography display='inline' sx={{textDecoration: 'underline'}} onClick={() => setHp(ownerId, hp - 1)}>-</Typography>
+              <Typography display='inline'> ({hp}) </Typography>
+              <Typography display='inline' sx={{textDecoration: 'underline'}} onClick={() => setHp(ownerId, hp + 1)}>+</Typography>
+            </Grid>
             <Typography>Infect: {infect}</Typography>
           </Grid>
           <ManaPool {...{manaPool, ownerId}}/>

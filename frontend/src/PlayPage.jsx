@@ -110,6 +110,7 @@ export default function PlayPage() {
   const [ openCreateDelayedTriggerDialog, setOpenCreateDelayedTriggerDialog ] = useState(false);
   const [ openDelayedTriggerMemoDrawer, setOpenDelayedTriggerMemoDrawer ] = useState(false);
   const [ openCreateTokenDialog, setOpenCreateTokenDialog ] = useState(false);
+  const [ isResolving, setIsResolving ] = useState(false);
 
   useEffect(() => {
     console.log("Connection state changed");
@@ -124,16 +125,26 @@ export default function PlayPage() {
   }
 
   function handleReceiveStep(data) {
+    store.dispatch(clearGameAction());
     store.dispatch(receivedNewGameData({ newGameData: data }));
   }
 
   function handleReceivePriority(data) {
+    store.dispatch(clearGameAction());
     setHasPriority(true);
     store.dispatch(receivedNewGameData({ newGameData: data }));
   }
 
   function handleRequirePlayerAction(data) {
+    store.dispatch(clearGameAction());
     setHasPseudopriority(true);
+    store.dispatch(receivedNewGameData({ newGameData: data }));
+  }
+
+  function handleResolveStack(data) {
+    store.dispatch(clearGameAction());
+    setHasPriority(true);
+    setIsResolving(true);
     store.dispatch(receivedNewGameData({ newGameData: data }));
   }
 
@@ -191,6 +202,9 @@ export default function PlayPage() {
           console.log("Requires Player's action but no priority", data.whose_turn, data.phase);
           handleRequirePlayerAction(data);
           break;
+        case 'resolve_stack':
+          console.log("resolving", data.board_state.stack.at(-1).name);
+          handleResolveStack(data);
       }
     }
   }, [lastMessage]);
@@ -272,6 +286,18 @@ export default function PlayPage() {
     }
   }, [dblClkMsg]);
 
+  const sendResolveStack = () => {
+    console.log("Resolving", actions)
+    const payload = {
+      type: "resolve_stack",
+      who: "user",
+      gameData: affectedGameData,
+      actions: actions,
+    }
+    sendMessage(JSON.stringify(payload));
+    setIsResolving(false);
+  }
+
   const sendPassPriority = () => {
     console.log("Passing", actions)
     const payload = {
@@ -280,9 +306,7 @@ export default function PlayPage() {
       gameData: affectedGameData,
       actions: actions,
     }
-    console.log("???", payload);
     sendMessage(JSON.stringify(payload));
-    store.dispatch(clearGameAction());
   };
 
   const sendPassNonPriority = () => {
@@ -295,11 +319,16 @@ export default function PlayPage() {
     }
     console.log("???" + JSON.stringify(payload));
     sendMessage(JSON.stringify(payload));
-    store.dispatch(clearGameAction());
   };
 
   useEffect(() => {
-    if (hasPriority && userIsDone) {
+    if (hasPriority && isResolving && userIsDone) {
+      setHasPriority(false);
+      setUserIsDone(false);
+      setIsResolving(false);
+      sendResolveStack();
+    }
+    else if (hasPriority && userIsDone) {
       setHasPriority(false);
       setUserIsDone(false);
       sendPassPriority();
@@ -308,7 +337,7 @@ export default function PlayPage() {
       setUserIsDone(false);
       sendPassNonPriority();
     }
-  }, [hasPriority, hasPseudopriority, userIsDone]);
+  }, [hasPriority, hasPseudopriority, userIsDone, isResolving]);
 
   useEffect(() => {
     if (hasPriority && userEndTurn && gameData.whose_turn === "user") {
@@ -395,6 +424,7 @@ export default function PlayPage() {
                   setOpenAnnotationDialog={setOpenAnnotationDialog}
                   setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
                   setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
+                  isResolving={isResolving}
                 />
               </Grid>
               <Grid item width='100%' height='60vh'>

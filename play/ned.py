@@ -80,6 +80,10 @@ class Ned():
                 return 'Beep boop Ned does nothing on ' + json_data['phase'], {'type': 'pass_non_priority_action', 'who': 'ned', 'actions': []}
             case 'receive_step':
                 return 'Beep boop Ned does nothing on ' + json_data['phase'], {'type': 'log', 'message': 'received step ' + json_data['phase']}
+            case 'resolve_stack':
+                card_name = json_data['board_state']['stack'][-1]['name']
+                game_data, actions = self.move_top_of_stack(json_data)
+                return 'Beep boop Ned moves the topmost card of the stack ' + card_name, {'type': 'resolve_stack', 'who': 'ned', 'gameData': game_data, 'actions': actions}
             case _:
                 print('[ERROR]')
                 #print(json_data)
@@ -190,3 +194,18 @@ class Ned():
             return {'type': 'mulligan', 'who': 'ned'}
         else:
             return {'type': 'keep_hand', 'who': 'ned', 'bottom': data['hand'][-to_bottom:]}
+
+    def move_top_of_stack(self, data):
+        card = data['board_state']['stack'].pop()
+        non_permanent = ['instant', 'sorcery']
+        target_zone = 'battlefield'
+        if any(_type in card['type_line'].lower() for _type in non_permanent):
+            target_zone = 'graveyard'
+        players = data['board_state']['players']
+        idx = 0
+        for i, player in enumerate(players):
+            if player['player_name'] == 'ned':
+                idx = i
+                player[target_zone].append(card)
+
+        return data, [{'type': 'move', 'targetId': card['in_game_id'], 'from': 'board_state.stack', 'to': f'board_state.players[{idx}].{target_zone}'}]

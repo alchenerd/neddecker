@@ -84,6 +84,11 @@ class Player:
         board_state['annotations'] = self.annotations
         return board_state
 
+    def apply_board_state(self, updated):
+        assert(self.player_name == updated.get('player_name', 'ned'))
+        for k, v in updated.items():
+            setattr(self, k, v)
+
     def __str__(self):
         return self.player_name
 
@@ -101,8 +106,10 @@ class Game:
         self.whose_turn = ''
         self.phase = ''
         self.whose_priority = ''
+        self.is_resolving = False
         self.player_has_priority = False
         self.require_player_action = False
+        self.stack_has_grown = False
         self.turn_phase_tracker = None
         self.priority_waitlist = []
 
@@ -172,14 +179,19 @@ class Game:
     def next_step(self):
         self.turn_count, self.whose_turn, (self.phase, self.player_has_priority, self.require_player_action) = next(self.turn_phase_tracker)
         self.whose_priority = self.whose_turn
+        self.refill_priority_waitlist(next_player=self.whose_priority)
+
+    def refill_priority_waitlist(self, next_player=None):
+        if next_player is None:
+            next_player = self.whose_turn
         self.priority_waitlist = [p.player_name for p in self.players]
         while True:
-            if self.priority_waitlist[0] != self.whose_priority:
+            if self.priority_waitlist[0] != next_player:
                 self.priority_waitlist.append(self.priority_waitlist.pop(0))
             else:
                 break
-        assert(len(self.priority_waitlist) == 2)
-        assert(self.priority_waitlist[0] == self.whose_priority)
+        assert(len(self.priority_waitlist) == len(self.players))
+        assert(self.priority_waitlist[0] == next_player)
 
     def apply(self, action):
         print(action)
@@ -187,23 +199,29 @@ class Game:
     def apply_board_state(self, board_state):
         if not board_state:
             return
-        #print(board_state)
         players = board_state.get('players', [])
-        print(players)
-        for player in players:
-            print(player.get('player_name', 'Undefined'))
-            #print(player.get('hand', []))
-            print(player.get('battlefield', []))
-            #print(player.get('library', []))
-            print(player.get('graveyard', []))
-            print(player.get('exile', []))
-            #print(player.get('sideboard', []))
+        for updated, tracking in zip(players, self.players):
+            tracking.apply_board_state(updated)
         stack = board_state.get('stack', [])
         print(stack)
+        if stack is not self.stack:
+            if len(stack) > len(self.stack):
+                stack_has_grown = True
+            self.stack = stack
 
     def get_payload(self):
         payload = {}
-        if self.player_has_priority:
+        if self.is_resolving:
+            payload = {
+                'type': 'resolve_stack',
+                'turn_count': self.turn_count,
+                'whose_turn': self.whose_turn,
+                'phase': self.phase,
+                'whose_priority': self.whose_priority,
+                'board_state': self.get_board_state(),
+                'is_resolving': self.is_resolving,
+            }
+        elif self.player_has_priority:
             payload = {
                 'type': 'receive_priority',
                 'turn_count': self.turn_count,

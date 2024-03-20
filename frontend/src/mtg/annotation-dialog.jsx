@@ -132,8 +132,9 @@ function AnnotationDialog({open, setOpen, card, registerSetAnnotationAction}) {
                   handleHomeEndKeys
                   fullWidth={true}
                   options={
-                    [... new Set(Object.values(annotationsToDisplay))]
+                    [...(new Set(Object.values(annotationsToDisplay).map(item => item.toString?.())))]
                   }
+                  getOptionLabel={(option) => (option.toString?.())}
                   onChange={handleChangeValue}
                   value={annotationValue || ""}
                   filterOptions={(options, params) => {
