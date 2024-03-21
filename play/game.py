@@ -17,7 +17,6 @@ class Player:
         self.exile = [] # {id, name}
         self.mana_pool = {'W': 0, 'U': 0, 'B': 0, 'R': 0, 'G': 0, 'C': 0}
         self.hp = 20
-        self.infect = 0
         self.counters = []
         self.annotations = []
 
@@ -63,7 +62,6 @@ class Player:
 
     def clear(self):
         self.hp = 20
-        self.infect = 0
         for zone in (self.hand, self.battlefield, self.graveyard, self.exile):
             for card in zone:
                 self.move_card(card, _from=zone, to='library')
@@ -77,7 +75,6 @@ class Player:
         board_state['graveyard'] = self.graveyard
         board_state['exile'] = self.exile
         board_state['hp'] = self.hp
-        board_state['infect'] = self.infect
         board_state['sideboard'] = self.sideboard
         board_state['mana_pool'] = self.mana_pool
         board_state['counters'] = self.counters

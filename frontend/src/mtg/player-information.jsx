@@ -77,7 +77,6 @@ export function PlayerInformation({
   const owner = _agd?.board_state?.players.find((player) => player.player_name === ownerName);
   const ownerId = _agd?.board_state?.players.findIndex(player => player.player_name === ownerName);
   const hp = owner?.hp;
-  const infect = owner?.infect;
   const manaPool = owner?.mana_pool;
   const handleContextMenu = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -115,7 +114,6 @@ export function PlayerInformation({
               <Typography display='inline'> ({hp}) </Typography>
               <Typography display='inline' sx={{textDecoration: 'underline'}} onClick={() => setHp(ownerId, hp + 1)}>+</Typography>
             </Grid>
-            <Typography>Infect: {infect}</Typography>
           </Grid>
           <ManaPool {...{manaPool, ownerId}}/>
         </Grid>
