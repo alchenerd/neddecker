@@ -136,6 +136,9 @@ const calculateAffectedGameData = (gameData, actions) => {
           const pseudoCard = cloneDeep(found.card);
           _.set(pseudoCard, "in_game_id", "trigger" + availableTriggerSerialNumber + "@" + found.card.in_game_id);
           _.set(pseudoCard, "triggerContent", action.triggerContent);
+          const previousControllerId = parseInt(found.path.match(/players\[(.*)\]/)[1]);
+          const previousControllerName = affectedGameData.board_state.players[previousControllerId].player_name;
+          pseudoCard.annotations.controller = previousControllerName;
           const newStack = [ ..._.get(affectedGameData, "board_state.stack"), pseudoCard ];
           _.set(affectedGameData, "board_state.stack", newStack);
         }

@@ -245,7 +245,7 @@ class PlayConsumer(WebsocketConsumer):
         whose_priority = self.mtg_match.game.whose_priority
         player = [p for p in self.mtg_match.game.players if p.player_name == whose_priority][0]
         payload = self.mtg_match.game.get_payload()
-        print(payload['type'])
+        #print(payload['type'])
         self.send_to_player(player, json.dumps(payload))
 
     # Called when all players agree to let the top of the stack to resolve

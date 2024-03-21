@@ -189,7 +189,8 @@ class Game:
         assert self.priority_waitlist[0] == next_player
 
     def apply(self, action):
-        print(action)
+        #print(action)
+        pass
 
     def is_board_sane(self, board):
         seen_ids = set()
@@ -220,7 +221,7 @@ class Game:
         for updated, tracking in zip(players, self.players):
             tracking.apply_board_state(updated)
         stack = board_state.get('stack', [])
-        print(stack)
+        #print(stack)
         if stack is not self.stack:
             if len(stack) > len(self.stack):
                 stack_has_grown = True

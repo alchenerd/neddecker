@@ -68,7 +68,7 @@ class Ned():
                 #print(json_data['message'])
                 return 'Ned received: ' + json_data['message'], json_data
             case 'mulligan':
-                return 'Beep boop Ned mulligans to 4', self.mulligan_to_four(json_data)
+                #return 'Beep boop Ned mulligans to 4', self.mulligan_to_four(json_data)
                 # ...or you may let GPT decide
                 payload, user_request = self.generate_contexts(json_data)
                 tools = [SubmitMulliganDescision()]
@@ -95,8 +95,8 @@ class Ned():
         lands = []
         for card in hand:
             name = card['name']
-            card_orm = self.get_card_orm_by_name(name)
-            front_orm, back_orm = self.get_faces_by_name(name)
+            card_orm = get_card_orm_by_name(name)
+            front_orm, back_orm = get_faces_orm_by_name(name)
             info = dict()
             info['id'] = card['id']
             info['card'] = json.loads(str(card_orm))
