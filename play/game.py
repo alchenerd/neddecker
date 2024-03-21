@@ -50,14 +50,14 @@ class Player:
                 card['annotations']['damage'] = 0
 
     def move_card(self, item, _from, to):
-        assert(item[id][0] == self.player_name[0])
+        assert item[id][0] == self.player_name[0]
         src_zone = _from
         dst_zone = to
         for zone in (src_zone, dst_zone):
             if isinstance(zone, str):
                 zone = self.getattr(zone)
-        assert(isinstance(src_zone, list))
-        assert(isinstance(dst_zone, list))
+        assert isinstance(src_zone, list)
+        assert isinstance(dst_zone, list)
         src_zone.remove(item)
         dst_zone.append(item)
 
@@ -85,7 +85,7 @@ class Player:
         return board_state
 
     def apply_board_state(self, updated):
-        assert(self.player_name == updated.get('player_name', 'ned'))
+        assert self.player_name == updated.get('player_name', 'ned')
         for k, v in updated.items():
             setattr(self, k, v)
 
@@ -138,7 +138,7 @@ class Game:
     def load_cards(self, player, main, side):
         rev_map = { value: key for key, value in self.card_map.items() }
         visited = {}
-        for name in main.keys():
+        for name in (main | side).keys():
             visited[name] = 1
         for name, count in main.items():
             for i in range(count):
@@ -155,8 +155,6 @@ class Game:
                 card['counters'] = list()
                 card['annotations'] = dict()
                 player.library.append(card)
-        for name in side.keys():
-            visited[name] = 1
         for name, count in side.items():
             for i in range(count):
                 card = dict()
@@ -190,15 +188,37 @@ class Game:
                 self.priority_waitlist.append(self.priority_waitlist.pop(0))
             else:
                 break
-        assert(len(self.priority_waitlist) == len(self.players))
-        assert(self.priority_waitlist[0] == next_player)
+        assert len(self.priority_waitlist) == len(self.players)
+        assert self.priority_waitlist[0] == next_player
 
     def apply(self, action):
         print(action)
 
+    def is_board_sane(self, board):
+        seen_ids = set()
+        def _check_unique_ids(item):
+            nonlocal seen_ids
+            if isinstance(item, dict):
+                if 'in_game_id' in item:
+                    id_val = item['in_game_id']
+                    if id_val in seen_ids:
+                        print(id_val, 'is bad!')
+                        return False
+                    seen_ids.add(id_val)
+                for value in item.values():
+                    if not _check_unique_ids(value):
+                        return False
+            elif isinstance(item, list):
+                for value in item:
+                    if not _check_unique_ids(value):
+                        return False
+            return True
+        return _check_unique_ids(board)
+
     def apply_board_state(self, board_state):
         if not board_state:
             return
+        assert self.is_board_sane(board_state), 'There are duplicate Ids in the new board!'
         players = board_state.get('players', [])
         for updated, tracking in zip(players, self.players):
             tracking.apply_board_state(updated)
@@ -252,7 +272,7 @@ class Game:
 
     def move_to_owner(self, item, _from, to):
         owner = [p for p in self.players if p.player_name[0] == item['id'][0]][-1]
-        assert(owner)
+        assert owner
         src_zone = _from
         dst_zone = to
         for zone in (src_zone, dst_zone):
@@ -260,8 +280,8 @@ class Game:
                 zone = self.stack
             elif isinstance(zone, str):
                 zone = owner.getattr(zone)
-        assert(isinstance(src_zone, list))
-        assert(isinstance(dst_zone, list))
+        assert isinstance(src_zone, list)
+        assert isinstance(dst_zone, list)
         src_zone.remove(item)
         dst_zone.append(item)
 

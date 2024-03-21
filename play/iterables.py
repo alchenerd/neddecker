@@ -1,9 +1,10 @@
 class Players():
     def __init__(self, players):
-        assert(isinstance(players, list) and
-               len(players) >= 2 and
-               len(set(players)) == len(players) and
-               all((isinstance(player, str) for player in players))
+        assert (
+            isinstance(players, list) and
+            len(players) >= 2 and
+            len(set(players)) == len(players) and
+            all((isinstance(player, str) for player in players))
         )
         self.ring = players
         self.index = 0
@@ -39,10 +40,11 @@ class MtgTurnsAndPhases():
     ]
 
     def __init__(self, players):
-        assert(isinstance(players, list) and
-               len(players) >= 2 and
-               len(set(players)) == len(players) and
-               all((isinstance(player, str) for player in players))
+        assert (
+            isinstance(players, list) and
+            len(players) >= 2 and
+            len(set(players)) == len(players) and
+            all((isinstance(player, str) for player in players))
         )
         self.turn_ring = players
         self.turn_stack = []
@@ -79,19 +81,19 @@ class MtgTurnsAndPhases():
         return turn, whose, phase
 
     def add_extra_turn(self, player):
-        assert(isinstance(player, str) and player in turn_ring)
+        assert (isinstance(player, str) and player in turn_ring)
         self.turn_stack.append(player)
 
     def add_extra_phase(self, phase, after_which):
-        assert(isinstance(phase, str) or isinstance(phase, int))
-        assert(isinstance(after_which, str) or isinstance(after_which, int))
+        assert (isinstance(phase, str) or isinstance(phase, int))
+        assert (isinstance(after_which, str) or isinstance(after_which, int))
         if isinstance(phase, int):
-            assert(phase >= 0 and phase < len(MtgTurnAndPhaseIterator.PHASES_AND_STEPS))
+            assert (phase >= 0 and phase < len(MtgTurnAndPhaseIterator.PHASES_AND_STEPS))
             phase = MtgTurnAndPhaseIterator.PHASES_AND_STEPS[phase]
         elif isinstance(phase, str):
             phase = [p for p in MtgTurnAndPhaseIterator.PHASES_AND_STEPS if p[0] == phase][-1]
         if isinstance(after_which, int):
-            assert(after_which >= 0 and after_which < len(MtgTurnAndPhaseIterator.PHASES_AND_STEPS))
+            assert (after_which >= 0 and after_which < len(MtgTurnAndPhaseIterator.PHASES_AND_STEPS))
             after_which = MtgTurnAndPhaseIterator.PHASES_AND_STEPS[phase][0]
         for i in range(self.phase_queue):
             if self.phase_queue[i][0] == after_which:

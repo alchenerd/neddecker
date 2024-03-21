@@ -35,7 +35,7 @@ class SubmitMulliganDescision(BaseTool):
     args_schema: Type[BaseModel] = MulliganInput
     def _run(self, choice: str, to_bottom: Optional[str] = '') -> str:
         choice = choice.lower()
-        assert(choice in ('take mulligan', 'keep hand'))
+        assert choice in ('take mulligan', 'keep hand')
         what_to_bottom = [{'id': card['_id'], 'name': card['name']} for card in to_bottom]
         global g_payload
         match choice:

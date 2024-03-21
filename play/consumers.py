@@ -250,9 +250,9 @@ class PlayConsumer(WebsocketConsumer):
 
     # Called when all players agree to let the top of the stack to resolve
     def resolve_stack(self, data={}):
-        assert(len(self.mtg_match.game.stack) > 0)
+        assert len(self.mtg_match.game.stack) > 0
         topmost = self.mtg_match.game.stack[-1]
-        assert(topmost.get('annotations', {}).get('controller', ''))
+        assert topmost.get('annotations', {}).get('controller', '')
         resolver = [p for p in self.mtg_match.game.players if p.player_name == topmost['annotations']['controller']][0]
         self.mtg_match.game.is_resolving = True
         self.mtg_match.game.whose_priority = resolver.player_name
@@ -280,7 +280,7 @@ class PlayConsumer(WebsocketConsumer):
         }))
 
     def send_to_player(self, player, text_data):
-        assert(isinstance(player, Player))
+        assert isinstance(player, Player)
         match player.player_type:
             case 'ai':
                 thoughts, choice = player.ai.receive(text_data=text_data)
