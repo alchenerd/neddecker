@@ -31,14 +31,14 @@ function CreateDelayedTriggerDialog({open, setOpen, card}) {
   const [triggerContent, setTriggerContent] = useState("");
 
   useEffect(() => {
-    if (open && triggerWhen) {
-      setTriggerWhen("");
+    if (open) {
+      setTriggerWhen(card?.oracle_text || "");
     }
   }, [open]);
 
   useEffect(() => {
-    if (open && triggerContent) {
-      setTriggerContent("");
+    if (open) {
+      setTriggerContent(card?.oracle_text || "");
     }
   }, [open]);
 

@@ -156,7 +156,7 @@ function CreateTokenDialog({ open, setOpen, actionTargetCard }) {
               >
                 {players?.map((player, index) => (
                   <MenuItem key={player.player_name} value={"board_state.players[" + index + "].battlefield"}>
-                    {"Player[" + index + "]: " + player.player_name}
+                    {"Player[" + index + "]: " + player.player_name + "'s battlefield"}
                   </MenuItem>
                 ))}
                 <MenuItem value="board_state.stack">stack</MenuItem>
