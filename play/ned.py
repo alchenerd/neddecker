@@ -14,12 +14,12 @@ from langchain.pydantic_v1 import BaseModel, Field
 from langchain_community.chat_models import ChatOpenAI
 from .models import Card, Face, get_card_orm_by_name, get_faces_orm_by_name
 from .serializers import CardSerializer, FaceSerializer
-from dotenv import load_dotenv
 
+from dotenv import load_dotenv
 load_dotenv()
 
 # This is a sin but I don't know any other solution
-g_payload = {} # What Ned answers to the consumer backend, this will be load as JSON
+g_payload = {} # What Ned answers to the consumer backend, this will be loaded as JSON
 
 class MtgCard(BaseModel):
     _id: str = Field(description='The ID of the card')
@@ -27,7 +27,7 @@ class MtgCard(BaseModel):
 
 class MulliganInput(BaseModel):
     choice: str = Field(description='"take mulligan" or "keep hand"')
-    to_bottom: Optional[Sequence[MtgCard]] = Field(description='An array of cards that will be send to the bottom of library')
+    to_bottom: Optional[Sequence[MtgCard]] = Field(description='An array of cards that will be sent to the bottom of library')
 
 class SubmitMulliganDescision(BaseTool):
     name = 'submit_mulligan_descision'
