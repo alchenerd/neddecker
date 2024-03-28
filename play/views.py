@@ -1,4 +1,5 @@
 import random
+from deprecated import deprecated
 from typing import List, Dict, Tuple
 from django.shortcuts import render
 from django.http import JsonResponse
@@ -8,7 +9,7 @@ from django.contrib.postgres.search import TrigramSimilarity
 from django.views.decorators.http import require_POST
 from .models import Deck, Card, Face
 from .models import get_card_orm_by_name
-from langchain.chat_models import ChatOpenAI
+from langchain_openai import ChatOpenAI
 from langchain.prompts.chat import ChatPromptTemplate
 from langchain.schema.messages import SystemMessage
 from langchain.agents import load_tools, initialize_agent, AgentType
@@ -20,7 +21,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-
+@deprecated
 def ned_talks_about(name, main, side, cards, faces):
     llm = ChatOpenAI(model_name='gpt-3.5-turbo-16k', temperature=0.8, max_tokens=1024)
     whoami = f"""Assistant is Ned Decker. Ned Decker is a competitive Magic: the Gathering player. Ned Decker will be playing a deck named {name} in a modern format tournament. Ned Decker is chatting with his opponent before their first game of the match.

@@ -1,4 +1,5 @@
 import json
+import threading
 from typing import Optional, Sequence, Type
 from langchain.pydantic_v1 import BaseModel, Field
 from langchain.tools import BaseTool
@@ -8,8 +9,10 @@ import sys
 import inspect
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 llmrootdir = os.path.dirname(currentdir + '/../../../')
-sys.path.insert(0, llmrootdir)
-from payload import g_payload
+rootdir = os.path.dirname(currentdir + '/../../../../')
+sys.path.insert(0, rootdir)
+import payload
+payload.g_payload_lock = threading.RLock()
 
 class MulliganInput(BaseModel):
     choice: str = Field(description="\"mulligan\" or \"keep\" (without quotation marks)")
@@ -27,11 +30,13 @@ class submit_mulligan_decision(BaseTool):
         assert choice in ('mulligan', 'keep')
         match choice:
             case 'mulligan':
-                g_payload['type'] = 'mulligan'
-                g_payload['who'] = 'ned'
-                return "Ned Decker takes a mulligan! As Ned Decker, complain to your opponent about bad luck with a short sentence said by Ned Decker, but remember to keep all infomation of your cards a top secret! Don't say anything else. No quotes and no metadata."
+                with payload.g_payload_lock:
+                    payload.g_payload['type'] = 'mulligan'
+                    payload.g_payload['who'] = 'ned'
+                return "Ned Decker takes a mulligan! As Ned Decker, complain to your opponent about bad luck with a short sentence said by Ned Decker, but remember to keep all infomation of your cards a top secret! Don't say anything else; no quotes and no metadata. Just the sentence only."
             case 'keep':
-                g_payload['type'] = 'keep_hand'
-                g_payload['who'] = 'ned'
-                g_payload['bottom'] = kwargs.get('to_bottom', [])
-                return "Submitted to keep this hand! As Ned Decker, please hint your opponent how awesome is your hand with a short sentence said by Ned Decker, but remember to keep all infomation of your cards a top secret! Don't say anything else. No quotes and no metadata."
+                with payload.g_payload_lock:
+                    payload.g_payload['type'] = 'keep_hand'
+                    payload.g_payload['who'] = 'ned'
+                    payload.g_payload['bottom'] = kwargs.get('to_bottom', [])
+                return "Submitted to keep this hand! As Ned Decker, please hint your opponent how awesome is your hand with a short sentence said by Ned Decker, but remember to keep all infomation of your cards a top secret! Don't say anything else; no quotes and no metadata. Just the sentence only."
