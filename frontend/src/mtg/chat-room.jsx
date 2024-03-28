@@ -13,7 +13,7 @@ import store from '../store/store';
 import { rollbackGameAction } from '../store/slice';
 import { useSelector } from 'react-redux';
 
-export function ChatRoom({lastMessage, ...props}) {
+export function ChatRoom({lastMessage, userIsDone, userEndTurn, ...props}) {
   const [chatHistory, setChatHistory] = useState([]);
   const [actionHistory, setActionHistory] = useState([]);
   const actionQueue = useSelector((state) => state.gameState.actions);
@@ -55,6 +55,16 @@ export function ChatRoom({lastMessage, ...props}) {
   }, [actionQueue]);
 
   useEffect(() => {
+    console.log(chatHistory);
+    console.log(actionQueue);
+    if ((userIsDone || userEndTurn) && actionQueue) {
+      for (const action of actionQueue) {
+        setChatHistory(prev => [ ...prev, {...action, ["action"]: action.type} ]);
+      }
+    }
+  }, [userIsDone, userEndTurn, actionQueue]);
+
+  useEffect(() => {
     if (chatroomRef.current && chatroomRef.current.scrollTo) {
       chatroomRef.current.scrollTo(0, chatroomRef.current.scrollHeight);
     }
@@ -82,7 +92,22 @@ export function ChatRoom({lastMessage, ...props}) {
                       overflowWrap: "break-word",
                     }}
                   >
-                    [SYSTEM]: {message["log"]}
+                    [LOG]: {message["log"]}
+                  </Typography>
+                )
+              } else if ("action" in message) {
+                return (
+                  <Typography
+                    key={"action-" + index}
+                    variant="subtitle1"
+                    sx={{
+                      color: "black",
+                      textAlign: "center",
+                      textDecoration: "underline",
+                      overflowWrap: "break-word",
+                    }}
+                  >
+                    [ACTION] - {message.action + (message.targetId ? ": " + message.targetId : "")}
                   </Typography>
                 )
               } else {

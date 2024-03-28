@@ -28,10 +28,10 @@ function CreateTriggerDialog({open, setOpen, card}) {
   const [triggerContent, setTriggerContent] = useState("");
 
   useEffect(() => {
-    if (open && triggerContent) {
-      setTriggerContent("");
+    if (open) {
+      setTriggerContent(card?.oracle_text || "");
     }
-  }, [open])
+  }, [open, card])
 
   const handleClose = () => {
     setOpen(false);

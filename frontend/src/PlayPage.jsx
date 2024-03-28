@@ -13,7 +13,7 @@ import CounterDialog from './mtg/counter-dialog';
 import AnnotationDialog from './mtg/annotation-dialog';
 import { useNavigate } from 'react-router-dom';
 import store from './store/store';
-import { selectAffectedGameData, receivedNewGameData, receivedNewGameAction, initialize } from './store/slice';
+import { selectAffectedGameData, receivedNewGameData, receivedNewGameAction, initialize, clearGameAction } from './store/slice';
 import { findCardById } from './mtg/find-card';
 import { useSelector } from 'react-redux';
 import CreateTriggerDialog from './mtg/create-trigger-dialog';
@@ -105,10 +105,12 @@ export default function PlayPage() {
   const [ openAnnotationDialog, setOpenAnnotationDialog] = useState(false);
   const gameData = useSelector((state) => state.gameState.gameData);
   const affectedGameData = useSelector(selectAffectedGameData);
+  const actions = useSelector((state => state.gameState.actions));
   const [ openCreateTriggerDialog, setOpenCreateTriggerDialog ] = useState(false);
   const [ openCreateDelayedTriggerDialog, setOpenCreateDelayedTriggerDialog ] = useState(false);
   const [ openDelayedTriggerMemoDrawer, setOpenDelayedTriggerMemoDrawer ] = useState(false);
   const [ openCreateTokenDialog, setOpenCreateTokenDialog ] = useState(false);
+  const [ isResolving, setIsResolving ] = useState(false);
 
   useEffect(() => {
     console.log("Connection state changed");
@@ -123,16 +125,26 @@ export default function PlayPage() {
   }
 
   function handleReceiveStep(data) {
+    store.dispatch(clearGameAction());
     store.dispatch(receivedNewGameData({ newGameData: data }));
   }
 
   function handleReceivePriority(data) {
+    store.dispatch(clearGameAction());
     setHasPriority(true);
     store.dispatch(receivedNewGameData({ newGameData: data }));
   }
 
   function handleRequirePlayerAction(data) {
+    store.dispatch(clearGameAction());
     setHasPseudopriority(true);
+    store.dispatch(receivedNewGameData({ newGameData: data }));
+  }
+
+  function handleResolveStack(data) {
+    store.dispatch(clearGameAction());
+    setHasPriority(true);
+    setIsResolving(true);
     store.dispatch(receivedNewGameData({ newGameData: data }));
   }
 
@@ -190,6 +202,9 @@ export default function PlayPage() {
           console.log("Requires Player's action but no priority", data.whose_turn, data.phase);
           handleRequirePlayerAction(data);
           break;
+        case 'resolve_stack':
+          console.log("resolving", data.board_state.stack.at(-1).name);
+          handleResolveStack(data);
       }
     }
   }, [lastMessage]);
@@ -271,12 +286,25 @@ export default function PlayPage() {
     }
   }, [dblClkMsg]);
 
+  const sendResolveStack = () => {
+    console.log("Resolving", actions)
+    const payload = {
+      type: "resolve_stack",
+      who: "user",
+      gameData: affectedGameData,
+      actions: actions,
+    }
+    sendMessage(JSON.stringify(payload));
+    setIsResolving(false);
+  }
+
   const sendPassPriority = () => {
-    console.log("Passing", gameData.phase)
+    console.log("Passing", actions)
     const payload = {
       type: "pass_priority",
       who: "user",
-      actions: [],
+      gameData: affectedGameData,
+      actions: actions,
     }
     sendMessage(JSON.stringify(payload));
   };
@@ -286,13 +314,21 @@ export default function PlayPage() {
     const payload = {
       type: "pass_non_priority_action",
       who: "user",
-      actions: [],
+      gameData: affectedGameData,
+      actions: actions,
     }
+    console.log("???" + JSON.stringify(payload));
     sendMessage(JSON.stringify(payload));
   };
 
   useEffect(() => {
-    if (hasPriority && userIsDone) {
+    if (hasPriority && isResolving && userIsDone) {
+      setHasPriority(false);
+      setUserIsDone(false);
+      setIsResolving(false);
+      sendResolveStack();
+    }
+    else if (hasPriority && userIsDone) {
       setHasPriority(false);
       setUserIsDone(false);
       sendPassPriority();
@@ -301,7 +337,7 @@ export default function PlayPage() {
       setUserIsDone(false);
       sendPassNonPriority();
     }
-  }, [hasPriority, hasPseudopriority, userIsDone]);
+  }, [hasPriority, hasPseudopriority, userIsDone, isResolving]);
 
   useEffect(() => {
     if (hasPriority && userEndTurn && gameData.whose_turn === "user") {
@@ -388,11 +424,14 @@ export default function PlayPage() {
                   setOpenAnnotationDialog={setOpenAnnotationDialog}
                   setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
                   setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
+                  isResolving={isResolving}
                 />
               </Grid>
               <Grid item width='100%' height='60vh'>
                 <ChatRoom
                   lastMessage={lastMessage}
+                  userIsDone={userIsDone}
+                  userEndTurn={userEndTurn}
                 />
               </Grid>
             </Grid>

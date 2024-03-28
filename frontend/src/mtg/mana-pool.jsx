@@ -20,9 +20,9 @@ const ManaCounter = ({xs, sx, ownerId, manaType, value, manaPool}) => {
         <Typography>{'{' + manaType + '}'}</Typography>
       </Grid>
       <Grid item xs={12} textAlign='center'>
-        <Typography display="inline" onClick={() => {setMana(ownerId, manaType, -1, manaPool)}}>{"< "}</Typography>
-        <Typography display="inline">{value}</Typography>
-        <Typography display="inline" onClick={() => {setMana(ownerId, manaType, +1, manaPool)}}>{" >"}</Typography>
+        <Typography display="inline" sx={{textDecoration: 'underline'}} onClick={() => {setMana(ownerId, manaType, -1, manaPool)}}>{"-"}</Typography>
+        <Typography display="inline">({value})</Typography>
+        <Typography display="inline" sx={{textDecoration: 'underline'}} onClick={() => {setMana(ownerId, manaType, +1, manaPool)}}>{"+"}</Typography>
       </Grid>
     </Grid>
   )

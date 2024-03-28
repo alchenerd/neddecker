@@ -72,7 +72,7 @@ function DelayedTriggerMemoDrawer({open, setOpen}) {
               }
               return (
                 <ListItem key={JSON.stringify(trigger)}>
-                  <ListItemText primary={((trigger.targetId.startsWith("u"))? "User's " : "Ned's ") + trigger.targetCardName} secondary={trigger.triggerWhen + ", " + trigger.triggerContent} />
+                  <ListItemText primary={((trigger.targetId.startsWith("u"))? "User's " : "Ned's ") + trigger.targetCardName + " (" + trigger.targetId + ")"} secondary={trigger.triggerWhen + ", " + trigger.triggerContent} />
                   <ListItemButton onClick={handleClickDeleteButton}>
                     <ListItemIcon>
                       <DeleteIcon />

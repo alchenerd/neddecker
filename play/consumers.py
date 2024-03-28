@@ -37,6 +37,8 @@ class PlayConsumer(WebsocketConsumer):
                 self.handle_pass_priority(data)
             case 'pass_non_priority_action':
                 self.handle_non_priority_action(data)
+            case 'resolve_stack':
+                self.handle_resolve_stack(data)
 
     def register_match(self, data):
         if hasattr(self, 'mtg_match'):
@@ -132,7 +134,7 @@ class PlayConsumer(WebsocketConsumer):
         self.send_to_player(player=player, text_data=json.dumps(payload))
 
     def player_keep_hand(self, data):
-        print(data)
+        # print(data)
         players = self.mtg_match.game.players
         [i] = [i for i, p in enumerate(players) if p.player_name == data['who']]
         player = players[i]
@@ -177,17 +179,34 @@ class PlayConsumer(WebsocketConsumer):
 
     # Called when a player passes priority
     def handle_pass_priority(self, data={}):
-        #print(data)
         whose_priority = self.mtg_match.game.whose_priority
-        if whose_priority != self.mtg_match.game.priority_waitlist[0]:
-            # not sender's priority
-            return
-        self.mtg_match.game.priority_waitlist.pop(0)
+        print(f'{whose_priority} passed priority action {self.mtg_match.game.phase}!')
+
+        if (self.mtg_match.game.priority_waitlist):
+            if whose_priority != self.mtg_match.game.priority_waitlist[0]:
+                # not sender's priority
+                return
+            self.mtg_match.game.priority_waitlist.pop(0)
+
+        # apply the board state to the game we're keeping track of
+        board_state = data.get('gameData', {}).get('board_state', {})
+        #print(board_state)
+        self.mtg_match.game.apply_board_state(board_state)
+
+        # TODO: save actions to database to replayability
         actions = data.get('actions', [])
         for action in actions:
+            #print(action);
             self.mtg_match.game.apply(action)
+
         if len(self.mtg_match.game.priority_waitlist) > 0:
-            # other players can respond
+            # if the stack has grown, then refill the priority queue starting with the caster
+            if (self.mtg_match.game.stack_has_grown):
+                self.mtg_match.game.stack_has_grown = False
+                self.mtg_match.game.refill_priority_waitlist(next_player=whose_priority)
+                # assume that the caster has passed priority
+                self.mtg_match.game.priority_waitlist.pop(0)
+            # other players may respond
             self.mtg_match.game.whose_priority = self.mtg_match.game.priority_waitlist[0]
             whose_priority = self.mtg_match.game.whose_priority
             player = [p for p in self.mtg_match.game.players if p.player_name == whose_priority][0]
@@ -198,15 +217,47 @@ class PlayConsumer(WebsocketConsumer):
             if len(self.mtg_match.game.stack) == 0:
                 self.advance()
             else:
-                # TODO have controller resolve stack
-                pass
+                self.resolve_stack()
 
     def handle_non_priority_action(self, data={}):
         print(f'passed non-priority action {self.mtg_match.game.phase}!')
+        #print(data)
+        board_state = data.get('gameData', {}).get('board_state', {})
+        #print(board_state)
+        self.mtg_match.game.apply_board_state(board_state)
         actions = data.get('actions', [])
         for action in actions:
             self.mtg_match.game.apply(action)
         self.advance()
+
+    def handle_resolve_stack(self, data={}):
+        print('The top of the stack has resolved!')
+        board_state = data.get('gameData', {}).get('board_state', {})
+        #print(board_state)
+        self.mtg_match.game.apply_board_state(board_state)
+        actions = data.get('actions', [])
+        for action in actions:
+            self.mtg_match.game.apply(action)
+        self.mtg_match.game.is_resolving = False
+        # refill priority waitlist; active player receives priority
+        self.mtg_match.game.refill_priority_waitlist(next_player=self.mtg_match.game.whose_turn)
+        self.mtg_match.game.whose_priority = self.mtg_match.game.priority_waitlist[0]
+        whose_priority = self.mtg_match.game.whose_priority
+        player = [p for p in self.mtg_match.game.players if p.player_name == whose_priority][0]
+        payload = self.mtg_match.game.get_payload()
+        #print(payload['type'])
+        self.send_to_player(player, json.dumps(payload))
+
+    # Called when all players agree to let the top of the stack to resolve
+    def resolve_stack(self, data={}):
+        assert len(self.mtg_match.game.stack) > 0
+        topmost = self.mtg_match.game.stack[-1]
+        assert topmost.get('annotations', {}).get('controller', '')
+        resolver = [p for p in self.mtg_match.game.players if p.player_name == topmost['annotations']['controller']][0]
+        self.mtg_match.game.is_resolving = True
+        self.mtg_match.game.whose_priority = resolver.player_name
+        payload = self.mtg_match.game.get_payload()
+        self.send_to_player(resolver, json.dumps(payload))
 
     # Called when all players agree to move to the next step
     def advance(self, data={}):
@@ -229,7 +280,7 @@ class PlayConsumer(WebsocketConsumer):
         }))
 
     def send_to_player(self, player, text_data):
-        assert(isinstance(player, Player))
+        assert isinstance(player, Player)
         match player.player_type:
             case 'ai':
                 thoughts, choice = player.ai.receive(text_data=text_data)

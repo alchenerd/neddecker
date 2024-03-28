@@ -45,16 +45,25 @@ export const gameSlice = createSlice({
           return { ...state, actions: [ ...state.actions.slice(0, -1), action.payload ] };
         }
       }
+      if (action.payload.type === "set_hp") {
+        const latestAction = current(state).actions.slice(-1)[0];
+        if (latestAction && latestAction.type === "set_hp" && latestAction.targetId === action.payload.targetId) {
+          return { ...state, actions: [ ...state.actions.slice(0, -1), action.payload ] };
+        }
+      }
       return { ...state, actions: [ ...state.actions, { ...action.payload } ] };
     },
     rollbackGameAction: (state) => {
-      const pastActions = state.actions.filter((item, index) => index < state.actions.length - 1);
+    const pastActions = state.actions.filter((item, index) => index < state.actions.length - 1);
       const previousState = {
         ...state,
         actions: pastActions,
       }
       return previousState;
     },
+    clearGameAction: (state) => {
+      return { ...state, actions: [] };
+    }
   },
 });
 
@@ -62,7 +71,8 @@ export const {
   initialize,
   receivedNewGameData,
   receivedNewGameAction,
-  rollbackGameAction
+  rollbackGameAction,
+  clearGameAction,
 } = gameSlice.actions;
 
 const selectGameData = (store) => store.gameState.gameData;
@@ -77,6 +87,11 @@ const calculateAffectedGameData = (gameData, actions) => {
         const newSourceZone = _.get(affectedGameData, found.path).filter(
           (card) => card.in_game_id !== found.card.in_game_id
         );
+        if (action.to === "board_state.stack") {
+          const previousControllerId = parseInt(found.path.match(/players\[(.*)\]/)[1]);
+          const previousControllerName = affectedGameData.board_state.players[previousControllerId].player_name;
+          found.card.annotations.controller = previousControllerName;
+        }
         const newTargetZone = [..._.get(affectedGameData, action.to, []), found.card];
         _.set(affectedGameData, found.path, newSourceZone);
         _.set(affectedGameData, action.to, newTargetZone); 
@@ -121,6 +136,9 @@ const calculateAffectedGameData = (gameData, actions) => {
           const pseudoCard = cloneDeep(found.card);
           _.set(pseudoCard, "in_game_id", "trigger" + availableTriggerSerialNumber + "@" + found.card.in_game_id);
           _.set(pseudoCard, "triggerContent", action.triggerContent);
+          const previousControllerId = parseInt(found.path.match(/players\[(.*)\]/)[1]);
+          const previousControllerName = affectedGameData.board_state.players[previousControllerId].player_name;
+          pseudoCard.annotations.controller = previousControllerName;
           const newStack = [ ..._.get(affectedGameData, "board_state.stack"), pseudoCard ];
           _.set(affectedGameData, "board_state.stack", newStack);
         }

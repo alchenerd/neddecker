@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Grid from '@mui/material/Grid';
@@ -7,8 +6,7 @@ import { Stack } from './stack';
 import store from './../store/store';
 import { selectAffectedGameData } from './../store/slice';
 
-export function GameInformation({focusedCard, setFocusedCard, setUserIsDone, userEndTurn, setUserEndTurn, setDndMsg, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, setOpenCreateTriggerDialog, setOpenCreateDelayedTriggerDialog}) {
-  const [ isResolving, setIsResolving ] = useState(false);
+export function GameInformation({focusedCard, setFocusedCard, setUserIsDone, userEndTurn, setUserEndTurn, setDndMsg, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, setOpenCreateTriggerDialog, setOpenCreateDelayedTriggerDialog, isResolving}) {
   const handleClickDoneButton = () => {
     setUserIsDone(true);
   }
