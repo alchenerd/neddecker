@@ -83,7 +83,7 @@ class MulliganPromptPreset():
         "(If the early game was not resilient enough, consider taking a mulligan.)\n"
         "5. Analyze why Ned Decker should keep or mulligan (only 1 reason, be super short & terse).\n"
         "5b. How many cards would Ned Decker get to keep if he chooses mulligan? \n"
-        "5b. Is it worth it to have one less card in hand to see the next seven cards? \n"
+        "5c. Is it worth it to have one less card in hand to see the next seven cards? \n"
         "(If should mulligan but mulligan is not worth having one less card, "
         "then Ned Decker should reluctantly keep instead.)\n"
         "6. Final Verdict: keep or mulligan (Keep/Mulligan)?\n",

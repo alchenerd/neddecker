@@ -14,7 +14,8 @@ import sys
 import inspect
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 llmrootdir = os.path.dirname(currentdir + '/../../../')
-sys.path.insert(0, llmrootdir)
+rootdir = os.path.dirname(currentdir + '/../../../../')
+sys.path.insert(0, rootdir)
 from payload import g_payload
 from prompts.mulligan import MulliganPromptPreset as MPP
 from agents.agent import ChatAndThenSubmitAgentExecutor as CSAgentExecutor
