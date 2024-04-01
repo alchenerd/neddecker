@@ -1,13 +1,6 @@
 from behave import *
 from langchain_openai import ChatOpenAI
-from langchain.prompts.chat import ChatPromptTemplate, MessagesPlaceholder
-from langchain.prompts import SystemMessagePromptTemplate, HumanMessagePromptTemplate
-from langchain.agents import create_openai_tools_agent
-from langchain.agents import AgentType
-from langchain.agents.agent import AgentExecutor
 from langchain.chains.conversation.memory import ConversationBufferMemory
-from langchain.tools.render import render_text_description
-import re
 
 import os
 import sys
@@ -17,16 +10,16 @@ llmrootdir = os.path.dirname(currentdir + '/../../../')
 rootdir = os.path.dirname(currentdir + '/../../../../')
 sys.path.insert(0, rootdir)
 from payload import g_payload
-from prompts.mulligan import MulliganPromptPreset as MPP
-from agents.agent import ChatAndThenSubmitAgentExecutor as CSAgentExecutor
+from llm.prompts.mulligan import MulliganPromptPreset as MPP
+from llm.agents.agent import ChatAndThenSubmitAgentExecutor as CSAgentExecutor
 
 from dotenv import load_dotenv
 load_dotenv()
 
-@given('the AI player is GPT from OpenAI')
+@given('the AI player for mulligan is GPT from OpenAI')
 def step_impl(context):
-    #context.llm = ChatOpenAI(model_name='gpt-3.5-turbo', temperature=0, max_tokens=1024)
-    context.llm = ChatOpenAI(model_name='gpt-4', temperature=0, max_tokens=1024)
+    context.llm = ChatOpenAI(model_name='gpt-3.5-turbo', temperature=0, max_tokens=1024)
+    #context.llm = ChatOpenAI(model_name='gpt-4', temperature=0, max_tokens=1024)
     context.tools = MPP.tools
     context.chat_prompt = MPP.chat_prompt
     context.tools_prompt = MPP.tools_prompt
@@ -624,7 +617,7 @@ def step_impl(context):
 def step_impl(context):
     context.response = context.agent_executor.chatter.invoke({
         'data': "It's a good day for a Magic tournament.",
-        'input': 'Hello, my opponent! High roll?',
+        'input': 'Hello, my opponent! What do you think of this phase?',
     })
 
 @when('the system asks the AI player for mulligan decision (bottoming 0)')

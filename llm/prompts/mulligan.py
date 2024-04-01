@@ -7,10 +7,11 @@ import sys
 import inspect
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 llmrootdir = os.path.dirname(currentdir + '/../')
-sys.path.insert(0, llmrootdir)
-from tools.mulligan import submit_mulligan_decision
-from prompts.whoami import AI_ROLE
-from prompts.react import REACT_GUIDE
+rootdir = os.path.dirname(currentdir + '/../../')
+sys.path.insert(0, rootdir)
+from llm.tools.mulligan import submit_mulligan_decision
+from llm.prompts.whoami import AI_ROLE
+from llm.prompts.react import REACT_GUIDE
 
 class MulliganPromptPreset():
     chat_prompt = ChatPromptTemplate.from_messages([

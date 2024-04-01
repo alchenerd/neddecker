@@ -1,5 +1,4 @@
 import json
-import threading
 from typing import Optional, Sequence, Type
 from langchain.pydantic_v1 import BaseModel, Field
 from langchain.tools import BaseTool
@@ -12,7 +11,6 @@ llmrootdir = os.path.dirname(currentdir + '/../../../')
 rootdir = os.path.dirname(currentdir + '/../../../../')
 sys.path.insert(0, rootdir)
 import payload
-payload.g_payload_lock = threading.RLock()
 
 class MulliganInput(BaseModel):
     choice: str = Field(description="\"mulligan\" or \"keep\" (without quotation marks)")
