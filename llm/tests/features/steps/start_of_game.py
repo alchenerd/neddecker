@@ -16,13 +16,84 @@ from llm.agents.agent import ChatAndThenSubmitAgentExecutor as CSAgentExecutor
 from dotenv import load_dotenv
 load_dotenv()
 
-
 def leyline_of_the_void(n):
     return {
         "in_game_id": "n4#{0}".format(n+1),
         "name": "Leyline of the Void", "mana_cost": "{2}{B}{B}",
         "type_line": "Enchantment",
         "oracle_text": "If Leyline of the Void is in your opening hand, you may begin the game with it on the battlefield.\nIf a card would be put into an opponent’s graveyard from anywhere, exile it instead.",
+        "power": None, "toughness": None,
+    }
+
+def veil_of_summer(n):
+    return {
+        "in_game_id": "n13#{0}".format(n+1),
+        "name": "Veil of Summer", "mana_cost": "{G}",
+        "type_line": "Instant",
+        "oracle_text": "Draw a card if an opponent has cast a blue or black spell this turn. Spells you control can’t be countered this turn. You and permanents you control gain hexproof from blue and from black until end of turn. (You and they can’t be the targets of blue or black spells or abilities your opponents control.)",
+        "power": None, "toughness": None,
+    }
+
+def cursed_totem(n):
+    return {
+        "in_game_id": "n14#{0}".format(n+1),
+        "name": "Cursed Totem", "mana_cost": "{2}",
+        "type_line": "Artifact",
+        "oracle_text": "Activated abilities of creatures can’t be activated.",
+        "power": None, "toughness": None,
+    }
+
+def evil_presence(n):
+    return {
+        "in_game_id": "n15#{0}".format(n+1),
+        "name": "Evil Presence", "mana_cost": "{B}",
+        "type_line": "Enchantment - Aura",
+        "oracle_text": "Enchant land\nEnchanted land is a Swamp.",
+        "power": None, "toughness": None,
+    }
+
+def fatal_push(n):
+    return {
+        "in_game_id": "n16#{0}".format(n+1),
+        "name": "Fatal Push", "mana_cost": "{B}",
+        "type_line": "Instant",
+        "oracle_text": "Destroy target creature if it has mana value 2 or less.\nRevolt - Destroy that creature if it has mana value 4 or less instead if a permanent you controlled left the battlefield this turn.",
+        "power": None, "toughness": None,
+    }
+
+def chancellor_of_the_dross(n):
+    return {
+        "in_game_id": "n17#{0}".format(n+1),
+        "name": "Chancellor of the Dross", "mana_cost": "{4}{B}{B}{B}",
+        "type_line": "Creature - Phyrexian Vampire",
+        "oracle_text": "You may reveal this card from your opening hand. If you do, at the beginning of the first upkeep, each opponent loses 3 life, then you gain life equal to the life lost this way.\nFlying, lifelink",
+        "power": "6", "toughness": "6",
+    }
+
+def sleeper_agent(n):
+    return {
+        "in_game_id": "n19#{0}".format(n+1),
+        "name": "Sleeper Agent", "mana_cost": "{B}",
+        "type_line": "Creature - Phyrexian Minion",
+        "oracle_text": "When Sleeper Agent enters the battlefield, target opponent gains control of it.\nAt the beginning of your upkeep, Sleeper Agent deals 2 damage to you.",
+        "power": "3", "toughness": "3",
+    }
+
+def marsh_flats(n):
+    return {
+        "in_game_id": "n20#{0}".format(n+1),
+        "name": "Marsh Flats", "mana_cost": None,
+        "type_line": "Land",
+        "oracle_text": "{T}, Pay 1 life, Sacrifice Marsh Flats: Search your library for a Plains or Swamp card, put it onto the battlefield, then shuffle.",
+        "power": None, "toughness": None,
+    }
+
+def swamp(n):
+    return {
+        "in_game_id": "n21#{0}".format(n+1),
+        "name": "Swamp", "mana_cost": None,
+        "type_line": "Basic Land - Swamp",
+        "oracle_text": "({T}: Add {B}.)",
         "power": None, "toughness": None,
     }
 
@@ -174,6 +245,8 @@ def step_impl(context):
 def step_impl(context):
     if not hasattr(context, 'hand') or not hasattr(context, 'sideboard'):
         return
+    with payload.g_actions_lock:
+        payload.g_actions = []
     board_analysis = SGPP.board_analysis.format(hand=context.hand, sideboard=context.sideboard)
     _input = SGPP._input
     context.response = context.agent_executor.invoke({
@@ -184,8 +257,6 @@ def step_impl(context):
 @then('the AI Player marks the card as companion')
 def step_impl(context):
     assert any(map(lambda act: act.get('annotationKey', '') == 'isCompanion', payload.g_actions))
-    with payload.g_actions_lock:
-        payload.g_actions = []
 
 @given('the AI player has one Chancellor of the Dross in hand')
 def step_impl(context):
@@ -193,39 +264,6 @@ def step_impl(context):
     Sideboard (Black Burn): [ 3 Veil of Summer, 3 Cursed Totem, 3 Evil Presence, 3 Leyline of the Void, 3 Fatal Push ]
     Hand (Black Burn): [ Chancellor of the dross, Okiba Reckoner Raid, Sleeper Agent, Sleeper Agent, Marsh Flats, Marsh Flats, Swamp ]
     """
-    def veil_of_summer(n):
-        return {
-            "in_game_id": "n13#{0}".format(n+1),
-            "name": "Veil of Summer", "mana_cost": "{G}",
-            "type_line": "Instant",
-            "oracle_text": "Draw a card if an opponent has cast a blue or black spell this turn. Spells you control can’t be countered this turn. You and permanents you control gain hexproof from blue and from black until end of turn. (You and they can’t be the targets of blue or black spells or abilities your opponents control.)",
-            "power": None, "toughness": None,
-        }
-    def cursed_totem(n):
-        return {
-            "in_game_id": "n14#{0}".format(n+1),
-            "name": "Cursed Totem", "mana_cost": "{2}",
-            "type_line": "Artifact",
-            "oracle_text": "Activated abilities of creatures can’t be activated.",
-            "power": None, "toughness": None,
-        }
-    def evil_presence(n):
-        return {
-            "in_game_id": "n15#{0}".format(n+1),
-            "name": "Evil Presence", "mana_cost": "{B}",
-            "type_line": "Enchantment - Aura",
-            "oracle_text": "Enchant land\nEnchanted land is a Swamp.",
-            "power": None, "toughness": None,
-        }
-    def fatal_push(n):
-        return {
-            "in_game_id": "n16#{0}".format(n+1),
-            "name": "Fatal Push", "mana_cost": "{B}",
-            "type_line": "Instant",
-            "oracle_text": "Destroy target creature if it has mana value 2 or less.\nRevolt - Destroy that creature if it has mana value 4 or less instead if a permanent you controlled left the battlefield this turn.",
-            "power": None, "toughness": None,
-        }
-        
     context.sideboard = []
     context.sideboard.extend([ veil_of_summer(n) for n in range(3) ])
     context.sideboard.extend([ cursed_totem(n) for n in range(3) ])
@@ -236,14 +274,6 @@ def step_impl(context):
 
     # Hand (Black Burn): [ Chancellor of the dross, Okiba Reckoner Raid, Sleeper Agent, Sleeper Agent, Marsh Flats, Marsh Flats, Swamp ]
 
-    def chancellor_of_the_dross(n):
-        return {
-            "in_game_id": "n17#{0}".format(n+1),
-            "name": "Chancellor of the Dross", "mana_cost": "{4}{B}{B}{B}",
-            "type_line": "Creature - Phyrexian Vampire",
-            "oracle_text": "You may reveal this card from your opening hand. If you do, at the beginning of the first upkeep, each opponent loses 3 life, then you gain life equal to the life lost this way.\nFlying, lifelink",
-            "power": "6", "toughness": "6",
-        }
     def okiba_reckoner_raid(n):
         return {
             "in_game_id": "n18#{0}".format(n+1),
@@ -251,30 +281,6 @@ def step_impl(context):
             "type_line": "Enchantment - Saga // Enchantment Creature - Rat Rogue",
             "oracle_text": "(As this Saga enters and after your draw step, add a lore counter.)\nI, II - Each opponent loses 1 life and you gain 1 life.\nIII - Exile this Saga, then return it to the battlefield transformed under your control. // Menace\nVehicles you control have menace. (They can’t be blocked except by two or more creatures.)",
             "power": "None // 2", "toughness": "None // 2",
-        }
-    def sleeper_agent(n):
-        return {
-            "in_game_id": "n19#{0}".format(n+1),
-            "name": "Sleeper Agent", "mana_cost": "{B}",
-            "type_line": "Creature - Phyrexian Minion",
-            "oracle_text": "When Sleeper Agent enters the battlefield, target opponent gains control of it.\nAt the beginning of your upkeep, Sleeper Agent deals 2 damage to you.",
-            "power": "3", "toughness": "3",
-        }
-    def marsh_flats(n):
-        return {
-            "in_game_id": "n20#{0}".format(n+1),
-            "name": "Marsh Flats", "mana_cost": None,
-            "type_line": "Land",
-            "oracle_text": "{T}, Pay 1 life, Sacrifice Marsh Flats: Search your library for a Plains or Swamp card, put it onto the battlefield, then shuffle.",
-            "power": None, "toughness": None,
-        }
-    def swamp(n):
-        return {
-            "in_game_id": "n21#{0}".format(n+1),
-            "name": "Swamp", "mana_cost": None,
-            "type_line": "Basic Land - Swamp",
-            "oracle_text": "({T}: Add {B}.)",
-            "power": None, "toughness": None,
         }
 
     context.hand = []
@@ -285,17 +291,39 @@ def step_impl(context):
     context.hand.extend([ swamp(n) for n in range(1) ])
     assert len(context.hand) == 7
 
-@then(u'the AI player registers a delayed trigger for Chancellor of the Dross')
+@then('the AI player registers a delayed trigger for Chancellor of the Dross')
 def step_impl(context):
-    pass
+    assert len(payload.g_actions) == 1
+    assert payload.g_actions[0].get('type', '') == 'create_delayed_trigger'
+    assert payload.g_actions[0].get('targetCardName', '') == 'Chancellor of the Dross'
 
 @given(u'the AI player has three Chancellor of the Dross in hand')
 def step_impl(context):
-    pass
+    """ Sets the hand with three Chancellor of Dross.
+    Sideboard (Black Burn): [ 3 Veil of Summer, 3 Cursed Totem, 3 Evil Presence, 3 Leyline of the Void, 3 Fatal Push ]
+    Hand (Black Burn): [ Chancellor of the dross, Chancellor of the dross, Chancellor of the dross, Sleeper Agent, Marsh Flats, Marsh Flats, Swamp ]
+    """
+    context.sideboard = []
+    context.sideboard.extend([ veil_of_summer(n) for n in range(3) ])
+    context.sideboard.extend([ cursed_totem(n) for n in range(3) ])
+    context.sideboard.extend([ evil_presence(n) for n in range(3) ])
+    context.sideboard.extend([ leyline_of_the_void(n) for n in range(3) ])
+    context.sideboard.extend([ fatal_push(n) for n in range(3) ])
+    assert len(context.sideboard) == 15
+
+    context.hand = []
+    context.hand.extend([ chancellor_of_the_dross(n) for n in range(3) ])
+    context.hand.extend([ sleeper_agent(n) for n in range(1) ])
+    context.hand.extend([ marsh_flats(n) for n in range(2) ])
+    context.hand.extend([ swamp(n) for n in range(1) ])
+    assert len(context.hand) == 7
 
 @then(u'the AI player registers three different delayed trigger for each of the Chancellor of the Dross')
 def step_impl(context):
-    pass
+    assert len(payload.g_actions) == 3
+    for i in range(3):
+        assert payload.g_actions[i].get('type', '') == 'create_delayed_trigger'
+        assert payload.g_actions[i].get('targetCardName', '') == 'Chancellor of the Dross'
 
 @given(u'the AI player has one Gemstone Caverns in hand')
 def step_impl(context):

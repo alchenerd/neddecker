@@ -42,8 +42,8 @@ class choose_companion(BaseTool):
             payload.g_actions.append(new_action)
         return (
             "{name} ({_id}) is set to be companion! ".format(name=card_name, _id=in_game_id) +
-            "You may later in the game pay three mana and put it into your hand as a sorcery. "
-            "For now, it stays in your sideboard.\n"
+            "Ned Decker may later in the game pay three mana and put it into his hand as a sorcery. "
+            "For now, it stays in Ned's sideboard.\n"
             "Pass the start of game phase or "
             "continue to take start of game actions for other cards "
             "until Ned Decker (AI) wants to pass the start of game phase."
@@ -72,7 +72,7 @@ class reveal_from_hand(BaseTool):
 
 class move_to_battlefield_from_hand(BaseTool):
     name = "move_to_battlefield_from_hand"
-    description = """Submit to move a card from hand to battlefield. Only call this when a card in hand says that you may begin the game with it on the battlefield."""
+    description = """Submit to move a card from hand to battlefield. Only call this when a card in hand says that owner may begin the game with it on the battlefield."""
     args_schema: Type[BaseModel] = CardIdInput
     def _run(self, in_game_id, card_name):
         new_action = {
@@ -92,7 +92,7 @@ class move_to_battlefield_from_hand(BaseTool):
 
 class pass_start_of_game(BaseTool):
     name = "pass_start_of_game"
-    description = """Submit to pass the start of game phase. No parameter needed from input."""
+    description = """Submit to pass the start of game phase. No parameter needed."""
     def _to_args_and_kwargs(self, tool_input):
         return (), {}
 

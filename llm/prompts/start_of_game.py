@@ -38,31 +38,22 @@ class StartOfGamePromptPreset():
     ])
 
     requests = [
-        "At the start of the game, a player may:\n"
-        "<actions>\n"
-        "1. Set a companion card in the player's sideboard as a companion; "
-            "then the player can pay three mana "
-            "to put the companion card "
-            "from the player's sideboard "
-            "to the player's hand later in the game as a sorcery.\n"
-            "(A companion is usually a Legendary Creature that has a companion deckbuilding restriction.)\n"
-            "(To be eligible for action 1, a card must have the keyword \"Companion\" in its oracle text.)\n"
-        "2. Reveal one or more cards that do something at the start of the game if the card says so; "
-            "then the player may register a delayed trigger to resolve the effects. "
-            "(To be eligible for action 2, a card must have \"reveal\" and \"opening hand\" in its oracle text.)\n"
-        "3. Put one or more cards from the player's hand to the player's battlefield if the card says so; "
-            "then the player may move the card from hand to battlefield. "
-            "(To be eligible for action 3, a card must have \"...begin the game with ... on the battlefield\" in its oracle text.)\n"
-        "</actions>\n"
+        "At the start of the game, a player may (in listed order):\n"
+        "<eligible actions>\n"
+            "1. Choose Companion - Choose a companion card in the player's sideboard "
+                "(Choose Companion Criteria: Is a Legendary Creature, and has the exact keyword \"Companion\" at the beginning of its oracle text.)\n"
+            "2. Reveal from Hand - Reveal one or more cards that has an effect when revealed from the opening hand "
+                "(Reveal from Hand Criteria: Mentions \"reveal this card from your opening hand\" in the oracle text.)\n"
+            "3. Put onto Battlefield - Put one or more cards from hand to battlefield "
+                "(Put onto Battlefield Criteria: Mentions \"begin the game with ~ on the battlefield\" in the oracle text.)\n"
+        "</eligible actions>\n"
         "Answer as Ned Decker (AI):\n"
-        "Q1. List all Legandary Creatures that are in Ned Decker's sideboard and has oracle text starting with \"Companion\".\n"
-        "Q1a. If there is one or more, which would Ned Decker choose as his companion?\n"
-        "Q2. List all cards in Ned Decker's hand that does something when revealed from the opening hand (has exactly \"reveal\" in the oracle text). Give related oracle text excerpt and names.\n"
-        "Q2a. For each card listed, would Ned Decker want to reveal that card for its effect?\n"
-        "Q3. List all cards in Ned Decker's hand that in its oracle text state that Ned may begin the game with it on the battlefield. Give names.\n"
-        "Q3a. For each card listed, would Ned Decker want to put it to the battlefield?\n"
-        "Q3b. For each card about to put onto the battlefield, give exact excerpts from its oracle text that allows Ned to put it on the battlefield; is the allowed card really the card itself, or is the allowed card other things instead?\n"
-        "Q4. List all start-of game actions Ned Decker will take.\n"
+        "Q1. List all Legandary Creatures in the sideboard that meets the \"Choose Companion\" criteria.\n"
+        "Q2. List all cards in hand that meets the \"Reveal from Hand\" criteria. (Answer with card IDs and names.)\n"
+        "Q2a. Would Ned Decker want to reveal those cards for their effects?\n"
+        "Q3. List all cards in hand that meets the \"Put onto Battlefield\" criteria. (Answer with card IDs and names.)\n"
+        "Q3a. Would Ned Decker want to put them onto the battlefield?\n"
+        "Q4. Summarize Q1 to Q3 by listing Ned's TODO list of start-of-game actions.\n"
     ]
 
     board_analysis = (
@@ -71,7 +62,7 @@ class StartOfGamePromptPreset():
     )
 
     _input = (
-        "Ned Decker (AI) may take any number of actions as planned, and then he should pass the start of game phase."
+        "Ned Decker (AI) should take all actions in the TODO list, and then he should pass the start of game phase."
     )
 
     improvement_prompt = (
