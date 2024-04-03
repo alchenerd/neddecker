@@ -3,6 +3,7 @@ from langchain.agents import create_openai_tools_agent
 from langchain.agents.agent import AgentExecutor
 from langchain.chains import LLMChain
 from langchain.prompts.chat import MessagesPlaceholder
+from langchain.pydantic_v1 import ValidationError
 
 import os
 import sys
@@ -12,6 +13,14 @@ llmrootdir = os.path.dirname(currentdir + '/../')
 rootdir = os.path.dirname(currentdir + '/../../')
 sys.path.insert(0, rootdir)
 import payload
+
+def handle_error(error):
+    print('Trying to handle my custom error')
+    if isinstance(error, ValueError):
+        return str(error)
+    if isinstance(error, ValidationError):
+        return str(error)
+    raise error
 
 class ChainOfThoughtAgentExecutor():
     """Agent Executor that aims to retrieve Chain of thought history.
@@ -45,7 +54,7 @@ class SubmitAgentExecutor():
     """Agent Executor that have the AI call submit tool(s) based on memory.
     Require at least one tool for submission.
     """
-    def __init__(self, llm, prompt, tools, memory, requests, verbose=True):
+    def __init__(self, llm, prompt, tools, memory, requests, verbose=True, handle_parsing_errors=True):
         self.llm = llm
         self.prompt = prompt + MessagesPlaceholder("agent_scratchpad")
         self.tools = tools
@@ -59,6 +68,7 @@ class SubmitAgentExecutor():
                 prompt=self.prompt,
                 memory=self.memory,
                 verbose=self.verbose,
+                handle_parsing_errors=handle_parsing_errors,
         )
 
     def request(self, data=None):
@@ -74,7 +84,7 @@ class ChatAndThenSubmitAgentExecutor():
     """Agent Executor that have the AI chat and then submit.
     Require at least one tool for submission.
     """
-    def __init__(self, llm, chat_prompt, tools_prompt, tools, memory, requests=[], verbose=True):
+    def __init__(self, llm, chat_prompt, tools_prompt, tools, memory, requests=[], verbose=True, handle_parsing_errors=True):
         self.memory = memory
         if chat_prompt:
             self.chatter = ChainOfThoughtAgentExecutor(
@@ -92,6 +102,7 @@ class ChatAndThenSubmitAgentExecutor():
                     memory=self.memory,
                     requests=requests,
                     verbose=verbose,
+                    handle_parsing_errors=handle_error,
             )
 
     def invoke(self, _input):

@@ -256,7 +256,14 @@ def step_impl(context):
 
 @then('the AI Player marks the card as companion')
 def step_impl(context):
-    assert any(map(lambda act: act.get('annotationKey', '') == 'isCompanion', payload.g_actions))
+    try:
+        assert any((a.get('annotationKey', '') == 'isCompanion' and a.get('targetId', '').startswith('n3')) for a in payload.g_actions)
+    except AssertionError as e:
+        improvement = context.agent_executor.chatter.invoke({
+            'data': '',
+            'input': "Ned Decker has made one or more illegal action(s). What wrong actions did Ned Decker make? What was asked to guide Ned Decker to make mistake(s)?",
+        })
+        raise Exception('[improvement]: ' + improvement) from e
 
 @given('the AI player has one Chancellor of the Dross in hand')
 def step_impl(context):
@@ -293,9 +300,16 @@ def step_impl(context):
 
 @then('the AI player registers a delayed trigger for Chancellor of the Dross')
 def step_impl(context):
-    assert len(payload.g_actions) == 1
-    assert payload.g_actions[0].get('type', '') == 'create_delayed_trigger'
-    assert payload.g_actions[0].get('targetCardName', '') == 'Chancellor of the Dross'
+    try:
+        assert len(payload.g_actions) == 1
+        assert payload.g_actions[0].get('type', '') == 'create_delayed_trigger'
+        assert payload.g_actions[0].get('targetCardName', '') == 'Chancellor of the Dross'
+    except AssertionError as e:
+        improvement = context.agent_executor.chatter.invoke({
+            'data': '',
+            'input': "Ned Decker has made one or more illegal action(s). What wrong actions did Ned Decker make? What was asked to guide Ned Decker to make mistake(s)?",
+        })
+        raise Exception('[improvement]: ' + improvement) from e
 
 @given(u'the AI player has three Chancellor of the Dross in hand')
 def step_impl(context):
@@ -320,22 +334,180 @@ def step_impl(context):
 
 @then(u'the AI player registers three different delayed trigger for each of the Chancellor of the Dross')
 def step_impl(context):
-    assert len(payload.g_actions) == 3
-    for i in range(3):
-        assert payload.g_actions[i].get('type', '') == 'create_delayed_trigger'
-        assert payload.g_actions[i].get('targetCardName', '') == 'Chancellor of the Dross'
+    try:
+        assert len(payload.g_actions) == 3
+        for i in range(3):
+            assert payload.g_actions[i].get('type', '') == 'create_delayed_trigger'
+            assert payload.g_actions[i].get('targetCardName', '') == 'Chancellor of the Dross'
+    except AssertionError as e:
+        improvement = context.agent_executor.chatter.invoke({
+            'data': '',
+            'input': "Ned Decker has made one or more illegal action(s). What wrong actions did Ned Decker make? What was asked to guide Ned Decker to make mistake(s)?",
+        })
+        raise Exception('[improvement]: ' + improvement) from e
 
 @given(u'the AI player has one Gemstone Caverns in hand')
 def step_impl(context):
-    pass
+    """ Sets the hand with one Gemstone Caverns.
+    Sideboard (Temur Rhinos): [ 2 Blood Moon, 1 Boseiju, Who Endures, 3 Endurance, 3 Force of Vigor, 1 Magus of the Moon, 4 Mystical Dispute, 1 Tishana's Tidebinder ]
+    Hand (Temur Rhinos): [ Shardless Agent, Dead // Gone, Fire // Ice, Gemstone Caverns, Ketria Triome, Misty Rainforest, Steam Vents ]
+    """
+    def blood_moon(n):
+        return {
+            "in_game_id": "n22#{0}".format(n+1),
+            "name": "Blood Moon", "mana_cost": "{2}{R}",
+            "type_line": "Enchantment",
+            "oracle_text": "Nonbasic lands are Mountains.",
+            "power": None, "toughness": None,
+        }
+    def boseiju_who_endures(n):
+        return {
+            "in_game_id": "n23#{0}".format(n+1),
+            "name": "Boseiju Who Endures", "mana_cost": None,
+            "type_line": "Legendary Land",
+            "oracle_text": "{T}: Add {G}.\nChannel - {1}{G}, Discard Boseiju, Who Endures: Destroy target artifact, enchantment, or nonbasic land an opponent controls. That player may search their library for a land card with a basic land type, put it onto the battlefield, then shuffle. This ability costs {1} less to activate for each legendary creature you control.",
+            "power": None, "toughness": None,
+        }
+    def endurance(n):
+        return {
+            "in_game_id": "n24#{0}".format(n+1),
+            "name": "Endurance", "mana_cost": "{1}{G}{G}",
+            "type_line": "Creature - Elemental Incarnation",
+            "oracle_text": "Flash\nReach\nWhen Endurance enters the battlefield, up to one target player puts all the cards from their graveyard on the bottom of their library in a random order.\nEvoke-Exile a green card from your hand.",
+            "power": "3", "toughness": "4",
+        }
+    def force_of_vigor(n):
+        return {
+            "in_game_id": "n25#{0}".format(n+1),
+            "name": "Force of Vigor", "mana_cost": "{2}{G}{G}",
+            "type_line": "Instant",
+            "oracle_text": "If it’s not your turn, you may exile a green card from your hand rather than pay this spell’s mana cost.\nDestroy up to two target artifacts and/or enchantments.",
+            "power": None, "toughness": None,
+        }
+    def magus_of_the_moon(n):
+        return {
+            "in_game_id": "n26#{0}".format(n+1),
+            "name": "Magus of the Moon", "mana_cost": "{2}{R}",
+            "type_line": "Creature - Human Wizard",
+            "oracle_text": "Nonbasic lands are Mountains.",
+            "power": "2", "toughness": "2",
+        }
+    def mystical_dispute(n):
+        return {
+            "in_game_id": "n27#{0}".format(n+1),
+            "name": "Mystical Dispute", "mana_cost": "{2}{U}",
+            "type_line": "Instant",
+            "oracle_text": "This spell costs {2} less to cast if it targets a blue spell.\nCounter target spell unless its controller pays {3}.",
+            "power": None, "toughness": None,
+        }
+    def tishanas_tidebinder(n):
+        return {
+            "in_game_id": "n28#{0}".format(n+1),
+            "name": "Tishana's Tidebinder", "mana_cost": "{2}{U}",
+            "type_line": "Creature - Merfolk Wizard",
+            "oracle_text": "Flash\nWhen Tishana’s Tidebinder enters the battlefield, counter up to one target activated or triggered ability. If an ability of an artifact, creature, or planeswalker is countered this way, that permanent loses all abilities for as long as Tishana’s Tidebinder remains on the battlefield. (Mana abilities can’t be targeted.)",
+            "power": "3", "toughness": "2",
+        }
+
+    context.sideboard = []
+    context.sideboard.extend([ blood_moon(n) for n in range(2) ])
+    context.sideboard.extend([ boseiju_who_endures(n) for n in range(1) ])
+    context.sideboard.extend([ endurance(n) for n in range(3) ])
+    context.sideboard.extend([ force_of_vigor(n) for n in range(3) ])
+    context.sideboard.extend([ magus_of_the_moon(n) for n in range(1) ])
+    context.sideboard.extend([ mystical_dispute(n) for n in range(4) ])
+    context.sideboard.extend([ tishanas_tidebinder(n) for n in range(1) ])
+    assert len(context.sideboard) == 15
+
+    def shardless_agent(n):
+        return {
+            "in_game_id": "n29#{0}".format(n+1),
+            "name": "Shardless Agent", "mana_cost": "{1}{G}{U}",
+            "type_line": "Artifact Creature - Human Rogue",
+            "oracle_text": "Cascade (When you cast this spell, exile cards from the top of your library until you exile a nonland card that costs less. You may cast it without paying its mana cost. Put the exiled cards on the bottom of your library in a random order.)",
+            "power": "2", "toughness": "2",
+        }
+    def dead_gone(n):
+        return {
+            "in_game_id": "n30#{0}".format(n+1),
+            "name": "Dead // Gone", "mana_cost": "{R} // {2}{R}",
+            "type_line": "Instant // Instant",
+            "oracle_text": "Dead deals 2 damage to target creature. // Return target creature you don’t control to its owner’s hand.",
+            "power": None, "toughness": None,
+        }
+    def fire_ice(n):
+        return {
+            "in_game_id": "n31#{0}".format(n+1),
+            "name": "Fire // Ice", "mana_cost": "{1}{R} // {1}{U}",
+            "type_line": "Instant // Instant",
+            "oracle_text": "Fire deals 2 damage divided as you choose among one or two targets. // Tap target permanent.\nDraw a card." ,
+            "power": None, "toughness": None,
+        }
+    context.hand = []
+    def gemstone_caverns(n):
+        return {
+            "in_game_id": "n32#{0}".format(n+1),
+            "name": "Gemstone Caverns", "mana_cost": None,
+            "type_line": "Legendary Land",
+            "oracle_text": "If Gemstone Caverns is in your opening hand and you’re not the starting player, you may begin the game with Gemstone Caverns on the battlefield with a luck counter on it. If you do, exile a card from your hand.\n{T}: Add {C}. If Gemstone Caverns has a luck counter on it, instead add one mana of any color." ,
+            "power": None, "toughness": None,
+        }
+    def ketria_triome(n):
+        return {
+            "in_game_id": "n33#{0}".format(n+1),
+            "name": "Ketria Triome", "mana_cost": None,
+            "type_line": "Land - Forest Island Mountain",
+            "oracle_text": "({T}: Add {G}, {U}, or {R}.)\nKetria Triome enters the battlefield tapped.\nCycling {3} ({3}, Discard this card: Draw a card.)" ,
+            "power": None, "toughness": None,
+        }
+    def misty_rainforest(n):
+        return {
+            "in_game_id": "n34#{0}".format(n+1),
+            "name": "Misty Rainforest", "mana_cost": None,
+            "type_line": "Land",
+            "oracle_text": "{T}, Pay 1 life, Sacrifice Misty Rainforest: Search your library for a Forest or Island card, put it onto the battlefield, then shuffle." ,
+            "power": None, "toughness": None,
+        }
+    def steam_vents(n):
+        return {
+            "in_game_id": "n35#{0}".format(n+1),
+            "name": "Steam  Vents", "mana_cost": None,
+            "type_line": "Land - Island Mountain",
+            "oracle_text": "({T}: Add {U} or {R}.)\nAs Steam Vents enters the battlefield, you may pay 2 life. If you don’t, it enters the battlefield tapped." ,
+            "power": None, "toughness": None,
+        }
+    context.hand.extend([ shardless_agent(n) for n in range(1) ])
+    context.hand.extend([ dead_gone(n) for n in range(1) ])
+    context.hand.extend([ fire_ice(n) for n in range(1) ])
+    context.hand.extend([ gemstone_caverns(n) for n in range(1) ])
+    context.hand.extend([ ketria_triome(n) for n in range(1) ])
+    context.hand.extend([ misty_rainforest(n) for n in range(1) ])
+    context.hand.extend([ steam_vents(n) for n in range(1) ])
+    assert len(context.hand) == 7
 
 @then(u'the AI player puts one Gemstone Caverns on the battlefield')
 def step_impl(context):
-    pass
+    try:
+        assert not any(a['type'] == 'set_annotation' for a in payload.g_actions)
+        assert any((a['type'] == 'move' and a['targetId'].startswith('n32') )for a in payload.g_actions)
+        assert any((a['type'] == 'set_counter' and a['targetId'].startswith('n32') and 'luck' in a['counterType'].lower() and a['counterAmount'] == 1 )for a in payload.g_actions)
+    except AssertionError as e:
+        improvement = context.agent_executor.chatter.invoke({
+            'data': '',
+            'input': "Ned Decker has made one or more illegal action(s). What wrong actions did Ned Decker make? What was asked to guide Ned Decker to make mistake(s)?",
+        })
+        raise Exception('[improvement]: ' + improvement) from e
 
 @then(u'the AI player exiles a card from hand')
 def step_impl(context):
-    pass
+    try:
+        assert any((a['type'] == 'move' and 'hand' in a['from'] and 'exile' in a['to'])for a in payload.g_actions)
+    except AssertionError as e:
+        improvement = context.agent_executor.chatter.invoke({
+            'data': '',
+            'input': "Ned Decker has made one or more illegal action(s). What wrong actions did Ned Decker make? What was asked to guide Ned Decker to make mistake(s)?",
+        })
+        raise Exception('[improvement]: ' + improvement) from e
 
 @given(u'the AI player has three Gemstone Caverns in hand')
 def step_impl(context):
