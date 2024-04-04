@@ -11,10 +11,11 @@ rootdir = os.path.dirname(currentdir + '/../../')
 sys.path.insert(0, rootdir)
 from llm.tools.mulligan import submit_mulligan_decision
 from llm.prompts.whoami import AI_ROLE
-from llm.prompts.react import REACT_GUIDE
+from llm.prompts.react import PONDER_GUIDE, TOOLS_GUIDE
 
 class MulliganPromptPreset():
     chat_prompt = ChatPromptTemplate.from_messages([
+        SystemMessagePromptTemplate.from_template(PONDER_GUIDE),
         SystemMessagePromptTemplate.from_template(AI_ROLE),
         SystemMessagePromptTemplate.from_template('{data}'),
         SystemMessagePromptTemplate.from_template('Ned Decker (AI) is currently in the mulligan step.'),
@@ -25,7 +26,7 @@ class MulliganPromptPreset():
     tools = [ submit_mulligan_decision() ]
 
     tools_prompt = ChatPromptTemplate.from_messages([
-        SystemMessagePromptTemplate.from_template(REACT_GUIDE.format(
+        SystemMessagePromptTemplate.from_template(TOOLS_GUIDE.format(
             tools=render_text_description(tools),
             tool_names=", ".join([ t.name for t in tools ]),
         )),

@@ -86,9 +86,8 @@ class choose_companion(BaseTool):
             "{name} ({_id}) is set to be companion! ".format(name=card_name, _id=in_game_id) +
             "Ned Decker may later in the game pay three mana and put it into his hand as a sorcery. "
             "For now, it stays in Ned's sideboard.\n"
-            "Pass the start of game phase or "
-            "continue to take start of game actions for other cards "
-            "until Ned Decker (AI) wants to pass the start of game phase."
+            "Continue to take start of game actions for other cards "
+            "until Ned Decker (AI) wants to pass the start of game phase.\n"
         )
 
 class reveal_from_hand(BaseTool):
@@ -106,10 +105,9 @@ class reveal_from_hand(BaseTool):
         with payload.g_actions_lock:
             payload.g_actions.append(new_action)
         return (
-            "Delayed trigger {name} ({_id}): \"{what}\" submitted! ".format(name=card_name, _id=in_game_id, what=trigger_what) +
-            "Pass the start of game phase or "
-            "continue to take start of game actions for other cards "
-            "until Ned Decker (AI) wants to pass the start of game phase."
+            "Delayed trigger {name} ({_id}): \"{what}\" submitted!\n".format(name=card_name, _id=in_game_id, what=trigger_what) +
+            "Continue to take start of game actions for other cards "
+            "until Ned Decker (AI) wants to pass the start of game phase.\n"
         )
 
 class move_to_battlefield_from_hand(BaseTool):
@@ -126,10 +124,9 @@ class move_to_battlefield_from_hand(BaseTool):
         with payload.g_actions_lock:
             payload.g_actions.append(new_action)
         return (
-            "Card {name} ({_id}) moved to battledfield! ".format(name=card_name, _id=in_game_id) +
-            "Pass the start of game phase or "
-            "continue to take start of game actions for other cards "
-            "until Ned Decker (AI) wants to pass the start of game phase."
+            "Card {name} ({_id}) moved to battledfield!\n".format(name=card_name, _id=in_game_id) +
+            "Continue to take start of game actions for other cards "
+            "until Ned Decker (AI) wants to pass the start of game phase.\n"
         )
 
 class set_counter(BaseTool):
@@ -146,10 +143,9 @@ class set_counter(BaseTool):
         with payload.g_actions_lock:
             payload.g_actions.append(new_action)
         return (
-            "{count} {_type} counter(s) is set on card {name} ({_id})! ".format(count=counter_amount, _type=counter_type, name=card_name, _id=in_game_id) +
-            "Pass the start of game phase or "
-            "continue to take start of game actions for other cards "
-            "until Ned Decker (AI) wants to pass the start of game phase."
+            "{count} {_type} counter(s) is set on card {name} ({_id})!\n".format(count=counter_amount, _type=counter_type, name=card_name, _id=in_game_id) +
+            "Continue to take start of game actions for other cards "
+            "until Ned Decker (AI) wants to pass the start of game phase.\n"
         )
 
 class exile_from_hand(BaseTool):
@@ -166,10 +162,9 @@ class exile_from_hand(BaseTool):
         with payload.g_actions_lock:
             payload.g_actions.append(new_action)
         return (
-            "Card {name} ({_id}) is exiled! ".format(name=card_name, _id=in_game_id) +
-            "Pass the start of game phase or "
-            "continue to take start of game actions for other cards "
-            "until Ned Decker (AI) wants to pass the start of game phase."
+            "Card {name} ({_id}) is exiled!\n".format(name=card_name, _id=in_game_id) +
+            "Continue to take start of game actions for other cards "
+            "until Ned Decker (AI) wants to pass the start of game phase.\n"
         )
 
 class pass_start_of_game(BaseTool):
@@ -180,7 +175,7 @@ class pass_start_of_game(BaseTool):
 
     def _run(self):
         pprint(payload.g_actions)
-        return "Submitted to pass the start of game phase! As Ned Decker, announce to opponent (Human) what actions were made. Be short and terse. No quotation marks, and no metadata."
+        return "Submitted to pass the start of game phase!\nPlease announce to opponent (Human) what actions were made as Ned Decker (AI). If no actions were made, say that you're passing the phase. Announce from Ned Decker's POV. Be short and terse. No quotation marks, and no metadata. Only what Ned Decker says.\n"
 
 start_of_game_actions = [
     choose_companion(),

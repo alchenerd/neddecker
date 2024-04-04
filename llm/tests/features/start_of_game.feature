@@ -7,8 +7,13 @@ Feature: AI player acts in the start of game phase of an Magic: the Gathering ga
         When the system says hello to the AI player
         Then the AI player responds with something
 
+    Scenario: the AI player has nothing to do
+        Given the AI has nothing to do at the start of the game
+        When the system asks the AI player for start of game decisions
+        Then the AI player does nothing
+
     Scenario: [CR 103.2b] the AI player reveals a companion
-        Given AI has one companion card in sideboard
+        Given the AI player has one companion card in sideboard
         When the system asks the AI player for start of game decisions
         Then the AI Player marks the card as companion
 
@@ -34,8 +39,9 @@ Feature: AI player acts in the start of game phase of an Magic: the Gathering ga
         Then the AI player puts one Gemstone Caverns on the battlefield
         And the AI player exiles a card from hand
 
-    # In the special case of Leyline Rhino, not putting anythin on the battlefield can be a good play.
-    # We hereby consider that all leylines are better on the board than in hand, ignoring the above.
+    # In the special case of Leyline Rhinos, not putting anything on the battlefield can be a desired play.
+    # We hereby consider that all leylines are better to be put on the board than staying in hand,
+    # ignoring the Rhinos case.
     Scenario: the AI player puts one Leyline on the battlefield
         Given the AI player has one Leyline of the Guildpact in hand
         When the system asks the AI player for start of game decisions
