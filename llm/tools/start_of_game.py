@@ -63,11 +63,9 @@ class RevealDelayedTriggerInput(BaseModel):
         return values
 """
 
-class SetCounterInput(BaseModel):
+class SetLuckCounterInput(BaseModel):
     in_game_id: Required[str] = Field(description="The ID of the target card; e.g. \"n1#1\"")
     card_name: Required[str] = Field(description="The name of the target card")
-    counter_type: Required[str] = Field(description="The type of the counter; e.g. \"stun\", \"+1/+1\"")
-    counter_amount: Required[int] = Field(description="The amount of the counter")
 
 class choose_companion(BaseTool):
     name = "choose_companion"
@@ -90,8 +88,8 @@ class choose_companion(BaseTool):
             "until Ned Decker (AI) wants to pass the start of game phase.\n"
         )
 
-class reveal_from_hand(BaseTool):
-    name = "reveal_from_hand"
+class reveal_from_opening_hand(BaseTool):
+    name = "reveal_from_opening_hand"
     description = """Submit a delayed trigger that will happen at the first upkeep of the game. Do not use this to choose a companion; use choose_companion instead. Do not use this to move a card from hand to battlefield; use move_to_battlefield_from_hand instead."""
     args_schema: Type[BaseModel] = RevealDelayedTriggerInput
     def _run(self, in_game_id, card_name, trigger_what, oracle_text):
@@ -123,27 +121,35 @@ class move_to_battlefield_from_hand(BaseTool):
         }
         with payload.g_actions_lock:
             payload.g_actions.append(new_action)
-        return (
+
+        return_string = (
             "Card {name} ({_id}) moved to battledfield!\n".format(name=card_name, _id=in_game_id) +
             "Continue to take start of game actions for other cards "
             "until Ned Decker (AI) wants to pass the start of game phase.\n"
         )
+        if card_name == 'Gemstone Caverns':
+            return_string += (
+                "Looks like you have put a Gemstone Caverns onto the battlefield!\n"
+                "Remember to set a luck counter on it!\n"
+            )
+        return return_string
 
-class set_counter(BaseTool):
-    name = "set_counter"
-    description = """Set a number of counters of one type on a card on the battlefield. Target card must be moved by move_to_battlefield_from_hand."""
-    args_schema: Type[BaseModel] = SetCounterInput
-    def _run(self, in_game_id, card_name, counter_type, counter_amount):
+class set_luck_counter(BaseTool):
+    name = "set_luck_counter"
+    description = """Set a luck counter on Gemstone Caverns."""
+    args_schema: Type[BaseModel] = SetLuckCounterInput
+    def _run(self, in_game_id, card_name,):
         new_action = {
             "type": "set_counter",
             "targetId": in_game_id,
-            "counterType": counter_type,
-            "counterAmount": counter_amount,
+            "counterType": "luck",
+            "counterAmount": 1,
         }
         with payload.g_actions_lock:
             payload.g_actions.append(new_action)
         return (
-            "{count} {_type} counter(s) is set on card {name} ({_id})!\n".format(count=counter_amount, _type=counter_type, name=card_name, _id=in_game_id) +
+            "One luck counter is set on card {name} ({_id})!\n".format(name=card_name, _id=in_game_id) +
+            "Remember to exile a card from hand because of Gemstone Caverns!\n"
             "Continue to take start of game actions for other cards "
             "until Ned Decker (AI) wants to pass the start of game phase.\n"
         )
@@ -169,19 +175,19 @@ class exile_from_hand(BaseTool):
 
 class pass_start_of_game(BaseTool):
     name = "pass_start_of_game"
-    description = """Submit to pass the start of game phase. No parameter needed."""
+    description = """Pass the start of game phase. No input parameter needed."""
     def _to_args_and_kwargs(self, tool_input):
         return (), {}
 
     def _run(self):
         pprint(payload.g_actions)
-        return "Submitted to pass the start of game phase!\nPlease announce to opponent (Human) what actions were made as Ned Decker (AI). If no actions were made, say that you're passing the phase. Announce from Ned Decker's POV. Be short and terse. No quotation marks, and no metadata. Only what Ned Decker says.\n"
+        return "Submitted to pass the start of game phase!\nPlease announce to opponent (Human) what actions were made as Ned Decker (AI). If no actions were made, say that you're passing the phase. Announce from Ned Decker's POV. Be short and terse. No quotation marks, and no metadata. You must only write down what Ned Decker would say.\n"
 
 start_of_game_actions = [
     choose_companion(),
-    reveal_from_hand(),
+    reveal_from_opening_hand(),
     move_to_battlefield_from_hand(),
-    set_counter(),
+    set_luck_counter(),
     exile_from_hand(),
     pass_start_of_game(),
 ]

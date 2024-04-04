@@ -1,6 +1,7 @@
 from behave import *
 from langchain_openai import ChatOpenAI
 from langchain.chains.conversation.memory import ConversationBufferMemory
+import json
 
 import os
 import sys
@@ -275,7 +276,11 @@ def step_impl(context):
         return
     with payload.g_actions_lock:
         payload.g_actions = []
-    board_analysis = SGPP.board_analysis.format(hand=context.hand, sideboard=context.sideboard)
+    companion = [ card for card in context.sideboard if 'Companion' in card['oracle_text']]
+    to_reveal = [ card for card in context.hand if 'from your opening hand' in card['oracle_text']]
+    to_battlefield = [ card for card in context.hand if 'begin the game' in card['oracle_text']]
+    hand = [ { **card, 'where': 'hand'} for card in context.hand ]
+    board_analysis = SGPP.board_analysis.format(hand=json.dumps(hand, indent=4), companion=json.dumps(companion, indent=4), to_reveal=json.dumps(to_reveal, indent=4), to_battlefield=json.dumps(to_battlefield, indent=4))
     _input = SGPP._input
     context.response = context.agent_executor.invoke({
         'data': board_analysis,
