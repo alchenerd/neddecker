@@ -189,7 +189,7 @@ class StartOfGamePromptPreset():
 
     board_analysis = (
         "All companions in Ned Decker's sideboard:\n"
-        "<companion format=JSON>\n{companion}\n</companion>\n"
+        "<companions format=JSON>\n{companions}\n</companions>\n"
         "All cards to reveal at the start of the game:\n"
         "<to_reveal format=JSON>\n{to_reveal}\n</to_reveal>\n"
         "All cards to begin the game on the battlefield with:\n"

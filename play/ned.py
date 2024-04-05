@@ -1,4 +1,5 @@
 import json
+from copy import copy
 from multiprocessing import Manager
 from langchain.memory import ConversationBufferMemory
 from langchain_openai import ChatOpenAI
@@ -11,6 +12,7 @@ llmrootdir = os.path.dirname(currentdir + '/../')
 sys.path.insert(0, llmrootdir)
 
 from llm.prompts.mulligan import MulliganPromptPreset as MPP
+from llm.prompts.start_of_game import StartOfGamePromptPreset as SOGPP
 from llm.agents.agent import ChatAndThenSubmitAgentExecutor as CSAgentExecutor
 import payload
 
@@ -19,8 +21,8 @@ load_dotenv()
 
 class Ned():
     def __init__(self):
-        #self.llm = ChatOpenAI(model_name='gpt-3.5-turbo-16k', temperature=0.8, max_tokens=1024)
-        self.llm = ChatOpenAI(model_name='gpt-4-1106-preview', temperature=0.8, max_tokens=1024)
+        self.llm = ChatOpenAI(model_name='gpt-3.5-turbo', temperature=0.2, max_tokens=1024)
+        #self.llm = ChatOpenAI(model_name='gpt-4-1106-preview', temperature=0.2, max_tokens=1024)
         self.memory = ConversationBufferMemory(memory_key="chat_history", input_key='input', return_messages=True)
         self.agent_executor = None
 
@@ -37,7 +39,11 @@ class Ned():
                 thoughts, choice = self.ask_ned_decker(topic='mulligan', data=json_data)
                 return thoughts, choice
             case 'receive_priority':
-                return f'Beep boop Ned passes priority ({json_data["whose_turn"]}\'s {json_data["phase"]})', { 'type': 'pass_priority', 'who': 'ned', 'actions': [] }
+                match json_data['phase']:
+                    case 'start of game phase':
+                        return self.ask_ned_decker(topic='start_of_game', data=json_data)
+                    case _:
+                        return f'Beep boop Ned passes priority ({json_data["whose_turn"]}\'s {json_data["phase"]})', { 'type': 'pass_priority', 'who': 'ned', 'actions': [] }
             case 'require_player_action':
                 return 'Beep boop Ned does nothing on ' + json_data['phase'], { 'type': 'pass_non_priority_action', 'who': 'ned', 'actions': [], }
             case 'receive_step':
@@ -52,6 +58,25 @@ class Ned():
                 #print('...What?')
                 return '...What?', {'type': 'log', 'message': 'Error:\n' + text_data}
 
+    def process_card(self, bulky_card):
+        """Create a processed card by extracting crucial information for LLM to read.
+        """
+        card = {}
+        card['in_game_id'] = bulky_card['in_game_id']
+        card['name'] = bulky_card['name']
+        card['mana_cost'] = bulky_card.get('mana_cost', '') or None
+        card['type_line'] = bulky_card.get('type_line', '') or None
+        card['oracle_text'] = bulky_card.get('oracle_text', '') or None
+        card['power'] = bulky_card.get('power', '') or None
+        card['toughness'] = bulky_card.get('toughness', '') or None
+        card['produced_mana'] = bulky_card.get('produced_mana', '') or None
+        card['loyalty'] = bulky_card.get('loyalty', '') or None
+        card['defense'] = bulky_card.get('defense', '') or None
+        if 'faces' in bulky_card:
+            card['faces'] = {}
+            card['faces'] |= bulky_card['faces']
+        return card
+
     def ask_ned_decker(self, topic, data):
         match (topic):
             case 'mulligan':
@@ -64,23 +89,8 @@ class Ned():
                         requests=MPP.requests,
                         verbose=True,
                 )
-                hand = []
-                for bulky_card in data.get('hand'):
-                    card = {}
-                    card['in_game_id'] = bulky_card['in_game_id']
-                    card['name'] = bulky_card['name']
-                    card['mana_cost'] = bulky_card.get('mana_cost', '') or None
-                    card['type_line'] = bulky_card.get('type_line', '') or None
-                    card['oracle_text'] = bulky_card.get('oracle_text', '') or None
-                    card['power'] = bulky_card.get('power', '') or None
-                    card['toughness'] = bulky_card.get('toughness', '') or None
-                    card['produced_mana'] = bulky_card.get('produced_mana', '') or None
-                    card['loyalty'] = bulky_card.get('loyalty', '') or None
-                    card['defense'] = bulky_card.get('defense', '') or None
-                    if 'faces' in bulky_card:
-                        card['faces'] = {}
-                        card['faces'] |= bulky_card['faces']
-                    hand.append(card)
+
+                hand = list(map(self.process_card, data.get('hand', [])))
 
                 to_bottom_count = data.get('to_bottom')
                 land_count = MPP.count_lands(hand)
@@ -94,6 +104,9 @@ class Ned():
                         to_bottom_count=to_bottom_count,
                         keep_card_count=7-to_bottom_count,
                         )
+
+                with payload.g_payload_lock:
+                    payload.g_payload = {}
                 response = agent_executor.invoke({
                     'data': hand_analysis,
                     'input': _input,
@@ -101,6 +114,44 @@ class Ned():
                 print (response.get('output'))
                 print (payload.g_payload)
                 return response.get('output'), payload.g_payload
+            case 'start_of_game':
+                agent_executor = CSAgentExecutor(
+                        llm=self.llm,
+                        chat_prompt=SOGPP.chat_prompt,
+                        tools_prompt=SOGPP.tools_prompt,
+                        tools=SOGPP.tools,
+                        memory=self.memory,
+                        requests=SOGPP.requests,
+                        verbose=True,
+                )
+                hand = list(map(self.process_card, data.get('hand', [])))
+                sideboard = list(map(self.process_card, data.get('sideboard', [])))
+                companions = [ card for card in sideboard if 'Companion' in card['oracle_text']]
+                to_reveal = [ card for card in hand if 'opening hand' in card['oracle_text']]
+                to_battlefield = [ card for card in hand if 'begin the game' in card['oracle_text']]
+                hand = [ { **card, 'where': 'hand'} for card in hand ]
+                board_analysis = SOGPP.board_analysis.format( \
+                        hand=json.dumps(hand, indent=4), \
+                        companions=json.dumps(companions, indent=4), \
+                        to_reveal=json.dumps(to_reveal, indent=4), \
+                        to_battlefield=json.dumps(to_battlefield, indent=4) \
+                )
+                _input = SOGPP._input
+
+                with payload.g_actions_lock:
+                    payload.g_actions = []
+                response = agent_executor.invoke({
+                    'data': board_analysis,
+                    'input': _input,
+                })
+                print (response.get('output'))
+                print (payload.g_actions)
+                ret_payload = {
+                    'type': 'pass_priority',
+                    'who': 'ned',
+                    'actions': copy(payload.g_actions)
+                }
+                return response.get('output'), ret_payload
             case _:
                 return None, None
 
