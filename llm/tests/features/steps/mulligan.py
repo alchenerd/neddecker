@@ -1,4 +1,5 @@
 from behave import *
+import json
 from langchain_openai import ChatOpenAI
 from langchain.chains.conversation.memory import ConversationBufferMemory
 
@@ -18,8 +19,8 @@ load_dotenv()
 
 @given('the AI player for mulligan is GPT from OpenAI')
 def step_impl(context):
-    context.llm = ChatOpenAI(model_name='gpt-3.5-turbo', temperature=0, max_tokens=1024)
-    #context.llm = ChatOpenAI(model_name='gpt-4', temperature=0, max_tokens=1024)
+    context.llm = ChatOpenAI(model_name='gpt-3.5-turbo', temperature=0, max_tokens=2048)
+    #context.llm = ChatOpenAI(model_name='gpt-4', temperature=0, max_tokens=2048)
     context.tools = MPP.tools
     context.chat_prompt = MPP.chat_prompt
     context.tools_prompt = MPP.tools_prompt
@@ -626,9 +627,11 @@ def step_impl(context):
         return
     to_bottom_count = 0
     land_count = MPP.count_lands(context.hand)
+    land_warning_string = MPP.land_warning_string(land_count)
     hand_analysis = MPP.hand_analysis.format(
-            hand=context.hand,
+            hand=json.dumps(context.hand, indent=4),
             land_count=land_count,
+            land_warning_string=land_warning_string,
             to_bottom_count=to_bottom_count,
             keep_card_count=7-to_bottom_count,
     )
@@ -647,9 +650,11 @@ def step_impl(context):
         return
     to_bottom_count = 2
     land_count = MPP.count_lands(context.hand)
+    land_warning_string = MPP.land_warning_string(land_count)
     hand_analysis = MPP.hand_analysis.format(
-            hand=context.hand,
+            hand=json.dumps(context.hand, indent=4),
             land_count=land_count,
+            land_warning_string=land_warning_string,
             to_bottom_count=to_bottom_count,
             keep_card_count=7-to_bottom_count,
     )

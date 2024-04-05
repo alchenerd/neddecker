@@ -21,10 +21,13 @@ load_dotenv()
 
 class Ned():
     def __init__(self):
-        self.llm = ChatOpenAI(model_name='gpt-3.5-turbo', temperature=0.2, max_tokens=1024)
-        #self.llm = ChatOpenAI(model_name='gpt-4-1106-preview', temperature=0.2, max_tokens=1024)
+        self.llm = ChatOpenAI(model_name='gpt-3.5-turbo', temperature=0.2, max_tokens=2048)
+        #self.llm = ChatOpenAI(model_name='gpt-4-1106-preview', temperature=0.2, max_tokens=2048)
         self.memory = ConversationBufferMemory(memory_key="chat_history", input_key='input', return_messages=True)
         self.agent_executor = None
+
+    def clear_memory(self):
+        self.memory = ConversationBufferMemory(memory_key="chat_history", input_key='input', return_messages=True)
 
     def receive(self, text_data):
         #print(text_data)
@@ -78,6 +81,7 @@ class Ned():
         return card
 
     def ask_ned_decker(self, topic, data):
+        self.clear_memory()
         match (topic):
             case 'mulligan':
                 agent_executor = CSAgentExecutor(
@@ -94,9 +98,11 @@ class Ned():
 
                 to_bottom_count = data.get('to_bottom')
                 land_count = MPP.count_lands(hand)
+                land_warning_string = MPP.land_warning_string(land_count)
                 hand_analysis = MPP.hand_analysis.format(
-                        hand=hand,
+                        hand=json.dumps(hand, indent=4),
                         land_count=land_count,
+                        land_warning_string=land_warning_string,
                         to_bottom_count=to_bottom_count,
                         keep_card_count=7-to_bottom_count,
                         )
