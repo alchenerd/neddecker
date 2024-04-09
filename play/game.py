@@ -19,6 +19,7 @@ class Player:
         self.hp = 20
         self.counters = []
         self.annotations = []
+        self.delayed_triggers = []
 
     def set_player_name(self, name):
         self.player_name = name
@@ -79,6 +80,7 @@ class Player:
         board_state['mana_pool'] = self.mana_pool
         board_state['counters'] = self.counters
         board_state['annotations'] = self.annotations
+        board_state['delayed_triggers'] = self.delayed_triggers
         return board_state
 
     def apply_board_state(self, updated):
@@ -189,8 +191,54 @@ class Game:
         assert self.priority_waitlist[0] == next_player
 
     def apply(self, action):
-        #print(action)
-        pass
+        target_id = action['targetId']
+        who = target_id[0] # n for ned or u for user
+        [ player ] = [ p for p in self.players if p.player_name.startswith(who) ]
+
+        zones = [ player.library, player.hand, player.battlefield, player.graveyard, player.exile, player.sideboard ]
+        found_card = None
+        found_zone = None
+        for zone in zones:
+            for card in zone:
+                if card.in_game_id == target_id:
+                    found_card = card
+                    found_zone = zone
+                    break
+            if found_card:
+                break
+        assert found_card
+
+        match action.get('type'):
+            case 'set_annotation':
+                if found_card:
+                    found_card['annotations'][action['annotationKey']] = action['annotationValue']
+                return
+            case 'create_delayed_trigger':
+                player.delayed_triggers.append(copy(action))
+                return
+            case 'move':
+                match action.get('to'):
+                    case 'library':
+                        player.library.append(found_card)
+                    case 'hand':
+                        player.hand.append(found_card)
+                    case 'battlefield':
+                        player.battlefield.append(found_card)
+                    case 'graveyard':
+                        player.graveyard.append(found_card)
+                    case 'exile':
+                        player.exile.append(found_card)
+                    case 'sideboard':
+                        player.sideboard.append(found_card)
+                found_zone.remove(found_card)
+                return
+            case 'set_counter':
+                for key in found_card.counters:
+                    if key == action.counterType:
+                        found_card.counters = action.counterAmount
+                        return
+                found_card.counters[action.counterType] = action.counterAmount
+                return
 
     def is_board_sane(self, board):
         seen_ids = set()

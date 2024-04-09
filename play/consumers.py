@@ -191,13 +191,14 @@ class PlayConsumer(WebsocketConsumer):
         # apply the board state to the game we're keeping track of
         board_state = data.get('gameData', {}).get('board_state', {})
         #print(board_state)
-        self.mtg_match.game.apply_board_state(board_state)
-
-        # TODO: save actions to database to replayability
-        actions = data.get('actions', [])
-        for action in actions:
-            #print(action);
-            self.mtg_match.game.apply(action)
+        if board_state:
+            self.mtg_match.game.apply_board_state(board_state)
+        else:
+            # TODO: save actions to database to replayability
+            actions = data.get('actions', [])
+            for action in actions:
+                #print(action);
+                self.mtg_match.game.apply(action)
 
         if len(self.mtg_match.game.priority_waitlist) > 0:
             # if the stack has grown, then refill the priority queue starting with the caster
