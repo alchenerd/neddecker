@@ -9,7 +9,6 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 llmrootdir = os.path.dirname(currentdir + '/../')
 rootdir = os.path.dirname(currentdir + '/../../')
 sys.path.insert(0, rootdir)
-from llm.tools.mulligan import submit_mulligan_decision
 from llm.tools.start_of_game import start_of_game_actions
 from llm.prompts.whoami import AI_ROLE
 from llm.prompts.react import PONDER_GUIDE, TOOLS_GUIDE
@@ -209,7 +208,6 @@ class StartOfGamePromptPreset():
 if __name__ == '__main__':
     print(StartOfGamePromptPreset.chat_prompt)
     print(StartOfGamePromptPreset.tools)
-    print(StartOfGamePromptPreset.submit)
     print(StartOfGamePromptPreset.tools_prompt)
     print(StartOfGamePromptPreset.requests)
     print(StartOfGamePromptPreset._input)
