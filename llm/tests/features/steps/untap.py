@@ -1,4 +1,5 @@
 from behave import *
+import json
 from langchain_openai import ChatOpenAI
 from langchain.chains.conversation.memory import ConversationBufferMemory
 from dotenv import load_dotenv
@@ -35,20 +36,62 @@ def step_impl(context):
             verbose=True,
     )
 
+def tapped_goblin_guide(n):
+    return {
+        "in_game_id": "n1#{0}".format(n+1),
+        "name": "Goblin Guide", "mana_cost": "{R}",
+        "type_line": "Creature — Goblin Scout",
+        "oracle_text": "Haste\nWhenever Goblin Guide attacks, defending player reveals the top card of their library. If it’s a land card, that player puts it into their hand.",
+        "power": "2", "toughness": "2",
+        "annotations": {
+            "isTapped": True,
+        }
+    }
+
+def tapped_brass_gnat(n):
+    return {
+        "in_game_id": "n2#{0}".format(n+1),
+        "name": "Brass Gnat", "mana_cost": "{1}",
+        "type_line": "Artifact Creature — Insect ",
+        "oracle_text": "Flying\nBrass Gnat doesn’t untap during your untap step.\nAt the beginning of your upkeep, you may pay {1}. If you do, untap Brass Gnat.",
+        "power": "1", "toughness": "1",
+        "annotations": {
+            "isTapped": True,
+        }
+    }
+
 
 @given(u'there is no card to prevent from untapping')
 def step_impl(context):
-    raise NotImplementedError(u'STEP: Given there is no card to prevent from untapping')
+    context.battlefield = [ tapped_goblin_guide(n) for n in range(2) ]
+    context.ned_delayed_triggers = []
+    context.user_delayed_triggers = []
 
 
 @when(u'the system asks the AI player for prevent untap decisions')
 def step_impl(context):
-    raise NotImplementedError(u'STEP: When the system asks the AI player for prevent untap decisions')
+    with payload.g_actions_lock:
+        payload.g_actions = []
 
+    assert context.battlefield is not None
+    assert context.ned_delayed_triggers is not None
+    assert context.user_delayed_triggers is not None
+    board_analysis = UPP.board_analysis.format( \
+            battlefield=json.dumps(context.battlefield, indent=4), \
+            ned_delayed_triggers=json.dumps(context.ned_delayed_triggers, indent=4), \
+            user_delayed_triggers=json.dumps(context.user_delayed_triggers, indent=4) \
+    )
+    _input = UPP._input
+    context.response = context.agent_executor.invoke({
+        'data': board_analysis,
+        'input': _input,
+    })
 
 @given(u'there is one card that doesn\'t untap because of oracle text')
 def step_impl(context):
-    raise NotImplementedError(u'STEP: Given there is one card that doesn\'t untap because of oracle text')
+    context.battlefield = [ *[ tapped_goblin_guide(n) for n in range(2) ], tapped_brass_gnat(1), ]
+    context.ned_delayed_triggers = []
+    context.user_delayed_triggers = []
 
 
 @then(u'the AI player chooses to prevent the card\'s untapping')
