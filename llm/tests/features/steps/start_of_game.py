@@ -276,7 +276,7 @@ def step_impl(context):
         return
     with payload.g_actions_lock:
         payload.g_actions = []
-    companion = [ card for card in context.sideboard if 'Companion' in card['oracle_text']]
+    companions = [ card for card in context.sideboard if 'Companion' in card['oracle_text']]
     to_reveal = [ card for card in context.hand if 'from your opening hand' in card['oracle_text']]
     to_battlefield = [ card for card in context.hand if 'begin the game' in card['oracle_text']]
     hand = [ { **card, 'where': 'hand'} for card in context.hand ]

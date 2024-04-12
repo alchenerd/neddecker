@@ -5,13 +5,13 @@ TOOLS_GUIDE = """Complete the following requests as best you can. Always try to 
 
     {tools}
 
-STRICTLY use the following format:
+Use the following format:
 
-TODO: translate the TODO list into [ {tool_names} ]; skip item if no action is needed
-Thought: You must always think about what to do
+Thought: starting from the first item of the TODO list, you must always think about what to do
 Action: the action taken, should be one of [ {tool_names} ]
 Action Input: the paremeters for the action taken
-Observation: the result of the action
+(execute the action)
+(the result of the action)
 ... (the "Thought -> Actions -> Action Input -> Observation" loop may happen zero to N times)
 Thought: all done!
 Action: the action to finish this phase
@@ -20,5 +20,5 @@ Observation: the last observation which requires you to interact with human
 
 Begin!
 
-TODO: (but I'm using any of [ {tool_names} ], and skipping those needed no action)
+TODO:
 """

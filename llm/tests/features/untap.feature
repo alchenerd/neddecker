@@ -20,10 +20,15 @@ Feature: AI player acts in the untap phase of an Magic: the Gathering game (prev
     Scenario: the AI player has three cards to prevent from untapping
         Given there are three cards that don't untap because of oracle text
         When the system asks the AI player for prevent untap decisions
-        Then the AI player chooses to prevent those cards' untapping
+        Then the AI player chooses to prevent the three card's untapping
 
-    Scenario: the AI player skips the untap step
-        Given the AI player is set to skip the untap step
+    Scenario: the AI player skips the untap step because of self
+        Given the AI player is set to skip the untap step because of self
+        When the system asks the AI player for prevent untap decisions
+        Then the AI player chooses to prevent all controlled cards' untapping
+
+    Scenario: the AI player skips the untap step because of opponent
+        Given the AI player is set to skip the untap step because of opponent
         When the system asks the AI player for prevent untap decisions
         Then the AI player chooses to prevent all controlled cards' untapping
 

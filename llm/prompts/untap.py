@@ -39,14 +39,38 @@ class UntapPromptPreset():
 
     requests = [
         "Ned Decker is given the state of his battlefield before the untap phase, as well as lists of both player's delayed triggers. "
-        "If Ned passes the untap phase without doing anything, by default all permanents on his battlefield will be untapped. Most cards will be untapped except for some special cases.\n"
-        "The task is simple: identify what card(s) would stay tapped because of the card text, or any of the delayed effects on either player.\n"
+        "If Ned passes the untap phase without doing anything, by default all permanents on his battlefield will be untapped. Most permanents will be untapped except for some special cases.\n"
+        "The task is simple: identify what permanent(s) would stay tapped because of its text, or any of the delayed effects from either player.\n"
         "\n"
-        "Q1. Did any card say that it doesn't untap or may choose to not untap? "
-            "(if none then may pass without doing anything)\n"
-        "Q2. If some of the cards should stay untapped, what are their ID and names?\n"
-        "Q3. Is any of the player affected by delayed triggers that prevents untapping?\n"
-        "Final Verdict: Please make a TODO list about what permanents to prevent from untapping.\n",
+        "\n"
+        "Please answer as Ned Decker:\n"
+        "\n"
+        "Q1. Do any permanents you control say \"doesn't untap\" or \"may choose to not untap\"? "
+            "(answer with names and card IDs) "
+            "(if none then you may pass without doing anything)\n"
+        "\n"
+        "Q2. Would you skip the untap step because of a delayed trigger? "
+            "(if yes, then Ned Decker will prevent all permanents from untapping) "
+            "(hint: Ned Decker is opponent's opponent)\n"
+        "\n"
+        "Q3. Will all permanents you control be prevented from untapping due to skipping the untap step?\n"
+        "\n"
+        "Q4. If not all permanents will be prevented from untapping, then list each permanent that you will prevent from untapping (use name and card ID; each id will be in a new line).\n"
+        "\n"
+        "(only answer the final verdict question AFTER ALL questions above are answered)\n"
+        "Final Verdict: Please create a TODO list about what permanents to prevent from untapping. If all should be prevented from untapping, then list \"all.\"\n"
+        "(for the Final Verict question, the expected format is:\n"
+        "\n"
+        "Final Verdict:\n"
+        "\n"
+        "TODO ({[count/\"all\"]} permanents to prevent from untapping):"
+        "\n"
+        "- there is nothing to do\n"
+        "or\n"
+        "- write down this exact sentence: \"I will prevent ALL permanents from untapping\"\n"
+        "or\n"
+        "- write down this exact sentence: \"I will prevent card_id card_name from untapping (NOT ALL!)\" (each id will be in a new line)\n"
+        ")\n"
     ]
 
     board_analysis = (
@@ -66,7 +90,7 @@ class UntapPromptPreset():
     )
 
     _input = (
-        "Ned Decker (AI) will, if the TODO list instructed, prevent N permanents or all permanants from untapping, and then Ned Decker will pass the untap phase. However, if there is nothing to do, Ned Decker will pass the untap phase immediately."
+        "Currently, NONE in the TODO list was done (all are pending action). Ned Decker (AI) will follow the TODO list. After all items in the TODO list are done, Ned Decker will pass the untap phase. However, if there is nothing to do in the TODO list, Ned Decker will pass the untap phase immediately."
     )
 
     improvement_prompt = (
