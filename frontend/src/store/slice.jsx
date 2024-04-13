@@ -193,6 +193,26 @@ const calculateAffectedGameData = (gameData, actions) => {
           _.set(affectedGameData, found.path, newBattlefield);
         }
         break;
+      case "create_delayed_trigger":
+        {
+          const players = _.get(affectedGameData, "board_state.players");
+          const playerId = players.findIndex(player => player.player_name === action.affectingWho);
+          const newDelayedTriggers = [
+            ..._.get(affectedGameData, "board_state.players[" + playerId + "].delayed_triggers"),
+            action,
+          ]
+          _.set(affectedGameData, "board_state.players[" + playerId + "].delayed_triggers", newDelayedTriggers);
+        }
+        break;
+      case "remove_delayed_trigger":
+        {
+          const players = _.get(affectedGameData, "board_state.players");
+          const playerId = players.findIndex(player => player.player_name === action.affectingWho);
+          const delayedTriggers = _.get(affectedGameData, "board_state.players[" + playerId + "].delayed_triggers");
+          const newDelayedTriggers = delayedTriggers.filter(trigger => trigger.targetId !== action.targetId);
+          _.set(affectedGameData, "board_state.players[" + playerId + "].delayed_triggers", newDelayedTriggers);
+        }
+        break;
     }
   });
   return affectedGameData;

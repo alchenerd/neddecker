@@ -177,6 +177,8 @@ class StartOfGamePromptPreset():
         "- set_luck_counter (for Gemstone Caverns)\n"
         "- exile_from_hand (for Gemstone Caverns)\n"
         "Are there Gemstone Caverns?\n"
+  const nedIndex = affectedGameData.board_state.players.findIndex((player) => player.player_name === 'ned')
+  const existingDelayedTriggersForNed = affectedGameData.board_state.players[nedIndex].delayed_triggers
         "If yes then after putting Gemstone Caverns onto the battlefield, "
         "call set_luck_counter and then exile_from_hand in the TODO list\n"
         "Think of the worse card in hand in the early game, how bad was it in the early game?\n"

@@ -138,9 +138,10 @@ class PlayConsumer(WebsocketConsumer):
         players = self.mtg_match.game.players
         [i] = [i for i, p in enumerate(players) if p.player_name == data['who']]
         player = players[i]
-        for card in reversed(data['bottom']):
-            player.hand.remove(card)
-            player.library.append(card)
+        for card_id in reversed(data['bottom']):
+            card_to_bottom, *_ = filter(lambda c: c['in_game_id'] == card_id, player.hand)
+            player.hand.remove(card_to_bottom)
+            player.library.append(card_to_bottom)
         player.mulligan_done = True
         self.send(json.dumps({
                 'type': 'log',

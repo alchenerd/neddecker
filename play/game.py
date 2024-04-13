@@ -1,5 +1,6 @@
 from random import shuffle
 from string import Formatter
+from copy import copy
 import json
 from dataclasses import dataclass
 from .models import Card, Face, get_card_by_name_as_dict, get_faces_by_name_as_dict
@@ -86,7 +87,10 @@ class Player:
 
     def apply_board_state(self, updated):
         assert self.player_name == updated.get('player_name', 'ned')
+        assert 'delayed_triggers' in updated.keys()
         for k, v in updated.items():
+            print('updating k = ' + k)
+            print('updating v = ' + str(v))
             setattr(self, k, v)
 
     def __str__(self):
