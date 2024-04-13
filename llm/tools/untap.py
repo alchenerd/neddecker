@@ -35,6 +35,7 @@ class prevent_untap_all(BaseTool):
     def _run(self):
         new_action = {
             "type": "prevent_untap_all",
+            "who": "ned",
             "targetId": None,
         }
         with payload.g_actions_lock:

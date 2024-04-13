@@ -193,6 +193,9 @@ class StartOfGamePromptPreset():
         "<to_reveal format=JSON>\n{to_reveal}\n</to_reveal>\n"
         "All cards to begin the game on the battlefield with:\n"
         "<to_battlefield format=JSON>\n{to_battlefield}\n</to_battlefield>\n"
+    )
+
+    more_board_analysis = (
         "All cards in Ned Decker's hand:\n"
         "<hand format=JSON>\n{hand}\n</hand>\n"
     )

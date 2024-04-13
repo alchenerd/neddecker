@@ -13,6 +13,7 @@ sys.path.insert(0, llmrootdir)
 
 from llm.prompts.mulligan import MulliganPromptPreset as MPP
 from llm.prompts.start_of_game import StartOfGamePromptPreset as SOGPP
+from llm.prompts.untap import UntapPromptPreset as UPP
 from llm.agents.agent import ChatAndThenSubmitAgentExecutor as CSAgentExecutor
 import payload
 
@@ -48,7 +49,11 @@ class Ned():
                     case _:
                         return f'Beep boop Ned passes priority ({json_data["whose_turn"]}\'s {json_data["phase"]})', { 'type': 'pass_priority', 'who': 'ned', 'actions': [] }
             case 'require_player_action':
-                return 'Beep boop Ned does nothing on ' + json_data['phase'], { 'type': 'pass_non_priority_action', 'who': 'ned', 'actions': [], }
+                match json_data['phase']:
+                    case 'untap step':
+                        return self.ask_ned_decker(topic='untap', data=json_data)
+                    case _:
+                        return 'Beep boop Ned does nothing on ' + json_data['phase'], { 'type': 'pass_non_priority_action', 'who': 'ned', 'actions': [], }
             case 'receive_step':
                 return 'Beep boop Ned does nothing on ' + json_data['phase'], { 'type': 'log', 'message': 'received step ' + json_data['phase'], }
             case 'resolve_stack':
@@ -78,6 +83,10 @@ class Ned():
         if 'faces' in bulky_card:
             card['faces'] = {}
             card['faces'] |= bulky_card['faces']
+        if 'counters' in bulky_card:
+            card['counters'] = bulky_card['counters']
+        if 'annotations' in bulky_card:
+            card['annotations'] = bulky_card['annotations']
         return card
 
     def ask_ned_decker(self, topic, data):
@@ -130,18 +139,22 @@ class Ned():
                         requests=SOGPP.requests,
                         verbose=True,
                 )
-                hand = list(map(self.process_card, data.get('hand', [])))
-                sideboard = list(map(self.process_card, data.get('sideboard', [])))
+                players = data.get('board_state', {}).get('players', [])
+                [ ned ] = list(filter(lambda p: p['player_name'] == 'ned', players))
+                assert ned
+                hand = list(map(self.process_card, ned.get('hand', [])))
+                sideboard = list(map(self.process_card, ned.get('sideboard', [])))
                 companions = [ card for card in sideboard if 'Companion' in card['oracle_text']]
                 to_reveal = [ card for card in hand if 'opening hand' in card['oracle_text']]
                 to_battlefield = [ card for card in hand if 'begin the game' in card['oracle_text']]
                 hand = [ { **card, 'where': 'hand'} for card in hand ]
                 board_analysis = SOGPP.board_analysis.format( \
-                        hand=json.dumps(hand, indent=4), \
                         companions=json.dumps(companions, indent=4), \
                         to_reveal=json.dumps(to_reveal, indent=4), \
                         to_battlefield=json.dumps(to_battlefield, indent=4) \
                 )
+                if to_battlefield:
+                    board_analysis += SOGPP.more_board_analysis.format(hand=json.dumps(hand), indent=4)
                 _input = SOGPP._input
 
                 with payload.g_actions_lock:
@@ -156,6 +169,61 @@ class Ned():
                     'type': 'pass_priority',
                     'who': 'ned',
                     'actions': copy(payload.g_actions)
+                }
+                return response.get('output'), ret_payload
+            case 'untap':
+                agent_executor = CSAgentExecutor(
+                        llm=self.llm,
+                        chat_prompt=UPP.chat_prompt,
+                        tools_prompt=UPP.tools_prompt,
+                        tools=UPP.tools,
+                        memory=self.memory,
+                        requests=UPP.requests,
+                        verbose=True,
+                )
+                players = data.get('board_state', {}).get('players', [])
+                [ ned ] = list(filter(lambda p: p['player_name'] == 'ned', players))
+                [ user ] = list(filter(lambda p: p['player_name'] == 'user', players))
+                assert ned and user
+                battlefield = list(map(self.process_card, ned.get('battlefield', [])))
+                ned_delayed_triggers = ned.get('delayed_triggers', [])
+                user_delayed_triggers = user.get('delayed_triggers', [])
+                board_analysis = UPP.board_analysis.format( \
+                        battlefield=json.dumps(battlefield, indent=4), \
+                        ned_delayed_triggers=json.dumps(ned_delayed_triggers, indent=4), \
+                        user_delayed_triggers=json.dumps(user_delayed_triggers, indent=4), \
+                )
+                _input = UPP._input
+
+                with payload.g_actions_lock:
+                    payload.g_actions = []
+                response = agent_executor.invoke({
+                    'data': board_analysis,
+                    'input': _input,
+                })
+                print (response.get('output'))
+                print (payload.g_actions)
+                # translate "prevent untap" to "untap all others"
+                untap_actions = []
+                if any(action['type'] == 'prevent_untap_all' for action in payload.g_actions):
+                    pass
+                else:
+                    prevented_cards = [ action['targetId'] for action in payload.g_actions if action['type'] == 'prevent_untap' ]
+                    for card in battlefield:
+                        if card['in_game_id'] in prevented_cards:
+                            pass
+                        else:
+                            new_action = {
+                                'type': 'set_annotation',
+                                'targetId': card['in_game_id'],
+                                'annotationKey': 'isTapped',
+                                'annotationValue': False,
+                            }
+                            untap_actions.append(new_action)
+                ret_payload = {
+                    'type': 'pass_non_priority_action',
+                    'who': 'ned',
+                    'actions': untap_actions,
                 }
                 return response.get('output'), ret_payload
             case _:

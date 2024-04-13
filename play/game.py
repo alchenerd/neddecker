@@ -1,4 +1,5 @@
 from random import shuffle
+from string import Formatter
 import json
 from dataclasses import dataclass
 from .models import Card, Face, get_card_by_name_as_dict, get_faces_by_name_as_dict
@@ -190,23 +191,26 @@ class Game:
         assert len(self.priority_waitlist) == len(self.players)
         assert self.priority_waitlist[0] == next_player
 
-    def apply(self, action):
+    def apply_action(self, action):
         target_id = action['targetId']
-        who = target_id[0] # n for ned or u for user
+        who = action.get('who', None)
+        if not who and target_id:
+            who = target_id[0] # n for ned or u for user
         [ player ] = [ p for p in self.players if p.player_name.startswith(who) ]
 
         zones = [ player.library, player.hand, player.battlefield, player.graveyard, player.exile, player.sideboard ]
         found_card = None
         found_zone = None
-        for zone in zones:
-            for card in zone:
-                if card.in_game_id == target_id:
-                    found_card = card
-                    found_zone = zone
+        if target_id:
+            for zone in zones:
+                for card in zone:
+                    if card['in_game_id'] == target_id:
+                        found_card = card
+                        found_zone = zone
+                        break
+                if found_card:
                     break
-            if found_card:
-                break
-        assert found_card
+            assert found_card
 
         match action.get('type'):
             case 'set_annotation':
@@ -217,19 +221,20 @@ class Game:
                 player.delayed_triggers.append(copy(action))
                 return
             case 'move':
-                match action.get('to'):
+                destination = action.get('to').split('.')[-1]
+                match destination:
                     case 'library':
-                        player.library.append(found_card)
+                        player.library.append(copy(found_card))
                     case 'hand':
-                        player.hand.append(found_card)
+                        player.hand.append(copy(found_card))
                     case 'battlefield':
-                        player.battlefield.append(found_card)
+                        player.battlefield.append(copy(found_card))
                     case 'graveyard':
-                        player.graveyard.append(found_card)
+                        player.graveyard.append(copy(found_card))
                     case 'exile':
-                        player.exile.append(found_card)
+                        player.exile.append(copy(found_card))
                     case 'sideboard':
-                        player.sideboard.append(found_card)
+                        player.sideboard.append(copy(found_card))
                 found_zone.remove(found_card)
                 return
             case 'set_counter':
@@ -238,6 +243,12 @@ class Game:
                         found_card.counters = action.counterAmount
                         return
                 found_card.counters[action.counterType] = action.counterAmount
+            case 'prevent_untap_all':
+                for card in player.battlefield:
+                    card['annotations']['preventUntap'] = True
+                return
+            case 'prevent_untap':
+                found_card['annotations']['preventUntap'] = True
                 return
 
     def is_board_sane(self, board):

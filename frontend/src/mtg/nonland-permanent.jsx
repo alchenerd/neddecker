@@ -15,7 +15,7 @@ const NonlandPermanent = ({
   const canBeAttacked = gameData.phase.includes("declare attackers step") &&
                         gameData.whose_turn !== controller &&
                         controller !== "user" &&
-                        (typeLine.toLowerCase().includes("planeswalker") || typeLine.toLowerCase.includes("battle"));
+                        (typeLine.toLowerCase().includes("planeswalker") || typeLine.toLowerCase().includes("battle"));
 
   const handleClick = (event) => {
     if (event.type !== "click") {

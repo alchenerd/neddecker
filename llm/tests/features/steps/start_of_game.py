@@ -286,6 +286,8 @@ def step_impl(context):
             to_reveal=json.dumps(to_reveal, indent=4), \
             to_battlefield=json.dumps(to_battlefield, indent=4) \
     )
+    if to_battlefield:
+        board_analysis += SGPP.more_board_analysis.format(hand=json.dumps(hand), indent=4)
     _input = SGPP._input
     context.response = context.agent_executor.invoke({
         'data': board_analysis,
