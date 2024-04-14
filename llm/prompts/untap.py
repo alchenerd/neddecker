@@ -45,7 +45,7 @@ class UntapPromptPreset():
         "\n"
         "Please answer as Ned Decker:\n"
         "\n"
-        "Q1. Assess all cards on the battlefield; for each card you control on the battlefield, would you tap or untap? "
+        "Q1. Assess all cards on the battlefield; for each card you control on the battlefield, would you untap or keep it tapped? "
             "(When answering this question, use format of Ned Decker's monologue; "
             "the monologue is announcing all the game actions that Ned Decker will do; "
             "e.g. \"I will untap card_name (card_id)...\" or \"card_name (card_id) stays untap because...\")\n"

@@ -93,8 +93,8 @@ export default function PlayPage() {
   // For communication
   const [ hasPriority, setHasPriority] = useState(false);
   const [ hasPseudopriority, setHasPseudopriority] = useState(false);
-  const [ userIsDone, setUserIsDone] = useState(false);
-  const [ userEndTurn, setUserEndTurn] = useState(false);
+  const [ userIsDone, setUserIsDone] = useState(true);
+  const [ userEndTurn, setUserEndTurn] = useState(true);
   const [ dndMsg, setDndMsg ] = useState({});
   const [ dblClkMsg, setDblClkMsg ] = useState({});
   //const [ actionQueue, setActionQueue ] = useState([]);
@@ -132,12 +132,14 @@ export default function PlayPage() {
   function handleReceivePriority(data) {
     store.dispatch(clearGameAction());
     setHasPriority(true);
+    setUserIsDone(false);
     store.dispatch(receivedNewGameData({ newGameData: data }));
   }
 
   function handleRequirePlayerAction(data) {
     store.dispatch(clearGameAction());
     setHasPseudopriority(true);
+    setUserIsDone(false);
     store.dispatch(receivedNewGameData({ newGameData: data }));
   }
 
@@ -145,6 +147,7 @@ export default function PlayPage() {
     store.dispatch(clearGameAction());
     setHasPriority(true);
     setIsResolving(true);
+    setUserIsDone(false);
     store.dispatch(receivedNewGameData({ newGameData: data }));
   }
 
@@ -324,17 +327,14 @@ export default function PlayPage() {
   useEffect(() => {
     if (hasPriority && isResolving && userIsDone) {
       setHasPriority(false);
-      setUserIsDone(false);
       setIsResolving(false);
       sendResolveStack();
     }
     else if (hasPriority && userIsDone) {
       setHasPriority(false);
-      setUserIsDone(false);
       sendPassPriority();
     } else if (hasPseudopriority && userIsDone) {
       setHasPseudopriority(false);
-      setUserIsDone(false);
       sendPassNonPriority();
     }
   }, [hasPriority, hasPseudopriority, userIsDone, isResolving]);
@@ -342,9 +342,11 @@ export default function PlayPage() {
   useEffect(() => {
     if (hasPriority && userEndTurn && gameData.whose_turn === "user") {
       setHasPriority(false);
+      setUserIsDone(true);
       sendPassPriority();
     } else if (hasPseudopriority && userEndTurn && gameData.whose_turn === "user") {
       setHasPseudopriority(false);
+      setUserIsDone(true);
       sendPassNonPriority();
     }
   }, [hasPriority, hasPseudopriority, userEndTurn]);
@@ -414,6 +416,7 @@ export default function PlayPage() {
                 <GameInformation
                   focusedCard={focusedCard}
                   setFocusedCard={setFocusedCard}
+                  userIsDone={userIsDone}
                   setUserIsDone={setUserIsDone}
                   userEndTurn={userEndTurn}
                   setUserEndTurn={setUserEndTurn}

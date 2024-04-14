@@ -8,12 +8,20 @@ import MicIcon from '@mui/icons-material/Mic';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
+import CircularProgress from '@mui/material/CircularProgress';
 import _ from 'lodash';
 import store from '../store/store';
 import { rollbackGameAction } from '../store/slice';
 import { useSelector } from 'react-redux';
 
-export function ChatRoom({lastMessage, userIsDone, userEndTurn, ...props}) {
+function ThinkingIndicator({isThinking}) {
+    if (isThinking) {
+        return (<CircularProgress />);
+    }
+    return null;
+}
+
+export function ChatRoom({lastMessage, userIsDone, userEndTurn, hasPriority, ...props}) {
   const [chatHistory, setChatHistory] = useState([]);
   const [actionHistory, setActionHistory] = useState([]);
   const actionQueue = useSelector((state) => state.gameState.actions);
@@ -185,6 +193,9 @@ export function ChatRoom({lastMessage, userIsDone, userEndTurn, ...props}) {
               }
               <p></p>
             })}
+            <Box sx={{justifyContent:"center", display: "flex"}}>
+              <ThinkingIndicator isThinking={userIsDone}/>
+            </Box>
           </Box>
         </Grid>
         <Grid item xs={9}>

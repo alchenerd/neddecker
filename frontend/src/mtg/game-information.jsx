@@ -6,7 +6,7 @@ import { Stack } from './stack';
 import store from './../store/store';
 import { selectAffectedGameData } from './../store/slice';
 
-export function GameInformation({focusedCard, setFocusedCard, setUserIsDone, userEndTurn, setUserEndTurn, setDndMsg, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, setOpenCreateTriggerDialog, setOpenCreateDelayedTriggerDialog, isResolving}) {
+export function GameInformation({focusedCard, setFocusedCard, userIsDone, setUserIsDone, userEndTurn, setUserEndTurn, setDndMsg, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, setOpenCreateTriggerDialog, setOpenCreateDelayedTriggerDialog, isResolving}) {
   const handleClickDoneButton = () => {
     setUserIsDone(true);
   }
@@ -39,6 +39,7 @@ export function GameInformation({focusedCard, setFocusedCard, setUserIsDone, use
             id="doneButton"
             variant="contained"
             sx={{width: "100%", height: "100%"}}
+            disabled={userIsDone}
             onClick={handleClickDoneButton}
           >
             { isResolving ? `Resolve` : `Pass` }
