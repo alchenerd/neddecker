@@ -77,6 +77,21 @@ class UntapPromptPreset():
         ")\n"
     ]
 
+    bonus_requests = [
+        "Looks like there are permanants you control that would be triggered when untapped. "
+        "Please continue to answer as Ned Decker:\n"
+        "\n"
+        "Q1. Please provide a table of permanents you control that would be triggered when untapped. "
+            "(columns = card id, card name, does it untap, what does it do when untapped)\n"
+        "Q2. If there would be more than one triggers, think about what order do you want them to happen in game. "
+            "You may skip this if there is only one trigger. "
+            "(answer as Ned Decker with his analysis; what trigger happens first, what happens next, ...)"
+        "Q3. The MTG stack follows LIFO (Last In, First Out); So, as Ned decker, reverse that order and "
+            "talk about the order of triggers that you will put onto the stack.\n"
+        "Q4. Please recite the previous TODO list, and then append all the create trigger actions to the TODO list, "
+            "following the order of answer for Q3.\n"
+    ]
+
     board_analysis = (
         "\n"
         "<battlefield format=JSON>\n"
@@ -93,8 +108,17 @@ class UntapPromptPreset():
         "\n"
     )
 
+    bonus_board_analysis = {
+        "\n"
+        "Permanents you (Ned Decker, AI) control are as follows:\n"
+        "<triggered_when_untapped format=JSON>\n"
+        "{triggered_when_untapped}\n"
+        "</triggered_when_untapped>\n"
+        "\n"
+    }
+
     _input = (
-        "Currently, NONE in the TODO list was done (all are pending action). Ned Decker (AI) will follow the TODO list. After all items in the TODO list are done, Ned Decker will pass the untap phase. However, if there is nothing to do in the TODO list, Ned Decker will pass the untap phase immediately."
+        "Currently, NONE in the TODO list was done (all items are pending your action). Ned Decker (AI) will follow the TODO list. After all items in the TODO list are done, Ned Decker will pass the untap phase. However, if there is nothing to do in the TODO list, Ned Decker will pass the untap phase immediately."
     )
 
     improvement_prompt = (
@@ -106,5 +130,8 @@ if __name__ == '__main__':
     print(UntapPromptPreset.tools)
     print(UntapPromptPreset.tools_prompt)
     print(UntapPromptPreset.requests)
+    print(UntapPromptPreset.bonus_requests)
+    print(UntapPromptPreset.board_analysis)
+    print(UntapPromptPreset.bonus_board_analysis)
     print(UntapPromptPreset._input)
     print(UntapPromptPreset.improvement_prompt)

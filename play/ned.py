@@ -175,31 +175,56 @@ class Ned():
                 }
                 return response.get('output'), ret_payload
             case 'untap':
-                agent_executor = CSAgentExecutor(
-                        llm=self.llm,
-                        chat_prompt=UPP.chat_prompt,
-                        tools_prompt=UPP.tools_prompt,
-                        tools=UPP.tools,
-                        memory=self.memory,
-                        requests=UPP.requests,
-                        verbose=True,
-                )
                 players = data.get('board_state', {}).get('players', [])
                 [ ned ] = list(filter(lambda p: p['player_name'] == 'ned', players))
                 [ user ] = list(filter(lambda p: p['player_name'] == 'user', players))
                 assert ned and user
+
                 battlefield = list(map(self.process_card, ned.get('battlefield', [])))
                 ned_delayed_triggers = ned.get('delayed_triggers', [])
                 user_delayed_triggers = user.get('delayed_triggers', [])
-                board_analysis = UPP.board_analysis.format( \
-                        battlefield=json.dumps(battlefield, indent=4), \
-                        ned_delayed_triggers=json.dumps(ned_delayed_triggers, indent=4), \
-                        user_delayed_triggers=json.dumps(user_delayed_triggers, indent=4), \
-                )
+                triggered_when_untapped = filter(
+                        lambda x: 'becomes untapped' in x.get('oracle_text', '') or \
+                                'Whenever you untap' in x.get('oracle_text', ''), battlefield
+                        )
+
+                requests = None
+                board_analysis = None
+                tools = None
+                if triggered_when_untapped:
+                    requests = UPP.requests + UPP.bonus_requests
+                    board_analysis = UPP.board_analysis + UPP.bonus_board_analysis
+                    board_analysis = board_analysis.format(
+                            battlefield=json.dumps(battlefield, indent=4), \
+                            ned_delayed_triggers=json.dumps(ned_delayed_triggers, indent=4), \
+                            user_delayed_triggers=json.dumps(user_delayed_triggers, indent=4), \
+                            triggered_when_untapped=json.dumps(triggered_when_untapped, indent=4)
+                            )
+                    tools = UPP.untap_actions + UPP.untap_bonus_actions
+                else:
+                    requests = UPP.requests
+                    board_analysis = UPP.board_analysis.format( \
+                            battlefield=json.dumps(battlefield, indent=4), \
+                            ned_delayed_triggers=json.dumps(ned_delayed_triggers, indent=4), \
+                            user_delayed_triggers=json.dumps(user_delayed_triggers, indent=4), \
+                    )
+                    tools = UPP.untap_actions
+
                 _input = UPP._input
 
                 with payload.g_actions_lock:
                     payload.g_actions = []
+
+                agent_executor = CSAgentExecutor(
+                        llm=self.llm,
+                        chat_prompt=UPP.chat_prompt,
+                        tools_prompt=UPP.tools_prompt,
+                        tools=tools,
+                        memory=self.memory,
+                        requests=requests,
+                        verbose=True,
+                )
+
                 response = agent_executor.invoke({
                     'data': board_analysis,
                     'input': _input,

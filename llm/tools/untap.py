@@ -14,6 +14,15 @@ class CardIdInput(BaseModel):
     in_game_id: Required[str] = Field(description="The ID of the target card; e.g. \"n1#1\"")
     card_name: Required[str] = Field(description="The name of the target card")
 
+class TriggerInput(BaseModel):
+    in_game_id: Required[str] = Field(description="The ID of the target card; e.g. \"n1#1\"")
+    card_name: Required[str] = Field(description="The name of the target card")
+    trigger_content: Required[str] = Field(description= \
+            "The excerpt of the card's oracle text that describes the trigger that will be put onto the stack;" \
+            " e.g. trigger_content will be \"You may pay {2}...\" " \
+            "for a card that says \"Whenever ~ untaps, you may pay {2}...\""
+    )
+
 class prevent_untap_one(BaseTool):
     name = "prevent_untap_one"
     description = """This will prevent one target permanent you control from untapping. Use this to keep the permanent tapped. You may only use this if and only if the card instructs you to do so. Prevent cards from untapping separately (call this N times for N cards to prevent from untapping!)"""
@@ -42,6 +51,21 @@ class prevent_untap_all(BaseTool):
             payload.g_actions.append(new_action)
         return "All tapped permanents you control will stay tapped! Please pass the untap step next.\n"
 
+class create_trigger(BaseTool):
+    name = "create_trigger"
+    description = """Create a trigger on the stack according to a card."""
+    args_schema: Type[BaseModel] = TriggerInput
+    def _run(self, in_game_id, card_name, trigger_content):
+        new_action = {
+            "type": "create_trigger",
+            "targetId": in_game_id,
+            "triggerContent": trigger_content
+        }
+        with payload.g_actions_lock:
+            payload.g_actions.append(new_action)
+        return ""
+        return "Card {name} ({_id}) trigger is put onto the stack! Please continue until all triggers are created.\n".format(name=card_name, _id=in_game_id)
+
 class pass_untap(BaseTool):
     name = "pass_untap"
     description = """Pass the untap step. If no action is needed according to the TODO list, immediately call this only."""
@@ -51,3 +75,4 @@ class pass_untap(BaseTool):
         return "Passed the untap step! If you have prevented nothing from untapping, say \"Untap.\" Otherwise, if you have prevented anything from untapping, announce to your opponent (Human) what cards stay tapped as Ned Decker.\n"
 
 untap_actions = [ prevent_untap_one(), prevent_untap_all(), pass_untap() ]
+untap_bonus_actions = [ create_trigger() ]
