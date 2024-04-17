@@ -87,10 +87,16 @@ class Ned():
             card['counters'] = bulky_card['counters']
         if 'annotations' in bulky_card:
             card['annotations'] = bulky_card['annotations']
+        if 'ai_annotations' in bulky_card:
+            card['tags'] = bulky_card['ai_annotations']
         return card
 
     def ask_ned_decker(self, topic, data):
         self.clear_memory()
+        with payload.g_payload_lock:
+            payload.g_payload = {}
+        with payload.g_actions_lock:
+            payload.g_actions = []
         match (topic):
             case 'mulligan':
                 agent_executor = CSAgentExecutor(
@@ -120,8 +126,6 @@ class Ned():
                         keep_card_count=7-to_bottom_count,
                         )
 
-                with payload.g_payload_lock:
-                    payload.g_payload = {}
                 response = agent_executor.invoke({
                     'data': hand_analysis,
                     'input': _input,
@@ -160,8 +164,6 @@ class Ned():
                     board_analysis += SOGPP.more_board_analysis.format(hand=json.dumps(hand), indent=4)
                 _input = SOGPP._input
 
-                with payload.g_actions_lock:
-                    payload.g_actions = []
                 response = agent_executor.invoke({
                     'data': board_analysis,
                     'input': _input,
@@ -183,10 +185,10 @@ class Ned():
                 battlefield = list(map(self.process_card, ned.get('battlefield', [])))
                 ned_delayed_triggers = ned.get('delayed_triggers', [])
                 user_delayed_triggers = user.get('delayed_triggers', [])
-                triggered_when_untapped = filter(
+                triggered_when_untapped = list(filter(
                         lambda x: 'becomes untapped' in x.get('oracle_text', '') or \
                                 'Whenever you untap' in x.get('oracle_text', ''), battlefield
-                        )
+                        ))
 
                 requests = None
                 board_analysis = None
@@ -211,9 +213,6 @@ class Ned():
                     tools = UPP.untap_actions
 
                 _input = UPP._input
-
-                with payload.g_actions_lock:
-                    payload.g_actions = []
 
                 agent_executor = CSAgentExecutor(
                         llm=self.llm,

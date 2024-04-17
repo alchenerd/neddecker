@@ -1,7 +1,8 @@
+import json
+import re
 from random import shuffle
 from string import Formatter
 from copy import copy
-import json
 from dataclasses import dataclass
 from .models import Card, Face, get_card_by_name_as_dict, get_faces_by_name_as_dict
 from .ned import Ned
@@ -139,6 +140,87 @@ class Game:
             card_id = f'{player_id}{i+1}'
             self.card_map[card_id] = cardname
 
+    def get_ai_annotations(self, card):
+        """Get a tag set that helps data preprocessing for the AI player."""
+        ai_annotations = []
+        oracle_text = card.get('oracle_text', '').lower() or \
+                card.get('faces', {}).get('front', {}).get('oracle_text', '').lower()
+
+        # general tags
+        # has triggered ability?
+        if re.search('when', oracle_text):
+            ai_annotations.append('has_trigger')
+
+        # start of game specific tags: check scryfall `q=otag:start-of-game f:modern`
+        # is companion?
+        if 'companion' in oracle_text:
+            ai_annotations.append('is_companion')
+        # can reveal at start of game?
+        if 'opening hand' in oracle_text:
+            ai_annotations.append('should_reveal_at_start_of_game')
+        # can begin the game with the card on the battlefield?
+        if 'begin the game with' in oracle_text:
+            ai_annotations.append('should_move_to_battlefield_at_start_of_game')
+
+        # untap tags
+        # triggered when day/night changes?
+        if re.search('becomes[^,]+(day|night)', oracle_text):
+            ai_annotations.append('day_night_matters')
+        # triggered when untap?
+        if any(substring in oracle_text for substring in ['becomes untapped', 'whenever you untap']):
+            ai_annotations.append('untap_matters')
+
+        # upkeep tags
+        # at the beginning of .+ upkeep?
+        if re.search('at the beginning of .+ upkeep', oracle_text):
+            ai_annotations.append('beginning_upkeep')
+
+        # draw tags
+        # triggered when draw?
+        if re.search('when.+draw', oracle_text) or re.search('drawn.+this turn', oracle_text):
+            ai_annotations.append('draw_matters')
+        # draw replacement?
+        if re.search('draw.+instead', oracle_text):
+            ai_annotations.append('draw_replacement')
+
+        # main phase tags
+        # at the beginning of the main phase?
+        if re.search('beginning[^.]+main phase', oracle_text):
+            if re.search('precombat main', oracle_text):
+                ai_annotations.append('beginning_precombat_main')
+            elif re.search('postcombat main', oracle_text):
+                ai_annotations.append('beginning_postcombat_main')
+            else:
+                ai_annotations('beginning_main')
+
+        # combat tags
+        # at the beginning of combat?
+        if re.search('beginning[^,]+combat on your turn', oracle_text) or \
+                re.search('beginning[^,]+(each|next|that|of) combat', oracle_text):
+            ai_annotations.append('beginning_combat')
+        # triggered when attacking?
+        if re.search('when[^,]+attack', oracle_text):
+            ai_annotations.append('attacking_matters')
+        # triggered when blocked?
+        if re.search('when[^,]+block', oracle_text):
+            ai_annotations.append('blocking_matters')
+        # triggered when dealing combat damage?
+        if re.search('when[^,]+deals? combat damage', oracle_text):
+            ai_annotations.append('dealing_combat_damage_matters')
+        # triggered when dealt combat damage?
+        if re.search('when[^,]+dealt combat damage', oracle_text):
+            ai_annotations.append('dealt_combat_damage_matters')
+        # damage replacement?
+        if re.search('damage[^,]+instead', oracle_text):
+            ai_annotations.append('damage_replacement')
+
+        # cleanup tags
+        # lose mana replacement?
+        if re.search('lose mana[^,]+instead', oracle_text):
+            ai_annotations.append('lose_mana_replacement')
+
+        return ai_annotations
+
     def load_cards(self, player, main, side):
         rev_map = { value: key for key, value in self.card_map.items() }
         visited = {}
@@ -158,6 +240,7 @@ class Game:
                     card['faces'] |= {'front': front, 'back': back}
                 card['counters'] = list()
                 card['annotations'] = dict()
+                card['ai_annotations'] = self.get_ai_annotations(card)
                 player.library.append(card)
         for name, count in side.items():
             for i in range(count):
@@ -173,6 +256,7 @@ class Game:
                     card['faces'] |= {'front': front, 'back': back}
                 card['counters'] = list()
                 card['annotations'] = dict()
+                card['ai_annotations'] = self.get_ai_annotations(card)
                 player.sideboard.append(card)
 
     def start(self):

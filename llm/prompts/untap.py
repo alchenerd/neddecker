@@ -8,7 +8,7 @@ import inspect
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 rootdir = os.path.dirname(currentdir + '/../../../')
 sys.path.insert(0, rootdir)
-from llm.tools.untap import untap_actions
+from llm.tools.untap import untap_actions, untap_bonus_actions
 from llm.prompts.whoami import AI_ROLE
 from llm.prompts.react import PONDER_GUIDE, TOOLS_GUIDE
 
@@ -23,6 +23,8 @@ class UntapPromptPreset():
     ])
 
     tools = [ *untap_actions ]
+    untap_actions = untap_actions
+    untap_bonus_actions = untap_bonus_actions
 
     tools_prompt = ChatPromptTemplate.from_messages([
         SystemMessagePromptTemplate.from_template(TOOLS_GUIDE.format(
@@ -108,14 +110,14 @@ class UntapPromptPreset():
         "\n"
     )
 
-    bonus_board_analysis = {
+    bonus_board_analysis = (
         "\n"
         "Permanents you (Ned Decker, AI) control are as follows:\n"
         "<triggered_when_untapped format=JSON>\n"
         "{triggered_when_untapped}\n"
         "</triggered_when_untapped>\n"
         "\n"
-    }
+    )
 
     _input = (
         "Currently, NONE in the TODO list was done (all items are pending your action). Ned Decker (AI) will follow the TODO list. After all items in the TODO list are done, Ned Decker will pass the untap phase. However, if there is nothing to do in the TODO list, Ned Decker will pass the untap phase immediately."
