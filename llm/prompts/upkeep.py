@@ -37,7 +37,21 @@ class UpkeepPromptPreset():
         AIMessagePromptTemplate.from_template('{agent_scratchpad}'),
     ])
 
-    requests = []
+    requests = [
+        "Please answer these questions for submitting triggers for the upkeep step as Ned Decker "
+            "(answers should be short and terse):\n"
+        "Q1. What do you see on your battlefield? "
+            "For each permanent, think out loud if this permanent needs attention during this upkeep; "
+            "if the permanent requires attention for this upkeep, state the oracle text that referenes this.\n"
+        "Q2. Summarize the above - what permanents require your attention during this upkeep step, if any?\n"
+        "Q3. What delayed triggers were referenced this upkeep step, if any?\n"
+        "Q4. Please summarize all the above and recap what upkeep triggers are to be created.\n"
+        "Q5. Final Verdict - "
+            "with the information above, please create a TODO list about creating the required upkeep triggers, if any; "
+            "if there are upkeep triggers to create, for each TODO list item, "
+            "state the name, ID, and the trigger content within a JSON object, "
+            "otherwise, say \"There is nothing to do.\"\n",
+    ]
 
     board_analysis = (
         "\n"
@@ -56,7 +70,7 @@ class UpkeepPromptPreset():
     )
 
     _input = (
-        "Currently, NONE in the TODO list was done (all items are pending your action). Ned Decker (AI) will follow the TODO list. After all items in the TODO list are done, Ned Decker will pass the untap phase. However, if there is nothing to do in the TODO list, Ned Decker will pass the untap phase immediately."
+        "Currently, NONE of the TODO list was done (all items are pending your action). Ned Decker (AI) will follow the TODO list by calling appropriate functions. After all items in the TODO list are done, Ned Decker will pass the upkeep phase using `pass_upkeep`. However, if there is nothing to do in the TODO list, Ned Decker will pass the upkeep phase immediately."
     )
 
     improvement_prompt = (

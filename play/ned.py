@@ -13,7 +13,8 @@ sys.path.insert(0, llmrootdir)
 
 from llm.prompts.mulligan import MulliganPromptPreset as MPP
 from llm.prompts.start_of_game import StartOfGamePromptPreset as SOGPP
-from llm.prompts.untap import UntapPromptPreset as UPP
+from llm.prompts.untap import UntapPromptPreset as UnPP
+from llm.prompts.upkeep import UpkeepPromptPreset as UpPP
 from llm.agents.agent import ChatAndThenSubmitAgentExecutor as CSAgentExecutor
 import payload
 
@@ -46,6 +47,8 @@ class Ned():
                 match json_data['phase']:
                     case 'start of game phase':
                         return self.ask_ned_decker(topic='start_of_game', data=json_data)
+                    case 'upkeep step':
+                        return self.ask_ned_decker(topic='upkeep', data=json_data)
                     case _:
                         return f'Beep boop Ned passes priority ({json_data["whose_turn"]}\'s {json_data["phase"]})', { 'type': 'pass_priority', 'who': 'ned', 'actions': [] }
             case 'require_player_action':
@@ -194,30 +197,30 @@ class Ned():
                 board_analysis = None
                 tools = None
                 if triggered_when_untapped:
-                    requests = UPP.requests + UPP.bonus_requests
-                    board_analysis = UPP.board_analysis + UPP.bonus_board_analysis
+                    requests = UnPP.requests + UnPP.bonus_requests
+                    board_analysis = UnPP.board_analysis + UnPP.bonus_board_analysis
                     board_analysis = board_analysis.format(
                             battlefield=json.dumps(battlefield, indent=4), \
                             ned_delayed_triggers=json.dumps(ned_delayed_triggers, indent=4), \
                             user_delayed_triggers=json.dumps(user_delayed_triggers, indent=4), \
                             triggered_when_untapped=json.dumps(triggered_when_untapped, indent=4)
                             )
-                    tools = UPP.untap_actions + UPP.untap_bonus_actions
+                    tools = UnPP.untap_actions + UnPP.untap_bonus_actions
                 else:
-                    requests = UPP.requests
-                    board_analysis = UPP.board_analysis.format( \
+                    requests = UnPP.requests
+                    board_analysis = UnPP.board_analysis.format( \
                             battlefield=json.dumps(battlefield, indent=4), \
                             ned_delayed_triggers=json.dumps(ned_delayed_triggers, indent=4), \
                             user_delayed_triggers=json.dumps(user_delayed_triggers, indent=4), \
                     )
-                    tools = UPP.untap_actions
+                    tools = UnPP.untap_actions
 
-                _input = UPP._input
+                _input = UnPP._input
 
                 agent_executor = CSAgentExecutor(
                         llm=self.llm,
-                        chat_prompt=UPP.chat_prompt,
-                        tools_prompt=UPP.tools_prompt,
+                        chat_prompt=UnPP.chat_prompt,
+                        tools_prompt=UnPP.tools_prompt,
                         tools=tools,
                         memory=self.memory,
                         requests=requests,
@@ -247,12 +250,81 @@ class Ned():
                                 'annotationValue': False,
                             }
                             untap_actions.append(new_action)
+                other_actions = [ action for action in payload.g_actions if 'untap' not in action['type'] ]
+                untap_actions.extend(other_actions)
                 ret_payload = {
                     'type': 'pass_non_priority_action',
                     'who': 'ned',
                     'actions': untap_actions,
                 }
                 return response.get('output'), ret_payload
+            case "upkeep":
+                players = data.get('board_state', {}).get('players', [])
+                [ ned ] = list(filter(lambda p: p['player_name'] == 'ned', players))
+                [ user ] = list(filter(lambda p: p['player_name'] == 'user', players))
+                assert ned and user
+
+                battlefield = list(map(self.process_card, ned.get('battlefield', [])))
+                ned_delayed_triggers = ned.get('delayed_triggers', [])
+                user_delayed_triggers = user.get('delayed_triggers', [])
+
+                requests = UpPP.requests
+                board_analysis = UpPP.board_analysis
+                board_analysis = board_analysis.format(
+                        battlefield=json.dumps(battlefield, indent=4), \
+                        ned_delayed_triggers=json.dumps(ned_delayed_triggers, indent=4), \
+                        user_delayed_triggers=json.dumps(user_delayed_triggers, indent=4), \
+                        )
+                tools = UpPP.tools
+
+                _input = UpPP._input
+
+                agent_executor = CSAgentExecutor(
+                        llm=self.llm,
+                        chat_prompt=UpPP.chat_prompt,
+                        tools_prompt=UpPP.tools_prompt,
+                        tools=tools,
+                        memory=self.memory,
+                        requests=requests,
+                        verbose=True,
+                )
+
+                response = agent_executor.invoke({
+                    'data': board_analysis,
+                    'input': _input,
+                })
+                print (response.get('output'))
+                print (payload.g_actions)
+
+                ret_speech = response.get('output')
+                ret_actions = copy(payload.g_actions)
+
+                # aside from upkeep triggers, Ned will recieve priority as well (instant speed)
+                priority_response = self.ask_ned_decker(topic="receive_priority_instant", data=data)
+                ret_speech += " "
+                ret_speech += priority_response[0]
+                ret_actions.extend(copy(payload.g_actions))
+
+                ret_payload = {
+                    'type': 'pass_priority',
+                    'who': 'ned',
+                    'actions': copy(payload.g_actions),
+                }
+                return ret_speech, ret_payload
+            case "receive_priority_instant":
+                dummy_action = {
+                    "type": "create_trigger",
+                    "targetId": "n1#1",
+                    "triggerContent": "Ned's special instant-speed decisions!\n"
+                }
+                return "Test string: pretend these are cool instant-speed decisions!\n", [ dummy_action, ]
+            case "receive_priority_sorcery":
+                dummy_action = {
+                    "type": "create_trigger",
+                    "targetId": "n1#1",
+                    "triggerContent": "Ned's special sorcery-speed decisions!\n"
+                }
+                return "Test string: pretend these are cool sorcery-speed decisions!\n", [ dummy_action, ]
             case _:
                 return None, None
 
