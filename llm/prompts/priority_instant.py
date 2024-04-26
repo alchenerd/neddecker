@@ -38,7 +38,11 @@ class PriorityInstantPromptPreset():
     ])
 
     requests = [
-        "",
+        "Q1. Whose turn is it and what phase/step of the game currently? The answer is guaranteed to be present in the above context.\n"
+        "Q2. At this stage, you are given the priority; what can you legally do in game right now?\n"
+        "Q3. Observe the board and your hand and decide what you want to do at this moment. Keep in mind that you cannot take any sorcery speed actions right now.\n"
+        "Q4. Double-check: is now the right time to act, or could you wait until later in the game?\n"
+        "Final Verdict - Make a TODO list of what you want to do in this priority. Keep in mind that you may only cast non-flash, non-instant spells when it's your turn and the stack is empty. End the list with \"Pass the priority.\"",
     ]
 
     # factor in the lost in the middle problem, the information ordering will be in descending order:
@@ -88,15 +92,10 @@ class PriorityInstantPromptPreset():
         "</opponent_exile>\n"
         "\n"
         "\n"
-        "<current_phase format=JSON>\n"
-        "{current_phase}\n"
-        "</current_phase>\n"
+        "Stack:\n"
+        "The stack is currently empty.\n"
         "\n"
-        "\n"
-        "<whose_turn format=JSON>\n"
-        "{whose_turn}\n"
-        "</whose_turn>\n"
-        "\n"
+        "You are given priority at {whose_turn}'s {current_phase}.\n"
     )
 
     _input = (
