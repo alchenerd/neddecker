@@ -151,13 +151,20 @@ class Ned():
                 assert ned
                 hand = list(map(self.process_card, ned.get('hand', [])))
                 sideboard = list(map(self.process_card, ned.get('sideboard', [])))
-                companions = [ card for card in sideboard if 'Companion' in card['oracle_text']] or \
-                        { "Error": "There's no companion in the sideboard." }
-                to_reveal = [ card for card in hand if 'opening hand' in card['oracle_text']] or \
-                        { "Error": "There's no card in hand to reveal." }
-                to_battlefield = [ card for card in hand if 'begin the game' in card['oracle_text']] or \
-                        { "Error": "There's no card to move to the battlefield." }
-                hand = [ { **card, 'where': 'hand'} for card in hand ]
+                companions = []
+                to_reveal = []
+                to_battlefield = []
+                for card in sideboard:
+                    print(card)
+                    oracle_text = card.get('oracle_text') or card.get('faces').get('front').get('oracle_text')
+                    assert oracle_text
+                    if 'Companion' in oracle_text:
+                        companions.append(card)
+                    if 'opening hand' in oracle_text:
+                        to_reveal.append(card)
+                    if 'begin the game' in oracle_text:
+                        to_battlefield.append(card)
+                hand = [ { **card, 'where': 'hand' } for card in hand ]
                 board_analysis = SOGPP.board_analysis.format( \
                         companions=json.dumps(companions, indent=4), \
                         to_reveal=json.dumps(to_reveal, indent=4), \

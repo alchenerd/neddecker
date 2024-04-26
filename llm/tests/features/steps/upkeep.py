@@ -74,6 +74,7 @@ def archangel_avacin(n):
         },
     }
 
+# Steps
 @given(u'the AI player for upkeep step is GPT from OpenAI')
 def step_impl(context):
     context.llm = ChatOpenAI(model_name='gpt-3.5-turbo', temperature=0, max_tokens=1024)
