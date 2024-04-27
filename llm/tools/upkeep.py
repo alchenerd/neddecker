@@ -27,7 +27,7 @@ class create_trigger(BaseTool):
         new_action = {
             "type": "create_trigger",
             "targetId": in_game_id,
-            "triggerContent": trigger_content
+            "triggerContent": trigger_content,
         }
         with payload.g_actions_lock:
             payload.g_actions.append(new_action)
@@ -39,6 +39,6 @@ class pass_upkeep(BaseTool):
     def _to_args_and_kwargs(self, tool_input):
         return (), {}
     def _run(self):
-        return "Passed the upkeep step! Please announce to your opponent (Human) as Ned Decker (AI) what upkeep triggers were put onto the stack (refer to card names and abilities if any). Speak as if you are Ned Decker who's making his plays while announcing in the game. Use only Ned's tone. No quotation marks.\n"
+        return "Passed the upkeep step! Please announce to your opponent (Human) as Ned Decker (AI) what Ned's upkeep triggers were put onto the stack (refer to card names and abilities if any). Speak as if you are Ned Decker who's making his plays while announcing in the game. Use only Ned's tone. No quotation marks.\n"
 
 upkeep_actions = [ create_trigger(), pass_upkeep() ]

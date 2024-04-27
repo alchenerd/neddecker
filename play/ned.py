@@ -1,5 +1,5 @@
 import json
-from copy import copy
+from copy import copy, deepcopy
 from random import choice
 from multiprocessing import Manager
 from langchain.memory import ConversationBufferMemory
@@ -168,15 +168,12 @@ class Ned():
                     print(card)
                     oracle_text = card.get('oracle_text') or card.get('faces').get('front').get('oracle_text')
                     assert oracle_text
-                    if 'Companion' in oracle_text:
-                        companions.append(card)
                     if 'opening hand' in oracle_text:
                         to_reveal.append(card)
                     if 'begin the game' in oracle_text:
                         to_battlefield.append(card)
                 hand = [ { **card, 'where': 'hand' } for card in hand ]
                 board_analysis = SOGPP.board_analysis.format( \
-                        companions=json.dumps(companions, indent=4), \
                         to_reveal=json.dumps(to_reveal, indent=4), \
                         to_battlefield=json.dumps(to_battlefield, indent=4) \
                 )
@@ -284,6 +281,9 @@ class Ned():
                 battlefield = list(map(self.process_card, ned.get('battlefield', [])))
                 ned_delayed_triggers = ned.get('delayed_triggers', [])
                 user_delayed_triggers = user.get('delayed_triggers', [])
+                stack = data.get('board_state', {}).get('stack', [])
+                whose_turn = 'opponent' if data.get('whose_turn') == 'user' else 'ned'
+                phase = data.get('phase')
 
                 requests = UpPP.requests
                 board_analysis = UpPP.board_analysis
@@ -291,6 +291,9 @@ class Ned():
                         battlefield=json.dumps(battlefield, indent=4), \
                         ned_delayed_triggers=json.dumps(ned_delayed_triggers, indent=4), \
                         user_delayed_triggers=json.dumps(user_delayed_triggers, indent=4), \
+                        stack=json.dumps(stack, indent=4), \
+                        whose_turn=whose_turn, \
+                        current_phase=phase, \
                         )
                 tools = UpPP.tools
 
@@ -313,8 +316,8 @@ class Ned():
                 print (response.get('output'))
                 print (payload.g_actions)
 
-                ret_speech = response.get('output')
-                ret_actions = copy(payload.g_actions)
+                ret_speech = copy(response.get('output'))
+                ret_actions = deepcopy(payload.g_actions)
 
                 # aside from upkeep triggers, Ned will recieve priority as well (instant speed)
                 priority_response = self.ask_ned_decker(topic="receive_priority_instant", data=data)
@@ -325,7 +328,7 @@ class Ned():
                 ret_payload = {
                     'type': 'pass_priority',
                     'who': 'ned',
-                    'actions': copy(payload.g_actions),
+                    'actions': ret_actions,
                 }
                 return ret_speech, ret_payload
             case "receive_priority_instant":

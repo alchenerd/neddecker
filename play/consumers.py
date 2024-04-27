@@ -253,6 +253,7 @@ class PlayConsumer(WebsocketConsumer):
         else:
             # TODO: save actions to database for replayability
             actions = data.get('actions', [])
+            print(actions)
             for action in actions:
                 #print(action);
                 self.mtg_match.game.apply_action(action)

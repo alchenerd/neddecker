@@ -273,6 +273,16 @@ export default function PlayPage() {
     }
   }, [lastMessage]);
 
+  useEffect(() => {
+    console.log("sideboard data changed")
+    console.log(sideboardData)
+    if (sideboardData && sideboardData.length) {
+      const companions = sideboardData.filter(card => card.oracle_text?.startsWith('Companion'))
+      console.log(companions)
+      setCompanion(companions[0]['in_game_id']);
+    }
+  }, [sideboardData]);
+
   const registerMoveAction = (id, to) => {
     console.log("registermoveaction is called");
     console.log("moving", id, "to", to);
@@ -526,7 +536,7 @@ export default function PlayPage() {
             {"Reveal Companion?"}
           </DialogTitle>
           <DialogContent>
-            <Select onChange={handleChangeCompanion}>
+            <Select onChange={handleChangeCompanion} value={companion}>
               {sideboardData.map(card => {
                 if (card.oracle_text?.startsWith("Companion")) {
                   return (<MenuItem key={card.in_game_id} value={card.in_game_id}>{card.name}</MenuItem>)

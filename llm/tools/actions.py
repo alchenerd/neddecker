@@ -45,6 +45,14 @@ class SetCounter(BaseTool):
     description = """Set the amount of a type of counter on target card. This is for paying cost only, such as removing counters by setting a lower value for some counter. Do not use this for any other purpose."""
     args_schema: Type[BaseModel] = SetCounterInput
     def _run(self, in_game_id, card_name, counter_type, counter_amount):
+        new_action = {
+            "type": "set_counter",
+            "targetId": in_game_id,
+            "counterType": counter_type,
+            "counterAmount": counter_amount,
+        }
+        with payload.g_actions_lock:
+            payload.g_actions.append(new_action)
         return f"{card_name} ({in_game_id}) now has {counter_amount} {counter_type} counter(s)!"
 
 
@@ -60,6 +68,14 @@ class SetAnnotation(BaseTool):
     description = """Set a non-counter annotaion on target card. This is for paying cost only, such as tapping a card or untapping a card. Do not use this for any other purpose."""
     args_schema: Type[BaseModel] = SetAnnotationInput
     def _run(self, in_game_id, card_name, annotation_key, annotation_value):
+        new_action = {
+            "type": "set_annotation",
+            "targetId": in_game_id,
+            "annotationKey": annotation_key,
+            "annotationValue": annotation_value,
+        }
+        with payload.g_actions_lock:
+            payload.g_actions.append(new_action)
         return f"{card_name} ({in_game_id}) now is marked with {annotation_key}: {annotation_value}!"
 
 
@@ -74,6 +90,13 @@ class CreateTrigger(BaseTool):
     description = """Create a trigger on top of the stack originated from target card. This is for activating a card. Do not use this for any other purpose."""
     args_schema: Type[BaseModel] = CreateTriggerInput
     def _run(self, in_game_id, card_name, trigger_content):
+        new_action = {
+            "type": "create_trigger",
+            "targetId": in_game_id,
+            "triggerContent": trigger_content,
+        }
+        with payload.g_actions_lock:
+            payload.g_actions.append(new_action)
         return f"The trigger of {card_name} ({in_game_id}) - {trigger_content} is put onto the stack!"
 
 
@@ -91,6 +114,21 @@ class SetMana(BaseTool):
     description = """Set your mana pool. This is for paying cost, or activating mana abilities for paying cost later. Do not use this for any other purpose."""
     args_schema: Type[BaseModel] = SetManaInput
     def _run(self, white, blue, black, red, green, colorless):
+        mana_pool = {
+            "W": white,
+            "U": blue,
+            "B": black,
+            "R": red,
+            "G": green,
+            "C": colorless,
+        }
+        new_action = {
+            "type": "set_mana",
+            "targetId": "ned",
+            "manaPool": mana_pool,
+        }
+        with payload.g_actions_lock:
+            payload.g_actions.append(new_action)
         return f"You now have: \n- {white} white mana,\n- {blue} blue mana, \n- {black} black mana, \n- {red} red mana, \n- {green} green mana, \n- {colorless} colorless mana!"
 
 
@@ -103,6 +141,13 @@ class SetHp(BaseTool):
     description = """Set your hit point. This is for paying life for casting spells or activate abilities. Do not use this for any other purpose."""
     args_schema: Type[BaseModel] = SetHpInput
     def _run(self, amount):
+        new_action = {
+            "type": "set_hp",
+            "targetId": "ned",
+            "value": amount,
+        }
+        with payload.g_actions_lock:
+            payload.g_actions.append(new_action)
         return f"You now have {amount} HP!"
 
 

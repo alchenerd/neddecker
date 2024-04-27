@@ -290,13 +290,15 @@ class Game:
         assert self.priority_waitlist[0] == next_player
 
     def apply_action(self, action):
+        print("Applying an action!")
+        print(action)
         target_id = action['targetId']
         who = action.get('who', None)
         if not who and target_id:
             who = target_id[0] # n for ned or u for user
-        [ player ] = [ p for p in self.players if p.player_name.startswith(who) ]
+        [ player ] = [ p for p in self.players if p.player_name.startswith(who) ] # not correct but convenient
 
-        zones = [ player.library, player.hand, player.battlefield, player.graveyard, player.exile, player.sideboard ]
+        zones = [ getattr(p, z) for z in ('library', 'hand', 'battlefield', 'graveyard', 'sideboard') for p in self.players ]
         found_card = None
         found_zone = None
         if target_id:
@@ -311,28 +313,40 @@ class Game:
             assert found_card
 
         match action.get('type'):
-            case 'set_annotation':
-                if found_card:
-                    found_card['annotations'][action['annotationKey']] = action['annotationValue']
+            case 'create_trigger':
+                stack = self.stack
+                relevants = [card for card in stack if card['in_game_id'].endswith(found_card['in_game_id'])]
+                used_ids = [ int(card['in_game_id'].split('@')[0]) for card in relevants if '@' in card['in_game_id']]
+                seen = set(used_ids)
+                enum = set(range(1, len(seen) + 2)) # edge and factor in seen could be (1, 2, 3)
+                next_serial_number = 1 if not seen else min(enum - seen)
+                controller = player.player_name
+                pseudo_card = copy(found_card)
+                pseudo_card['in_game_id'] = 'trigger' + str(next_serial_number) + '@' + found_card['in_game_id']
+                pseudo_card['triggerContent'] = action['triggerContent']
+                self.stack.append(pseudo_card)
                 return
             case 'create_delayed_trigger':
                 player.delayed_triggers.append(copy(action))
                 return
             case 'move':
-                destination = action.get('to').split('.')[-1]
-                match destination:
-                    case 'library':
-                        player.library.append(copy(found_card))
-                    case 'hand':
-                        player.hand.append(copy(found_card))
-                    case 'battlefield':
-                        player.battlefield.append(copy(found_card))
-                    case 'graveyard':
-                        player.graveyard.append(copy(found_card))
-                    case 'exile':
-                        player.exile.append(copy(found_card))
-                    case 'sideboard':
-                        player.sideboard.append(copy(found_card))
+                # for move, we cannot assume the owner == whose zone
+                splitted = action.get('to').split('.')
+                destination = splitted[-1]
+                recipient = splitted[0]
+                if 'stack' in destination:
+                    self.stack.append(copy(found_card))
+                else:
+                    if 'ned' in recipient:
+                        recipient = [ p for p in self.players if p.player_name.startswith('ned') ][0]
+                    elif 'user' in recipient:
+                        recipient = [ p for p in self.players if p.player_name.startswith('user') ][0]
+                    else:
+                        digit = [ c for c in recipient if isdigit(c) ][0]
+                        assert digit is not []
+                        digit = int(digit)
+                        recipient = self.players[digit]
+                recipient.getattr(destination).append(copy(found_card))
                 found_zone.remove(found_card)
                 return
             case 'set_counter':
@@ -341,6 +355,10 @@ class Game:
                         found_card.counters = action.counterAmount
                         return
                 found_card.counters[action.counterType] = action.counterAmount
+            case 'set_annotation':
+                if found_card:
+                    found_card['annotations'][action['annotationKey']] = action['annotationValue']
+                return
             case 'prevent_untap_all':
                 for card in player.battlefield:
                     card['annotations']['preventUntap'] = True
@@ -348,6 +366,21 @@ class Game:
             case 'prevent_untap':
                 found_card['annotations']['preventUntap'] = True
                 return
+            case 'set_mana':
+                name = action['targetId'] # expected ned or user
+                players = self.players
+                [ player ] = [ p for p in players if p.player_name == name ]
+                assert player
+                player.mana_pool = action['manaPool']
+                return
+            case 'set_hp':
+                name = action['targetId'] # expected ned or user
+                players = self.players
+                [ player ] = [ p for p in players if p.player_name == name ]
+                assert player
+                player.hp = action['value']
+                return
+
 
     def is_board_sane(self, board):
         seen_ids = set()
