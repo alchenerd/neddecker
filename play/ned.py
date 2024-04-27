@@ -1,5 +1,6 @@
 import json
 from copy import copy
+from random import choice
 from multiprocessing import Manager
 from langchain.memory import ConversationBufferMemory
 from langchain_openai import ChatOpenAI
@@ -38,6 +39,15 @@ class Ned():
             case 'log':
                 #print(json_data['message'])
                 return 'Ned received: ' + json_data['message'], json_data
+            case 'who_goes_first':
+                return 'Ned ALWAYS chooses to go first!', { 'type': 'who_goes_first', 'who': 'ned' }
+            case 'ask_reveal_companion':
+                sideboard = json_data['sideboard']
+                companions = [ card for card in sideboard if 'Companion' in repr(card) ]
+                companion = choice(companions)
+                companion_name = companion.get('name')
+                to_reveal = companion.get('in_game_id')
+                return f'Ned ALWAYS reveals a random companion! {companion_name}', { 'type': 'ask_reveal_companion', 'who': 'ned', 'targetId': to_reveal }
             case 'mulligan':
                 #return 'Beep boop Ned mulligans to 4', self.mulligan_to_four(json_data)
                 # ...or you may let GPT decide

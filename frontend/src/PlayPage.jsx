@@ -1,5 +1,13 @@
 import { useState, useEffect } from 'react';
 import Grid from '@mui/material/Grid';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
+import Button from '@mui/material/Button';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 import _ from 'lodash';
 import { cloneDeep } from 'lodash';
@@ -77,6 +85,10 @@ export default function PlayPage() {
   }, []);
   const wsUrl = 'ws://localhost:8000/ws/play/';
   const { sendMessage, lastMessage, readyState } = useWebSocket(wsUrl);
+  const [ openWhoGoesFirstDialog, setOpenWhoGoesFirstDialog ] = useState(false);
+  const [ openAskRevealCompanionDialog, setOpenAskRevealCompanionDialog ] = useState(false);
+  const [ sideboardData, setSideboardData ] = useState([]);
+  const [ companion, setCompanion ] = useState('');
   // For mulligan
   const [ openMulliganDialog, setOpenMulliganDialog ] = useState(false);
   const [ mulliganData, setMulliganData ] = useState({});
@@ -151,6 +163,48 @@ export default function PlayPage() {
     store.dispatch(receivedNewGameData({ newGameData: data }));
   }
 
+  function handleGoFirst() {
+    setOpenWhoGoesFirstDialog(false)
+    const payload = {
+      type: "who_goes_first",
+      who: "user",
+    }
+    sendMessage(JSON.stringify(payload));
+  }
+
+  function handleNoGoFirst() {
+    setOpenWhoGoesFirstDialog(false)
+    const payload = {
+      type: "who_goes_first",
+      who: "ned",
+    }
+    sendMessage(JSON.stringify(payload));
+  }
+
+  function handleChangeCompanion(e) {
+    setCompanion(e.target.value);
+  }
+
+  function handleRevealCompanion() {
+    setOpenAskRevealCompanionDialog(false)
+    const payload = {
+      type: "ask_reveal_companion",
+      who: "user",
+      targetId: companion,
+    }
+    sendMessage(JSON.stringify(payload));
+  }
+
+  function handleNoRevealCompanion() {
+    setOpenAskRevealCompanionDialog(false)
+    const payload = {
+      type: "ask_reveal_companion",
+      who: "user",
+      targetId: null,
+    }
+    sendMessage(JSON.stringify(payload));
+  }
+
   useEffect(() => {
     if (openMulliganDialog === false && requestMulligan === true) {
       sendMessage(JSON.stringify({
@@ -189,8 +243,15 @@ export default function PlayPage() {
           console.log(data.message);
           break;
         case 'game_start':
-          console.log("Game", data.game, "of", data.of, "has started.", data.who_goes_first, "goes first.");
+          console.log("Game", data.game, "of", data.of, "has started.");
           break;
+        case 'who_goes_first':
+          setOpenWhoGoesFirstDialog(true)
+          break
+        case 'ask_reveal_companion':
+          setSideboardData(data.sideboard);
+          setOpenAskRevealCompanionDialog(true);
+          break
         case 'mulligan':
           handleMulliganMessage(data);
           break;
@@ -440,6 +501,44 @@ export default function PlayPage() {
             </Grid>
           </Grid>
         </Grid>
+        <Dialog id="who-goes-first-dialog"
+          open={openWhoGoesFirstDialog}
+          onClose={ () => setOpenCreateDelayedTriggerDialog(false)}
+        >
+          <DialogTitle id="alert-dialog-title">
+            {"Go first?"}
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+              Would you like to go first this game?
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleGoFirst} autoFocus>Yes</Button>
+            <Button onClick={handleNoGoFirst}>No</Button>
+          </DialogActions>
+        </Dialog>
+        <Dialog id="reveal-companion-dialog"
+          open={openAskRevealCompanionDialog}
+          onClose={ () => setOpenAskRevealCompanionDialog(false)}
+        >
+          <DialogTitle id="alert-dialog-title">
+            {"Reveal Companion?"}
+          </DialogTitle>
+          <DialogContent>
+            <Select onChange={handleChangeCompanion}>
+              {sideboardData.map(card => {
+                if (card.oracle_text?.startsWith("Companion")) {
+                  return (<MenuItem key={card.in_game_id} value={card.in_game_id}>{card.name}</MenuItem>)
+                }
+              })}
+            </Select>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleRevealCompanion} autoFocus>Reveal as Companion</Button>
+            <Button onClick={handleNoRevealCompanion}>{"Don't Reveal"}</Button>
+          </DialogActions>
+        </Dialog>
         <MulliganDialog
           open={openMulliganDialog}
           setOpen={setOpenMulliganDialog}

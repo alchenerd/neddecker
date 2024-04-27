@@ -128,8 +128,10 @@ class Game:
         self.load_cards(player, main, side)
         self.players.append(player)
 
-    def shuffle_players(self):
-        shuffle(self.players)
+    def register_first_player(self, index):
+        if index:
+            for _ in range(index):
+                self.players.append(self.players.pop(0))
         self.turn_phase_tracker = iter(MTGTNPS([p.player_name for p in self.players]))
 
     def import_card_map(self, cards, name):
@@ -258,6 +260,14 @@ class Game:
                 card['annotations'] = dict()
                 card['ai_annotations'] = self.get_ai_annotations(card)
                 player.sideboard.append(card)
+
+    def set_companion(self, _id):
+        sideboards = [ player.sideboard for player in self.players ]
+        for sideboard in sideboards:
+            for card in sideboard:
+                if card['in_game_id'] == _id:
+                    card['annotations']['isCompanion'] = True
+                    return
 
     def start(self):
         self.next_step()

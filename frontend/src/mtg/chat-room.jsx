@@ -32,6 +32,8 @@ export function ChatRoom({lastMessage, userIsDone, userEndTurn, hasPriority, ...
       const data = JSON.parse(lastMessage.data);
       switch(data.type) {
         case "log":
+        case 'who_goes_first':
+        case 'ask_reveal_companion':
           setChatHistory(prev => ([...prev,
             {
               "log": data.message
@@ -43,8 +45,7 @@ export function ChatRoom({lastMessage, userIsDone, userEndTurn, hasPriority, ...
             "log":
               "Game " + data.game +
               " of " + data.of +
-              " has started.\n" +
-              data.who_goes_first + " goes first.\n"
+              " has started.\n"
           }]));
           break;
       }

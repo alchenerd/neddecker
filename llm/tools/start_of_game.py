@@ -19,11 +19,6 @@ class CardIdInput(BaseModel):
     in_game_id: Required[str] = Field(description="The ID of the target card; e.g. \"n1#1\"")
     card_name: Required[str] = Field(description="The name of the target card")
 
-class CompanionCardInput(BaseModel):
-    in_game_id: Required[str] = Field(description="The ID of the target card; e.g. \"n1#1\"")
-    card_name: Required[str] = Field(description="The name of the target card")
-    oracle_text: Required[str] = Field(description="The oracle text of the target card", pattern=r'^Companion')
-
 """
     @root_validator
     def validate_query(cls, values: Dict[str, Any]) -> Dict:
@@ -66,27 +61,6 @@ class RevealDelayedTriggerInput(BaseModel):
 class SetLuckCounterInput(BaseModel):
     in_game_id: Required[str] = Field(description="The ID of the target card; e.g. \"n1#1\"")
     card_name: Required[str] = Field(description="The name of the target card")
-
-class choose_companion(BaseTool):
-    name = "choose_companion"
-    description = """Submit the chosen companion; required input is the chosen companion's ID. If there was no companion in the sideboard, then skip this."""
-    args_schema: Type[BaseModel] = CompanionCardInput
-    def _run(self, in_game_id, card_name, oracle_text):
-        new_action = {
-            "type": "set_annotation",
-            "targetId": in_game_id,
-            "annotationKey": "isCompanion",
-            "annotationValue": True,
-        }
-        with payload.g_actions_lock:
-            payload.g_actions.append(new_action)
-        return (
-            "{name} ({_id}) is set to be companion! ".format(name=card_name, _id=in_game_id) +
-            "Ned Decker may later in the game pay three mana and put it into his hand as a sorcery. "
-            "For now, it stays in Ned's sideboard.\n"
-            "Continue to take start of game actions for other cards "
-            "until Ned Decker (AI) wants to pass the start of game phase.\n"
-        )
 
 class reveal_from_opening_hand(BaseTool):
     name = "reveal_from_opening_hand"
@@ -184,7 +158,6 @@ class pass_start_of_game(BaseTool):
         return "Submitted to pass the start of game phase!\nPlease announce to opponent (Human) what actions were made as Ned Decker (AI). If no actions were made, say that you're passing the phase. Announce from Ned Decker's POV. Be short and terse. No quotation marks, and no metadata. You must only write down what Ned Decker would say.\n"
 
 start_of_game_actions = [
-    choose_companion(),
     reveal_from_opening_hand(),
     move_to_battlefield_from_hand(),
     set_luck_counter(),

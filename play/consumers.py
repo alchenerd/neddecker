@@ -1,4 +1,5 @@
 import json
+from random import randint
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import WebsocketConsumer
 from .game import Match, Game, Player
@@ -29,6 +30,10 @@ class PlayConsumer(WebsocketConsumer):
                 self.register_match(data)
             case 'register_player':
                 self.register_player(data)
+            case 'who_goes_first':
+                self.register_who_first(data)
+            case 'ask_reveal_companion':
+                self.register_companion(data)
             case 'mulligan':
                 self.mulligan(data)
             case 'keep_hand':
@@ -72,14 +77,65 @@ class PlayConsumer(WebsocketConsumer):
         self.send(text_data=json.dumps(payload))
         if len(game.players) == game.max_players:
             game.clear()
-            game.shuffle_players()
             payload = {
                     'type': 'game_start',
                     'game': _match.games_played + 1,
                     'of': _match.max_games,
-                    'who_goes_first': str(game.players[0]),
             }
-            self.send(text_data=json.dumps(payload))
+            self.send(text_data=json.dumps(payload)) # announce start of game
+            self.decide_who_goes_first()
+
+    def decide_who_goes_first(self):
+        players = self.mtg_match.game.players
+        who_decides = randint(0, len(players) - 1)
+        payload = {
+            'type': 'who_goes_first',
+            'message': 'You decide if you will go first or not.',
+        }
+        player = players[who_decides]
+        self.send_to_player(player=player, text_data=json.dumps(payload))
+
+    def register_who_first(self, data):
+        who_first = data['who']
+        assert who_first
+        players = self.mtg_match.game.players
+        [index] = [ i for i, player in enumerate(players) if player.player_name == who_first ]
+        assert type(index) == int
+        self.mtg_match.game.register_first_player(index)
+        pending = self.handle_companion()
+        if not pending:
+            self.start_mulligan()
+        else:
+            self.mtg_match.game.pending_companion = pending
+
+    def handle_companion(self):
+        pending = 0
+        players = self.mtg_match.game.players
+        for player in players:
+            print(player.player_name)
+            for card in player.sideboard:
+                print(card['name'])
+                if 'Companion' in repr(card):
+                    self.ask_reveal_companion(player)
+                    pending += 1
+        return pending
+
+    def ask_reveal_companion(self, player):
+        payload = {
+            'type': 'ask_reveal_companion',
+            'message': 'You may reveal at most one companion.',
+            'sideboard': player.sideboard,
+        }
+        self.send_to_player(player=player, text_data=json.dumps(payload))
+
+    def register_companion(self, data):
+        _id = data['targetId']
+        if not _id:
+            return
+        self.mtg_match.game.set_companion(_id)
+        self.mtg_match.game.pending_companion -= 1
+        if not self.mtg_match.game.pending_companion:
+            delattr(self.mtg_match.game, 'pending_companion')
             self.start_mulligan()
 
     def next_mulligan_player(self, i):
