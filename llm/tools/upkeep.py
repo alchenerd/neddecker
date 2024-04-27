@@ -31,7 +31,6 @@ class create_trigger(BaseTool):
         }
         with payload.g_actions_lock:
             payload.g_actions.append(new_action)
-        return ""
         return "Card {name} ({_id}) trigger is put onto the stack! You may create more triggers using `create_trigger` or pass the upkeep step using `pass_upkeep`.\n".format(name=card_name, _id=in_game_id)
 
 class pass_upkeep(BaseTool):
