@@ -1,6 +1,6 @@
 import json
 from copy import copy, deepcopy
-from random import choice
+import random
 from multiprocessing import Manager
 from langchain.memory import ConversationBufferMemory
 from langchain_openai import ChatOpenAI
@@ -16,6 +16,7 @@ from llm.prompts.mulligan import MulliganPromptPreset as MPP
 from llm.prompts.start_of_game import StartOfGamePromptPreset as SOGPP
 from llm.prompts.untap import UntapPromptPreset as UnPP
 from llm.prompts.upkeep import UpkeepPromptPreset as UpPP
+from llm.prompts.priority_instant import PriorityInstantPromptPreset as PiPP
 from llm.agents.agent import ChatAndThenSubmitAgentExecutor as CSAgentExecutor
 import payload
 
@@ -44,15 +45,15 @@ class Ned():
             case 'ask_reveal_companion':
                 sideboard = json_data['sideboard']
                 companions = [ card for card in sideboard if 'Companion' in repr(card) ]
-                companion = choice(companions)
+                companion = random.choice(companions)
                 companion_name = companion.get('name')
                 to_reveal = companion.get('in_game_id')
                 return f'Ned ALWAYS reveals a random companion! {companion_name}', { 'type': 'ask_reveal_companion', 'who': 'ned', 'targetId': to_reveal }
             case 'mulligan':
                 #return 'Beep boop Ned mulligans to 4', self.mulligan_to_four(json_data)
                 # ...or you may let GPT decide
-                thoughts, choice = self.ask_ned_decker(topic='mulligan', data=json_data)
-                return thoughts, choice
+                thoughts, actions = self.ask_ned_decker(topic='mulligan', data=json_data)
+                return thoughts, actions
             case 'receive_priority':
                 match json_data['phase']:
                     case 'start of game phase':
@@ -320,10 +321,10 @@ class Ned():
                 ret_actions = deepcopy(payload.g_actions)
 
                 # aside from upkeep triggers, Ned will recieve priority as well (instant speed)
-                priority_response = self.ask_ned_decker(topic="receive_priority_instant", data=data)
+                priority_speech, priority_payload = self.ask_ned_decker(topic="receive_priority_instant", data=data)
                 ret_speech += " "
-                ret_speech += priority_response[0]
-                ret_actions.extend(copy(payload.g_actions))
+                ret_speech += priority_speech
+                ret_actions.extend(priority_payload.get('actions'))
 
                 ret_payload = {
                     'type': 'pass_priority',
@@ -332,12 +333,56 @@ class Ned():
                 }
                 return ret_speech, ret_payload
             case "receive_priority_instant":
-                dummy_action = {
-                    "type": "create_trigger",
-                    "targetId": "n1#1",
-                    "triggerContent": "Ned's special instant-speed decisions!\n"
+                agent_executor = CSAgentExecutor(
+                        llm=self.llm,
+                        chat_prompt=PiPP.chat_prompt,
+                        tools_prompt=PiPP.tools_prompt,
+                        tools=PiPP.tools,
+                        memory=self.memory,
+                        requests=PiPP.requests,
+                        verbose=True,
+                )
+                players = data.get('board_state', {}).get('players', [])
+                [ ned ] = list(filter(lambda p: p['player_name'] == 'ned', players))
+                [ user ] = list(filter(lambda p: p['player_name'] == 'user', players))
+                assert ned and user
+
+                opponent_battlefield = list(map(self.process_card, user.get('battlefield', [])))
+                self_battlefield = list(map(self.process_card, ned.get('battlefield', [])))
+                self_hand = list(map(self.process_card, ned.get('hand', [])))
+                self_graveyard = list(map(self.process_card, ned.get('graveyard', [])))
+                opponent_graveyard = list(map(self.process_card, user.get('graveyard', [])))
+                self_exile = list(map(self.process_card, ned.get('exile', [])))
+                opponent_exile = list(map(self.process_card, user.get('exile', [])))
+                whose_turn = 'opponent' if data.get('whose_turn') == 'user' else 'ned'
+                phase = data.get('phase')
+
+                board_analysis = PiPP.board_analysis.format(
+                        opponent_battlefield=json.dumps(opponent_battlefield, indent=4), \
+                        self_battlefield=json.dumps(self_battlefield, indent=4), \
+                        self_hand=json.dumps(self_hand, indent=4), \
+                        self_graveyard=json.dumps(self_graveyard, indent=4), \
+                        opponent_graveyard=json.dumps(opponent_graveyard, indent=4), \
+                        self_exile=json.dumps(self_exile, indent=4), \
+                        opponent_exile=json.dumps(opponent_exile, indent=4), \
+                        whose_turn=whose_turn, \
+                        current_phase=phase, \
+                )
+                _input = PiPP._input
+
+                response = agent_executor.invoke({
+                    'data': board_analysis,
+                    'input': _input,
+                })
+
+                ret_speech = copy(response.get('output'))
+                ret_payload = {
+                    'type': 'pass_priority',
+                    'who': 'ned',
+                    'actions': copy(payload.g_actions),
                 }
-                return "Test string: pretend these are cool instant-speed decisions!\n", [ dummy_action, ]
+
+                return ret_speech, ret_payload
             case "receive_priority_sorcery":
                 dummy_action = {
                     "type": "create_trigger",

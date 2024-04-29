@@ -301,7 +301,7 @@ class Game:
         zones = [ getattr(p, z) for z in ('library', 'hand', 'battlefield', 'graveyard', 'sideboard') for p in self.players ]
         found_card = None
         found_zone = None
-        if target_id:
+        if target_id and '#' in target_id:
             for zone in zones:
                 for card in zone:
                     if card['in_game_id'] == target_id:
@@ -324,6 +324,7 @@ class Game:
                 pseudo_card = copy(found_card)
                 pseudo_card['in_game_id'] = 'trigger' + str(next_serial_number) + '@' + found_card['in_game_id']
                 pseudo_card['triggerContent'] = action['triggerContent']
+                pseudo_card['annotations']['controller'] = action['controller']
                 self.stack.append(pseudo_card)
                 return
             case 'create_delayed_trigger':
@@ -334,7 +335,7 @@ class Game:
                 splitted = action.get('to').split('.')
                 destination = splitted[-1]
                 recipient = splitted[0]
-                if 'stack' in destination:
+                if 'stack' in action.get('to'):
                     self.stack.append(copy(found_card))
                 else:
                     if 'ned' in recipient:
@@ -346,7 +347,7 @@ class Game:
                         assert digit is not []
                         digit = int(digit)
                         recipient = self.players[digit]
-                recipient.getattr(destination).append(copy(found_card))
+                getattr(recipient, destination).append(copy(found_card))
                 found_zone.remove(found_card)
                 return
             case 'set_counter':

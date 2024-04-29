@@ -14,8 +14,8 @@ import payload
 class MoveInput(BaseModel):
     in_game_id: Required[str] = Field(description="The ID of the target card; e.g. \"n1#1\".")
     card_name: Required[str] = Field(description="The name of the target card.")
-    from_where: Required[str] = Field(description="Use format [player_name]-[zone_name]; e.g. ned-hand.")
-    to_where: Required[str] = Field(description="Use format [player_name]-[zone_name]; e.g. ned-graveyard.")
+    from_where: Required[str] = Field(description="Use format [player_name].[zone_name]; e.g. ned.hand.")
+    to_where: Required[str] = Field(description="Use format [player_name].[zone_name]; e.g. ned.graveyard.")
 
 class Move(BaseTool):
     name = "move"
@@ -94,6 +94,7 @@ class CreateTrigger(BaseTool):
             "type": "create_trigger",
             "targetId": in_game_id,
             "triggerContent": trigger_content,
+            "controller": "ned",
         }
         with payload.g_actions_lock:
             payload.g_actions.append(new_action)

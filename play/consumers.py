@@ -118,6 +118,7 @@ class PlayConsumer(WebsocketConsumer):
                 if 'Companion' in repr(card):
                     self.ask_reveal_companion(player)
                     pending += 1
+                    break
         return pending
 
     def ask_reveal_companion(self, player):
@@ -133,9 +134,11 @@ class PlayConsumer(WebsocketConsumer):
         if not _id:
             return
         self.mtg_match.game.set_companion(_id)
-        self.mtg_match.game.pending_companion -= 1
-        if not self.mtg_match.game.pending_companion:
-            delattr(self.mtg_match.game, 'pending_companion')
+        if hasattr(self.mtg_match.game, 'pending_companion'):
+            self.mtg_match.game.pending_companion -= 1
+            if not self.mtg_match.game.pending_companion:
+                delattr(self.mtg_match.game, 'pending_companion')
+        if not hasattr(self.mtg_match.game, 'pending_companion'):
             self.start_mulligan()
 
     def next_mulligan_player(self, i):
@@ -256,6 +259,8 @@ class PlayConsumer(WebsocketConsumer):
             print(actions)
             for action in actions:
                 #print(action);
+                if action['type'] == 'pass':
+                    break
                 self.mtg_match.game.apply_action(action)
 
         if len(self.mtg_match.game.priority_waitlist) > 0:
@@ -288,6 +293,8 @@ class PlayConsumer(WebsocketConsumer):
         else:
             actions = data.get('actions', [])
             for action in actions:
+                if action['type'] == 'pass':
+                    break
                 self.mtg_match.game.apply_action(action)
         self.advance()
 
@@ -298,6 +305,8 @@ class PlayConsumer(WebsocketConsumer):
         self.mtg_match.game.apply_board_state(board_state)
         actions = data.get('actions', [])
         for action in actions:
+            if action['type'] == 'pass':
+                break
             self.mtg_match.game.apply_action(action)
         self.mtg_match.game.is_resolving = False
         # refill priority waitlist; active player receives priority
