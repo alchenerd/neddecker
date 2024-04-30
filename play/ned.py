@@ -60,6 +60,8 @@ class Ned():
                         return self.ask_ned_decker(topic='start_of_game', data=json_data)
                     case 'upkeep step':
                         return self.ask_ned_decker(topic='upkeep', data=json_data)
+                    case 'draw step':
+                        return self.ask_ned_decker(topic='draw', data=json_data)
                     case _:
                         return f'Beep boop Ned passes priority ({json_data["whose_turn"]}\'s {json_data["phase"]})', { 'type': 'pass_priority', 'who': 'ned', 'actions': [] }
             case 'require_player_action':
@@ -332,6 +334,22 @@ class Ned():
                     'actions': ret_actions,
                 }
                 return ret_speech, ret_payload
+            case "draw":
+                players = data['board_state']['players']
+                [ ned ] = list(filter(lambda p: p['player_name'] == 'ned', players))
+                [ user ] = list(filter(lambda p: p['player_name'] == 'user', players))
+                assert ned and user
+                # search for draw replacement effect
+                possible_draw_replacement = False
+                if any((('draw' in repr(card)) and ('instead' in repr(card) or 'skip' in repr(card))) for card in ned['battlefield']):
+                    possible_draw_replacement = True
+                if any((('draw' in repr(card)) and ('instead' in repr(card) or 'skip' in repr(card))) for card in user['battlefield']):
+                    possible_draw_replacement = True
+                if any('dredge' in repr(card)) for card in user['graveyard']):
+                    possible_draw_replacement = True
+                if possible_draw_replacement:
+                    # TODO implement draw replacement, draw triggers, and draw step priority
+                    pass
             case "receive_priority_instant":
                 agent_executor = CSAgentExecutor(
                         llm=self.llm,
