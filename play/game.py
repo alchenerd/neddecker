@@ -8,6 +8,8 @@ from .models import Card, Face, get_card_by_name_as_dict, get_faces_by_name_as_d
 from .ned import Ned
 from .iterables import MtgTurnsAndPhases as MTGTNPS
 
+from dataclasses import dataclass
+
 class Player:
     def __init__(self):
         self.player_name = '' # 'ned' or 'user'
@@ -127,6 +129,8 @@ class Game:
         self.import_card_map(all_cards, player.player_name)
         self.load_cards(player, main, side)
         self.players.append(player)
+        if player.player_name not in self.__dict__:
+            setattr(self, player.player_name, player)
 
     def register_first_player(self, index):
         if index:

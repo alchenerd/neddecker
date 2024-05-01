@@ -27,3 +27,8 @@ Feature: AI player acts in the draw phase of an Magic: the Gathering game
         And Urabrask, Heretic Praetor has resolved its trigger on the AI player's upkeep
         When the system asks the AI player for draw replacement decisions
         Then the AI player replaces one draw with no draw
+
+    Scenario: the AI player has one draw trigger to create
+        Given the AI player controls a Hoofprints of the Stag
+        When the system asks the AI player for draw trigger decisions
+        Then the AI player creates a trigger for Hoofprints of the Stag

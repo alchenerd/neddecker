@@ -29,6 +29,7 @@ class Ned():
         #self.llm = ChatOpenAI(model_name='gpt-4-1106-preview', temperature=0.2, max_tokens=2048)
         self.memory = ConversationBufferMemory(memory_key="chat_history", input_key='input', return_messages=True)
         self.agent_executor = None
+        self.whiteboard = []
 
     def clear_memory(self):
         self.memory = ConversationBufferMemory(memory_key="chat_history", input_key='input', return_messages=True)
@@ -38,7 +39,6 @@ class Ned():
         json_data = json.loads(text_data)
         match json_data['type']:
             case 'log':
-                #print(json_data['message'])
                 return 'Ned received: ' + json_data['message'], json_data
             case 'who_goes_first':
                 return 'Ned ALWAYS chooses to go first!', { 'type': 'who_goes_first', 'who': 'ned' }
@@ -48,7 +48,8 @@ class Ned():
                 companion = random.choice(companions)
                 companion_name = companion.get('name')
                 to_reveal = companion.get('in_game_id')
-                return f'Ned ALWAYS reveals a random companion! {companion_name}', { 'type': 'ask_reveal_companion', 'who': 'ned', 'targetId': to_reveal }
+                return f'Ned ALWAYS reveals a random companion! {companion_name}', \
+                        { 'type': 'ask_reveal_companion', 'who': 'ned', 'targetId': to_reveal }
             case 'mulligan':
                 #return 'Beep boop Ned mulligans to 4', self.mulligan_to_four(json_data)
                 # ...or you may let GPT decide
@@ -345,7 +346,7 @@ class Ned():
                     possible_draw_replacement = True
                 if any((('draw' in repr(card)) and ('instead' in repr(card) or 'skip' in repr(card))) for card in user['battlefield']):
                     possible_draw_replacement = True
-                if any('dredge' in repr(card)) for card in user['graveyard']):
+                if any('dredge' in repr(card) for card in user['graveyard']):
                     possible_draw_replacement = True
                 if possible_draw_replacement:
                     # TODO implement draw replacement, draw triggers, and draw step priority
