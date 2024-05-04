@@ -15,7 +15,7 @@ class MoveInput(BaseModel):
     in_game_id: Required[str] = Field(description="The ID of the target card; e.g. \"n1#1\".")
     card_name: Required[str] = Field(description="The name of the target card.")
     from_where: Required[str] = Field(description="Use format [player_name].[zone_name]; e.g. ned.hand.")
-    to_where: Required[str] = Field(description="Use format [player_name].[zone_name]; e.g. ned.graveyard.")
+    to_where: Required[str] = Field(description="Use format [player_name].[zone_name], or \"stack\"; e.g. ned.graveyard.")
 
 class Move(BaseTool):
     name = "move"

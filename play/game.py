@@ -300,7 +300,8 @@ class Game:
         who = action.get('who', None)
         if not who and target_id:
             who = target_id[0] # n for ned or u for user
-        [ player ] = [ p for p in self.players if p.player_name.startswith(who) ] # not correct but convenient
+        if who:
+            [ player ] = [ p for p in self.players if p.player_name.startswith(who) ] # not correct but convenient
 
         zones = [ getattr(p, z) for z in ('library', 'hand', 'battlefield', 'graveyard', 'sideboard') for p in self.players ]
         found_card = None
@@ -351,7 +352,7 @@ class Game:
                         assert digit is not []
                         digit = int(digit)
                         recipient = self.players[digit]
-                getattr(recipient, destination).append(copy(found_card))
+                    getattr(recipient, destination).append(copy(found_card))
                 found_zone.remove(found_card)
                 return
             case 'set_counter':
