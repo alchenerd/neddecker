@@ -103,7 +103,8 @@ class Player:
         return self.player_name
 
 class Game:
-    def __init__(self, max_players=2):
+    def __init__(self, max_players=2, consumer=None):
+        self.consumer = consumer
         self.has_ended = False
         self.max_players = max_players
         self.card_map = {} # {id: cardname}
@@ -341,6 +342,7 @@ class Game:
                 destination = splitted[-1]
                 recipient = splitted[0]
                 if 'stack' in action.get('to'):
+                    found_card['annotations']['controller'] = self.whose_priority
                     self.stack.append(copy(found_card))
                 else:
                     if 'ned' in recipient:
@@ -510,4 +512,5 @@ class Match:
         self.max_games = kwargs['games']
         self.games_played = 0
         self.scores = [ 0, 0 ]
-        self.game = Game(max_players)
+        self.consumer = kwargs['consumer']
+        self.game = Game(max_players, self.consumer)

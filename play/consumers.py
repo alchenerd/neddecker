@@ -56,6 +56,7 @@ class PlayConsumer(WebsocketConsumer):
         self.mtg_match = Match(
                 mtg_format=data['format'],
                 games=data['games'],
+                consumer=self,
         )
         payload = {
                 'type': 'match_initialized',

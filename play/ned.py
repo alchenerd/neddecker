@@ -61,8 +61,8 @@ class Ned():
                         return self.ask_ned_decker(topic='start_of_game', data=json_data)
                     case 'upkeep step':
                         return self.ask_ned_decker(topic='upkeep', data=json_data)
-                    case 'draw step':
-                        return self.ask_ned_decker(topic='draw', data=json_data)
+                    # case 'draw step':
+                        # return self.ask_ned_decker(topic='draw', data=json_data)
                     case _:
                         return f'Beep boop Ned passes priority ({json_data["whose_turn"]}\'s {json_data["phase"]})', { 'type': 'pass_priority', 'who': 'ned', 'actions': [] }
             case 'require_player_action':
