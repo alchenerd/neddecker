@@ -305,6 +305,8 @@ class Game:
             [ player ] = [ p for p in self.players if p.player_name.startswith(who) ] # not correct but convenient
 
         zones = [ getattr(p, z) for z in ('library', 'hand', 'battlefield', 'graveyard', 'sideboard') for p in self.players ]
+        zones.append(self.stack)
+
         found_card = None
         found_zone = None
         if target_id and '#' in target_id:
