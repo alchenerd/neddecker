@@ -9,9 +9,11 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
 import CircularProgress from '@mui/material/CircularProgress';
+import JoinFullIcon from '@mui/icons-material/JoinFull';
 import _ from 'lodash';
+import ChatMessageContainer from './chat-message-container';
 import store from '../store/store';
-import { rollbackGameAction } from '../store/slice';
+import { rollbackGameAction, appendNewGrouping } from '../store/slice';
 import { useSelector } from 'react-redux';
 
 function ThinkingIndicator({isThinking}) {
@@ -25,7 +27,28 @@ export function ChatRoom({lastMessage, userIsDone, userEndTurn, hasPriority, ...
   const [chatHistory, setChatHistory] = useState([]);
   const [actionHistory, setActionHistory] = useState([]);
   const actionQueue = useSelector((state) => state.gameState.actions);
+  const groupingRecord = useSelector((state) => state.gameState.grouping);
   const chatroomRef = useRef(null);
+  const [ joiningActions, setJoiningActions ] = useState(false);
+  const [ startIndex, setStartIndex ] = useState(null);
+  const [ endIndex, setEndIndex ] = useState(null);
+
+  useEffect(() => {
+    if (startIndex !== null && endIndex !== null) {
+      const grouping = [
+        "test_string",
+        startIndex,
+        endIndex,
+      ]
+      store.dispatch(appendNewGrouping(grouping));
+    }
+  }, [startIndex, endIndex]);
+
+  useEffect(() => {
+    if (groupingRecord) {
+      console.log(groupingRecord);
+    }
+  }, [groupingRecord])
 
   useEffect(() => {
     if (lastMessage) {
@@ -57,7 +80,7 @@ export function ChatRoom({lastMessage, userIsDone, userEndTurn, hasPriority, ...
       setActionHistory(actionQueue.map((action) => ({
         user_action: {
           action: "[" + action.type + "]",
-          description: JSON.stringify(_.omit(action, "shuffleResult")),
+          description: JSON.stringify(_.omit(action, "shuffleResult"), null, 2),
         }
       })));
     }
@@ -79,124 +102,69 @@ export function ChatRoom({lastMessage, userIsDone, userEndTurn, hasPriority, ...
     }
   }, [chatroomRef, chatHistory, actionHistory]);
 
-  const handleCloseActionButtonClick = () => {
-    store.dispatch(rollbackGameAction());
-  }
 
   return (
     <Box sx={{display: "flex", height: "100%", width: "100%", alignItems: "center", justifyContent: "space-between", backgroundColor: "Yellow"}}>
       <Grid container sx={{height: "100%"}}>
-        <Grid item xs={12} sx={{display: "flex"}}>
+        <Grid item container xs={12} sx={{display: "flex"}}>
           <Box ref={chatroomRef} sx={{width: "100%", height: "55vh", background: "ghostwhite", overflow: "auto"}}>
             {chatHistory && chatHistory.map((message, index) => {
               if ("log" in message) {
                 return (
-                  <Typography
-                    key={"chat-" + index}
-                    variant="subtitle1"
-                    sx={{
-                      color: "grey",
-                      textAlign: "center",
-                      textDecoration: "underline",
-                      overflowWrap: "break-word",
-                    }}
-                  >
-                    [LOG]: {message["log"]}
-                  </Typography>
+                  <Grid item key={"chat-" + index} xs={12}>
+                    <Typography
+                      variant="subtitle1"
+                      sx={{
+                        color: "grey",
+                        textAlign: "center",
+                        textDecoration: "underline",
+                        overflowWrap: "break-word",
+                      }}
+                    >
+                      [LOG]: {message["log"]}
+                    </Typography>
+                  </Grid>
                 )
               } else if ("action" in message) {
                 return (
-                  <Typography
-                    key={"action-" + index}
-                    variant="subtitle1"
-                    sx={{
-                      color: "black",
-                      textAlign: "center",
-                      textDecoration: "underline",
-                      overflowWrap: "break-word",
-                    }}
-                  >
-                    [ACTION] - {message.action + (message.targetId ? ": " + message.targetId : "")}
-                  </Typography>
+                  <Grid item key={"action-" + index} xs={12}>
+                    <Typography
+                      variant="subtitle1"
+                      sx={{
+                        color: "black",
+                        textAlign: "center",
+                        textDecoration: "underline",
+                        overflowWrap: "break-word",
+                      }}
+                    >
+                      [ACTION] - {message.action + (message.targetId ? ": " + message.targetId : "")}
+                    </Typography>
+                  </Grid>
                 )
               } else {
                 return null;
               }
             })}
+            <Grid item container spacing={1}>
             {actionHistory && actionHistory.map((message, index) => {
-              if ("ned_action" in message) {
-                return (
-                  <div key={"ned-action-" + index}>
-                    <Typography
-                      key={"ned-action-title-" + index}
-                      variant="body1"
-                      sx={{
-                        paddingLeft: "10px",
-                        backgroundColor: "palegreen",
-                        color: "black",
-                        textAlign: "left",
-                        overflowWrap: "break-word",
-                      }}
-                    >
-                      {message["ned_action"]["action"]}
-                    </Typography>
-                    <Typography
-                      key={"ned-action-" + index}
-                      variant="body1"
-                      sx={{
-                        paddingLeft: "10px",
-                        backgroundColor: "palegreen",
-                        color: "black",
-                        textAlign: "left",
-                        overflowWrap: "break-word",
-                      }}
-                    >
-                      {message["ned_action"]["description"]}
-                    </Typography>
-                  </div>
-                )
-              } else if ("user_action" in message) {
-                return (
-                  <div key={"user-action-" + index}>
-                    <Typography
-                      key={"user-action-title-" + index}
-                      variant="body1"
-                      sx={{
-                        paddingRight: "10px",
-                        backgroundColor: "lightblue",
-                        color: "black",
-                        textAlign: "right",
-                        overflowWrap: "break-word",
-                      }}
-                    >
-                      {message["user_action"]["action"]}
-                    </Typography>
-                    <Typography
-                      key={"user-action-desc-" + index}
-                      variant="body1"
-                      sx={{
-                        paddingRight: "10px",
-                        backgroundColor: "lightblue",
-                        color: "black",
-                        textAlign: "right",
-                        overflowWrap: "break-word",
-                      }}
-                    >
-                      {message["user_action"]["description"]}
-                      {index === actionHistory.length - 1 ? (
-                        <IconButton key={"action-" + index + "-close-btn"} onClick={handleCloseActionButtonClick}>
-                          <CloseIcon key={"action-" + index + "-close-icon"}/>
-                        </IconButton>
-                      ) : null}
-                    </Typography>
-                  </div>
-                )
-              }
-              <p></p>
+              const who = ("user_action" in message)? "user" : "ned";
+              return (
+                <ChatMessageContainer
+                  key={who + "-action-" + index}
+                  actionHistory={actionHistory}
+                  message={message}
+                  index={index}
+                  joiningActions={joiningActions}
+                  setJoiningActions={setJoiningActions}
+                  setStartIndex={setStartIndex}
+                  setEndIndex={setEndIndex}
+                />
+              );
             })}
-            <Box sx={{justifyContent:"center", display: "flex"}}>
+            </Grid>
+            <Grid item xs={12} sx={{justifyContent:"center", display: "flex"}}>
               <ThinkingIndicator isThinking={userIsDone}/>
-            </Box>
+            </Grid>
           </Box>
         </Grid>
         <Grid item xs={9}>

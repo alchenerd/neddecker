@@ -12,6 +12,7 @@ import { findCardById } from '../mtg/find-card';
 const initialState = {
   gameData: {},
   actions: [],
+  grouping: [],
 };
 
 const shuffle = (array) => {
@@ -63,7 +64,10 @@ export const gameSlice = createSlice({
     },
     clearGameAction: (state) => {
       return { ...state, actions: [] };
-    }
+    },
+    appendNewGrouping: (state, grouping) => {
+      return { ...state, grouping: [ ...state.grouping, grouping ] };
+    },
   },
 });
 
@@ -73,6 +77,7 @@ export const {
   receivedNewGameAction,
   rollbackGameAction,
   clearGameAction,
+  appendNewGrouping,
 } = gameSlice.actions;
 
 const selectGameData = (store) => store.gameState.gameData;

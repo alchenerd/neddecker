@@ -360,11 +360,11 @@ class Game:
                 found_zone.remove(found_card)
                 return
             case 'set_counter':
-                for key in found_card.counters:
+                for key in found_card['counters']:
                     if key == action.counterType:
-                        found_card.counters = action.counterAmount
+                        found_card['counters'] = action.counterAmount
                         return
-                found_card.counters[action.counterType] = action.counterAmount
+                found_card['counters'][action.counterType] = action.counterAmount
             case 'set_annotation':
                 if found_card:
                     found_card['annotations'][action['annotationKey']] = action['annotationValue']
