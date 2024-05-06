@@ -11,7 +11,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import CircularProgress from '@mui/material/CircularProgress';
 import JoinFullIcon from '@mui/icons-material/JoinFull';
 import _ from 'lodash';
-import ChatMessageContainer from './chat-message-container';
+import ChatMessageGroupContainer from './chat-message-group-container';
 import store from '../store/store';
 import { rollbackGameAction, appendNewGrouping } from '../store/slice';
 import { useSelector } from 'react-redux';
@@ -34,13 +34,15 @@ export function ChatRoom({lastMessage, userIsDone, userEndTurn, hasPriority, ...
   const [ endIndex, setEndIndex ] = useState(null);
 
   useEffect(() => {
-    if (startIndex !== null && endIndex !== null) {
+    if (Number.isInteger(startIndex) && Number.isInteger(endIndex)) {
       const grouping = [
-        "test_string",
+        "Joined Actions",
         startIndex,
         endIndex,
-      ]
+      ];
       store.dispatch(appendNewGrouping(grouping));
+      setStartIndex(undefined);
+      setEndIndex(undefined);
     }
   }, [startIndex, endIndex]);
 
@@ -77,14 +79,36 @@ export function ChatRoom({lastMessage, userIsDone, userEndTurn, hasPriority, ...
 
   useEffect(() => {
     if (actionQueue) {
-      setActionHistory(actionQueue.map((action) => ({
+      const formatted = actionQueue.map((action, index) => ({
         user_action: {
+          index: index,
           action: "[" + action.type + "]",
           description: JSON.stringify(_.omit(action, "shuffleResult"), null, 2),
         }
-      })));
+      }));
+
+      const processed = [];
+      let currentGroup = [];
+      let currentGroupTag = null;
+      for (let i = 0; i < formatted.length; i++) {
+        const groupDef = groupingRecord.find(([tag, start, end]) => (start <= i && i <= end));
+        if (groupDef) {
+          currentGroup.push(formatted[i]);
+          if (i === groupDef[2]) { // last element of group
+            currentGroupTag = groupDef[0];
+            processed.push({tag: currentGroupTag, group: currentGroup});
+            currentGroup = [];
+          }
+        } else {
+          currentGroup.push(formatted[i]);
+          processed.push({ tag: null, group: currentGroup });
+          currentGroup = [];
+        }
+      }
+      console.log(processed);
+      setActionHistory(processed);
     }
-  }, [actionQueue]);
+  }, [actionQueue, groupingRecord]);
 
   useEffect(() => {
     console.log(chatHistory);
@@ -145,22 +169,23 @@ export function ChatRoom({lastMessage, userIsDone, userEndTurn, hasPriority, ...
                 return null;
               }
             })}
-            <Grid item container spacing={1}>
-            {actionHistory && actionHistory.map((message, index) => {
-              const who = ("user_action" in message)? "user" : "ned";
-              return (
-                <ChatMessageContainer
-                  key={who + "-action-" + index}
-                  actionHistory={actionHistory}
-                  message={message}
-                  index={index}
-                  joiningActions={joiningActions}
-                  setJoiningActions={setJoiningActions}
-                  setStartIndex={setStartIndex}
-                  setEndIndex={setEndIndex}
-                />
-              );
-            })}
+            <Grid item container spacing={2}>
+              {actionHistory && actionHistory.map((messageGroup, index) => {
+                const who = ("user_action" in messageGroup.group[0])? "user" : "ned";
+                return (
+                  <ChatMessageGroupContainer
+                    key={who + "-action-group-" + index}
+                    groupIndex={index}
+                    actionQueue={actionQueue}
+                    messageGroup={messageGroup}
+                    index={index}
+                    joiningActions={joiningActions}
+                    setJoiningActions={setJoiningActions}
+                    setStartIndex={setStartIndex}
+                    setEndIndex={setEndIndex}
+                  />
+                );
+              })}
             </Grid>
             <Grid item xs={12} sx={{justifyContent:"center", display: "flex"}}>
               <ThinkingIndicator isThinking={userIsDone}/>

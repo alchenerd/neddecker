@@ -6,8 +6,9 @@ import CloseIcon from '@mui/icons-material/Close';
 import JoinFullIcon from '@mui/icons-material/JoinFull';
 import store from '../store/store';
 import { rollbackGameAction } from '../store/slice';
+import { useEffect } from 'react';
 
-const ChatMessageContainer = ({actionHistory, message, index, joiningActions, setJoiningActions, setStartIndex, setEndIndex}) => {
+const ChatMessageContainer = ({actionQueue, message, index, joiningActions, setJoiningActions, setStartIndex, setEndIndex}) => {
   const who = ("user_action" in message)? "user" : "ned";
   const keyName = ("user_action" in message)? "user_action" : "ned_action";
   const justify = ("user_action" in message)? "flex-end" : "flex-start";
@@ -17,15 +18,17 @@ const ChatMessageContainer = ({actionHistory, message, index, joiningActions, se
     store.dispatch(rollbackGameAction());
   }
 
-  const handleJoinActionButtonClick = (e) => {
+  const handleJoinActionButtonClick = () => {
     setJoiningActions(true);
     setEndIndex(null);
-    setStartIndex(index);
+    console.log(message)
+    setStartIndex(message[keyName]['index']);
   }
 
-  const handleSubmitJoinActionButtonClick = (e) => {
+  const handleSubmitJoinActionButtonClick = () => {
     setJoiningActions(false);
-    setEndIndex(index);
+    console.log(message)
+    setEndIndex(message[keyName]['index']);
   }
 
   const getActionButton = (isJoining) => {
@@ -42,15 +45,16 @@ const ChatMessageContainer = ({actionHistory, message, index, joiningActions, se
     <Grid item xs={12} display="flex" justifyContent={justify}>
       <Box
         sx={{
-          width: "75%",
-            borderRadius: "5px",
-            backgroundColor: messageBoxColor,
-            color: "black",
+          width: "100%",
+          height: "100%",
+          borderRadius: "5px",
+          backgroundColor: messageBoxColor,
+          color: "black",
         }}
       >
         <Box display="flex" flexDirection="row" alignItems="center" justifyContent="space-between">
           {getActionButton(joiningActions)}
-          {index === actionHistory.length - 1 ? (
+          {message[keyName]['index'] === actionQueue.length - 1 ? (
             <IconButton key={"action-" + index + "-close-btn"}
               onClick={handleCloseActionButtonClick}
               alignself="flex-end"

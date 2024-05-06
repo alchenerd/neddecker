@@ -52,21 +52,34 @@ export const gameSlice = createSlice({
           return { ...state, actions: [ ...state.actions.slice(0, -1), action.payload ] };
         }
       }
-      return { ...state, actions: [ ...state.actions, { ...action.payload } ] };
+      const actionLength = state.actions.length;
+      const newGroupingRecord = state.grouping.filter(([tag, start, end]) => end < actionLength);
+      return { ...state, actions: [ ...state.actions, { ...action.payload } ], grouping: newGroupingRecord };
     },
     rollbackGameAction: (state) => {
-    const pastActions = state.actions.filter((item, index) => index < state.actions.length - 1);
+      const last = state.actions.length - 1;
+      const groupingRef = state.grouping.find(([tag, start, end]) => last === end);
+      let pastActions = null;
+      let pastGrouping = null;
+      if (groupingRef) {
+        pastActions = state.actions.filter((item, index) => index < groupingRef[1]);
+        pastGrouping = state.grouping.filter((item, index) => index < state.grouping.length - 1);
+      } else {
+        pastActions = state.actions.filter((item, index) => index < state.actions.length - 1);
+        pastGrouping = state.grouping;
+      }
       const previousState = {
         ...state,
         actions: pastActions,
+        grouping: pastGrouping,
       }
       return previousState;
     },
     clearGameAction: (state) => {
       return { ...state, actions: [] };
     },
-    appendNewGrouping: (state, grouping) => {
-      return { ...state, grouping: [ ...state.grouping, grouping ] };
+    appendNewGrouping: (state, action) => {
+      return { ...state, grouping: [ ...state.grouping, [ ...action.payload ] ] };
     },
   },
 });
