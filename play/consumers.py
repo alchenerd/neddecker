@@ -251,13 +251,16 @@ class PlayConsumer(WebsocketConsumer):
 
         # apply the board state to the game we're keeping track of
         board_state = data.get('gameData', {}).get('board_state', {})
+        actions = data.get('actions', [])
+        grouping = data.get('grouping', [])
         #print(board_state)
+        #print(actions)
+        #print(grouping)
+        self.mtg_match.game.record_actions(actions, grouping)
         if board_state:
             self.mtg_match.game.apply_board_state(board_state)
         else:
             # TODO: save actions to database for replayability
-            actions = data.get('actions', [])
-            print(actions)
             for action in actions:
                 #print(action);
                 if action['type'] == 'pass':

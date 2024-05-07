@@ -92,8 +92,8 @@ class Player:
         assert self.player_name == updated.get('player_name', 'ned')
         assert 'delayed_triggers' in updated.keys()
         for k, v in updated.items():
-            print('updating k = ' + k)
-            print('updating v = ' + str(v))
+            #print('updating k = ' + k)
+            #print('updating v = ' + str(v))
             setattr(self, k, v)
 
     def __str__(self):
@@ -294,6 +294,30 @@ class Game:
         assert len(self.priority_waitlist) == len(self.players)
         assert self.priority_waitlist[0] == next_player
 
+    def record_actions(self, actions, grouping):
+        grouped = list()
+        current = dict()
+        for index, action in enumerate(actions):
+            search = [ group for group in grouping if (index >= group[1] and index <= group[2] )]
+            if not search:
+                current['tag'] = None
+                if 'group' not in current:
+                    current['group'] = list()
+                current['group'].append(action)
+                grouped.append(current)
+                current = dict()
+            else:
+                group_attributes = search[0]
+                current['tag'] = group_attributes[0]
+                if 'group' not in current:
+                    current['group'] = list()
+                current['group'].append(action)
+                if index == group_attributes[2]:
+                    grouped.append(current)
+                    current = dict()
+        print('Grouped actions: ' + str(grouped))
+        self.actions = grouped
+
     def apply_action(self, action):
         print("Applying an action!")
         print(action)
@@ -342,19 +366,19 @@ class Game:
                 # for move, we cannot assume the owner == whose zone
                 splitted = action.get('to').split('.')
                 destination = splitted[-1]
-                recipient = splitted[0]
+                recipient = '.'.join(splitted[:-1])
                 if 'stack' in action.get('to'):
                     found_card['annotations']['controller'] = self.whose_priority
                     self.stack.append(copy(found_card))
                 else:
                     if 'ned' in recipient:
-                        recipient = [ p for p in self.players if p.player_name.startswith('ned') ][0]
+                        recipient = [ p for p in self.players if 'ned' in p.player_name ][0]
                     elif 'user' in recipient:
-                        recipient = [ p for p in self.players if p.player_name.startswith('user') ][0]
+                        recipient = [ p for p in self.players if 'user' in p.player_name ][0]
                     else:
-                        digit = [ c for c in recipient if isdigit(c) ][0]
+                        [digit] = [ c for c in recipient if c.isdigit() ]
                         assert digit is not []
-                        digit = int(digit)
+                        digit = int(digit[0])
                         recipient = self.players[digit]
                     getattr(recipient, destination).append(copy(found_card))
                 found_zone.remove(found_card)
@@ -438,6 +462,7 @@ class Game:
                 'whose_priority': self.whose_priority,
                 'board_state': self.get_board_state(),
                 'is_resolving': self.is_resolving,
+                'actions': getattr(self, 'actions', []),
             }
         elif self.player_has_priority:
             payload = {
@@ -447,6 +472,7 @@ class Game:
                 'phase': self.phase,
                 'whose_priority': self.whose_priority,
                 'board_state': self.get_board_state(),
+                'actions': getattr(self, 'actions', []),
             }
         elif self.require_player_action:
             payload = {
@@ -456,6 +482,7 @@ class Game:
                 'phase': self.phase,
                 'whose_priority': None,
                 'board_state': self.get_board_state(),
+                'actions': getattr(self, 'actions', []),
             }
         else:
             payload = {
@@ -465,6 +492,7 @@ class Game:
                 'phase': self.phase,
                 'whose_priority': None,
                 'board_state': self.get_board_state(),
+                'actions': getattr(self, 'actions', []),
             }
         return payload
 

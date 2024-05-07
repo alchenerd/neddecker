@@ -118,6 +118,7 @@ export default function PlayPage() {
   const gameData = useSelector((state) => state.gameState.gameData);
   const affectedGameData = useSelector(selectAffectedGameData);
   const actions = useSelector((state => state.gameState.actions));
+  const grouping = useSelector((state => state.gameState.grouping));
   const [ openCreateTriggerDialog, setOpenCreateTriggerDialog ] = useState(false);
   const [ openCreateDelayedTriggerDialog, setOpenCreateDelayedTriggerDialog ] = useState(false);
   const [ openDelayedTriggerMemoDrawer, setOpenDelayedTriggerMemoDrawer ] = useState(false);
@@ -379,6 +380,7 @@ export default function PlayPage() {
       who: "user",
       gameData: affectedGameData,
       actions: actions,
+      grouping: grouping,
     }
     sendMessage(JSON.stringify(payload));
   };
