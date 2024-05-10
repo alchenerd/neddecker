@@ -3,6 +3,8 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import ChatMessageContainer from './chat-message-container';
 import { useEffect } from 'react';
+import store from '../store/store';
+import { setGroupTag } from '../store/slice';
 
 const ChatMessageGroupContainer = ({
   groupIndex,
@@ -14,6 +16,9 @@ const ChatMessageGroupContainer = ({
   setStartIndex,
   setEndIndex
 }) => {
+  const handleGroupTagChange = (e) => {
+    store.dispatch(setGroupTag({tag: e.target.textContent, index: Object.values(messageGroup.group[0])[0].index}));
+  }
   return (
     <>
       <Grid item container spacing={1} xs={12} display="flex" justifyContent="flex-end">
@@ -24,7 +29,13 @@ const ChatMessageGroupContainer = ({
             backgroundColor: "grey",
           }}
         >
-          <Typography align="center">{messageGroup.tag}</Typography>
+          <Typography
+            align="center"
+            suppressContentEditableWarning={true}
+            contentEditable={true}
+            onBlur={handleGroupTagChange}>
+            {messageGroup.tag}
+          </Typography>
           {messageGroup.group && messageGroup.group.map((message, index) => {
             const who = ("user_action" in message)? "user" : "ned";
             return (

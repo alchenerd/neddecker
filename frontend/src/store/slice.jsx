@@ -81,6 +81,16 @@ export const gameSlice = createSlice({
     appendNewGrouping: (state, action) => {
       return { ...state, grouping: [ ...state.grouping, [ ...action.payload ] ] };
     },
+    setGroupTag: (state, action) => {
+      const foundGroupIndex = state.grouping.findIndex(([tag, start, end]) => action.payload.index >= start && action.payload.index <= end);
+      if (foundGroupIndex >= 0) {
+        const newGrouping = cloneDeep(state.grouping);
+        newGrouping[foundGroupIndex][0] = action.payload.tag;
+        return { ...state, grouping: newGrouping };
+      } else {
+        return { ...state };
+      }
+    },
   },
 });
 
@@ -91,6 +101,7 @@ export const {
   rollbackGameAction,
   clearGameAction,
   appendNewGrouping,
+  setGroupTag,
 } = gameSlice.actions;
 
 const selectGameData = (store) => store.gameState.gameData;
