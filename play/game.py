@@ -134,9 +134,8 @@ class Game:
             setattr(self, player.player_name, player)
 
     def register_first_player(self, index):
-        if index:
-            for _ in range(index):
-                self.players.append(self.players.pop(0))
+        if isinstance(index, int) and index:
+            self.players = self.players[index:] + self.players[:index]
         self.turn_phase_tracker = iter(MTGTNPS([p.player_name for p in self.players]))
 
     def import_card_map(self, cards, name):
@@ -451,9 +450,19 @@ class Game:
                 stack_has_grown = True
             self.stack = stack
 
-    def get_payload(self):
+    def get_payload(self, is_update=False):
         payload = {}
-        if self.is_resolving:
+        if is_update:
+            payload = {
+                'type': 'update',
+                'turn_count': self.turn_count,
+                'whose_turn': self.whose_turn,
+                'phase': self.phase,
+                'whose_priority': self.whose_priority,
+                'board_state': self.get_board_state(),
+                'actions': getattr(self, 'actions', []),
+            }
+        elif self.is_resolving:
             payload = {
                 'type': 'resolve_stack',
                 'turn_count': self.turn_count,

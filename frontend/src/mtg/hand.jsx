@@ -65,7 +65,6 @@ const Hand = ({
         }
         const handleCreateDelayedTrigger = () => {
           setActionTargetCard(card);
-          console.log(setOpenCreateTriggerDialog);
           setOpenCreateDelayedTriggerDialog(true);
         }
         const createTokenCopy = () => {

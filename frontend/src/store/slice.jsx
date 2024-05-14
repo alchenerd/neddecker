@@ -104,8 +104,8 @@ export const {
   setGroupTag,
 } = gameSlice.actions;
 
-const selectGameData = (store) => store.gameState.gameData;
-const selectActions = (store) => store.gameState.actions;
+export const selectGameData = (store) => store.gameState.gameData;
+export const selectActions = (store) => store.gameState.actions;
 
 const calculateAffectedGameData = (gameData, actions) => {
   const affectedGameData = cloneDeep(gameData);

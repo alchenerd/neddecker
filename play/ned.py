@@ -1,9 +1,10 @@
 import json
 from copy import copy, deepcopy
 import random
-from multiprocessing import Manager
 from langchain.memory import ConversationBufferMemory
 from langchain_openai import ChatOpenAI
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
 
 import os
 import sys
@@ -38,9 +39,15 @@ class Ned():
         #print(text_data)
         json_data = json.loads(text_data)
         match json_data['type']:
-            case 'log':
+            case 'log' | 'update':
                 return 'Ned received: ' + json_data['message'], json_data
-            case 'who_goes_first':
+            case 'question':
+                payload = {}
+                payload |= json_data
+                payload['type'] = 'answer'
+                speech, payload['answer'] = self.question_ned(json_data)
+                return speech, payload
+            case 'who_goes_first': # deprecated
                 return 'Ned ALWAYS chooses to go first!', { 'type': 'who_goes_first', 'who': 'ned' }
             case 'ask_reveal_companion':
                 sideboard = json_data['sideboard']
@@ -48,7 +55,7 @@ class Ned():
                 companion = random.choice(companions)
                 companion_name = companion.get('name')
                 to_reveal = companion.get('in_game_id')
-                return f'Ned ALWAYS reveals a random companion! {companion_name}', \
+                return f'Ned ALWAYS reveals a random companion! {companion_name} is revealed.', \
                         { 'type': 'ask_reveal_companion', 'who': 'ned', 'targetId': to_reveal }
             case 'mulligan':
                 #return 'Beep boop Ned mulligans to 4', self.mulligan_to_four(json_data)
@@ -82,6 +89,14 @@ class Ned():
                 #print(json_data)
                 #print('...What?')
                 return '...What?', {'type': 'log', 'message': 'Error:\n' + text_data}
+
+    def question_ned(self, json_data):
+        question = json_data['question']
+        options = json_data.get('options', 'any')
+        prompt = ChatPromptTemplate.from_messages(["user", "(You are playing an online Magic: the Gathering game; a popup shows up and asks you a question; specify ID in your answer wherever applicable)\n\n{question}\n(options: {options})\n"])
+        chain = prompt | self.llm | StrOutputParser()
+        response = chain.invoke({'question': question, 'options': options})
+        return response, response
 
     def process_card(self, bulky_card):
         """Create a processed card by extracting crucial information for LLM to read.
@@ -164,19 +179,16 @@ class Ned():
                 [ ned ] = list(filter(lambda p: p['player_name'] == 'ned', players))
                 assert ned
                 hand = list(map(self.process_card, ned.get('hand', [])))
-                sideboard = list(map(self.process_card, ned.get('sideboard', [])))
-                companions = []
                 to_reveal = []
                 to_battlefield = []
-                for card in sideboard:
+                for card in hand:
                     print(card)
                     oracle_text = card.get('oracle_text') or card.get('faces').get('front').get('oracle_text')
                     assert oracle_text
-                    if 'opening hand' in oracle_text:
+                    if 'from your opening hand' in oracle_text:
                         to_reveal.append(card)
                     if 'begin the game' in oracle_text:
                         to_battlefield.append(card)
-                hand = [ { **card, 'where': 'hand' } for card in hand ]
                 board_analysis = SOGPP.board_analysis.format( \
                         to_reveal=json.dumps(to_reveal, indent=4), \
                         to_battlefield=json.dumps(to_battlefield, indent=4) \

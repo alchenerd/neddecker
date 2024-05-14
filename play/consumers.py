@@ -3,10 +3,13 @@ from random import randint
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import WebsocketConsumer
 from .game import Match, Game, Player
+from .game_rules_engine import GameRulesEngine
 import datetime
+from deprecated import deprecated
 
 class PlayConsumer(WebsocketConsumer):
     def connect(self):
+        self.gre = GameRulesEngine(self)
         async_to_sync(self.channel_layer.group_add)(
                 'user',
                 self.channel_name
@@ -18,10 +21,12 @@ class PlayConsumer(WebsocketConsumer):
                 'user',
                 self.channel_name
         )
+        del self.gre
 
     def receive(self, text_data):
-        data = json.loads(text_data)
-        self.multiplexer_handle(data)
+        self.gre._repl(text_data)
+        #data = json.loads(text_data)
+        #self.multiplexer_handle(data)
 
     def multiplexer_handle(self, data):
         msg_type = data['type']
@@ -45,6 +50,7 @@ class PlayConsumer(WebsocketConsumer):
             case 'resolve_stack':
                 self.handle_resolve_stack(data)
 
+    @deprecated
     def register_match(self, data):
         if hasattr(self, 'mtg_match'):
             payload = {
@@ -64,6 +70,7 @@ class PlayConsumer(WebsocketConsumer):
         }
         self.send(text_data=json.dumps(payload))
 
+    @deprecated
     def register_player(self, data):
         self.mtg_match.game.add_player(data)
         _match = self.mtg_match
@@ -86,6 +93,7 @@ class PlayConsumer(WebsocketConsumer):
             self.send(text_data=json.dumps(payload)) # announce start of game
             self.decide_who_goes_first()
 
+    @deprecated
     def decide_who_goes_first(self):
         players = self.mtg_match.game.players
         who_decides = randint(0, len(players) - 1)
@@ -96,6 +104,7 @@ class PlayConsumer(WebsocketConsumer):
         player = players[who_decides]
         self.send_to_player(player=player, text_data=json.dumps(payload))
 
+    @deprecated
     def register_who_first(self, data):
         who_first = data['who']
         assert who_first
@@ -109,6 +118,7 @@ class PlayConsumer(WebsocketConsumer):
         else:
             self.mtg_match.game.pending_companion = pending
 
+    @deprecated
     def handle_companion(self):
         pending = 0
         players = self.mtg_match.game.players
@@ -122,6 +132,7 @@ class PlayConsumer(WebsocketConsumer):
                     break
         return pending
 
+    @deprecated
     def ask_reveal_companion(self, player):
         payload = {
             'type': 'ask_reveal_companion',
@@ -130,6 +141,7 @@ class PlayConsumer(WebsocketConsumer):
         }
         self.send_to_player(player=player, text_data=json.dumps(payload))
 
+    @deprecated
     def register_companion(self, data):
         _id = data['targetId']
         if not _id:
@@ -353,6 +365,7 @@ class PlayConsumer(WebsocketConsumer):
                 'message': f'{str(to_log)}',
         }))
 
+    @deprecated
     def send_to_player(self, player, text_data):
         assert isinstance(player, Player)
         match player.player_type:

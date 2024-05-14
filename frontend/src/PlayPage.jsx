@@ -8,6 +8,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Button from '@mui/material/Button';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
+import TextField from '@mui/material/TextField';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 import _ from 'lodash';
 import { cloneDeep } from 'lodash';
@@ -85,7 +86,9 @@ export default function PlayPage() {
   }, []);
   const wsUrl = 'ws://localhost:8000/ws/play/';
   const { sendMessage, lastMessage, readyState } = useWebSocket(wsUrl);
-  const [ openWhoGoesFirstDialog, setOpenWhoGoesFirstDialog ] = useState(false);
+  const [ questionData, setQuestionData ] = useState(null);
+  const [ openQuestionDialog, setOpenQuestionDialog ] = useState(false);
+  const [ answer, setAnswer ] = useState('');
   const [ openAskRevealCompanionDialog, setOpenAskRevealCompanionDialog ] = useState(false);
   const [ sideboardData, setSideboardData ] = useState([]);
   const [ companion, setCompanion ] = useState('');
@@ -164,22 +167,22 @@ export default function PlayPage() {
     store.dispatch(receivedNewGameData({ newGameData: data }));
   }
 
-  function handleGoFirst() {
-    setOpenWhoGoesFirstDialog(false)
+  function handleAnswer() {
+    if (!answer) {
+      return;
+    }
+    setOpenQuestionDialog(false)
     const payload = {
-      type: "who_goes_first",
-      who: "user",
+      ...questionData,
+      type: "answer",
+      answer: answer,
     }
     sendMessage(JSON.stringify(payload));
+    setAnswer('');
   }
 
-  function handleNoGoFirst() {
-    setOpenWhoGoesFirstDialog(false)
-    const payload = {
-      type: "who_goes_first",
-      who: "ned",
-    }
-    sendMessage(JSON.stringify(payload));
+  function handleAnswerChange(event) {
+    setAnswer(event.target.value);
   }
 
   function handleChangeCompanion(e) {
@@ -236,6 +239,9 @@ export default function PlayPage() {
         case 'log':
           console.log("Message from server:", data.message);
           break;
+        case 'update':
+          store.dispatch(receivedNewGameData({ newGameData: data }));
+          break;
         case 'match_initialized':
           sendMessage(registerPlayerPayload('ned', playData.neds_main, playData.neds_side));
           sendMessage(registerPlayerPayload('user', playData.users_main, playData.users_side));
@@ -246,9 +252,9 @@ export default function PlayPage() {
         case 'game_start':
           console.log("Game", data.game, "of", data.of, "has started.");
           break;
-        case 'who_goes_first':
-          setOpenWhoGoesFirstDialog(true)
-          break
+        case 'question':
+          setQuestionData(data);
+          setOpenQuestionDialog(true);
         case 'ask_reveal_companion':
           setSideboardData(data.sideboard);
           setOpenAskRevealCompanionDialog(true);
@@ -513,42 +519,33 @@ export default function PlayPage() {
             </Grid>
           </Grid>
         </Grid>
-        <Dialog id="who-goes-first-dialog"
-          open={openWhoGoesFirstDialog}
-          onClose={ () => setOpenCreateDelayedTriggerDialog(false)}
+        <Dialog id="question-dialog"
+          open={openQuestionDialog}
         >
-          <DialogTitle id="alert-dialog-title">
-            {"Go first?"}
+          <DialogTitle id="question-dialog-title">
+            {"Question"}
           </DialogTitle>
           <DialogContent>
-            <DialogContentText id="alert-dialog-description">
-              Would you like to go first this game?
+            <DialogContentText id="question-dialog-description">
+              {questionData?.question || null}
             </DialogContentText>
+            {questionData?.options? (
+              <Select
+                value={answer}
+                onChange={handleAnswerChange}
+                fullWidth={true}
+              >
+                {questionData.options.map((option) => (
+                  <MenuItem key={option} value={option}>{option}</MenuItem>
+                ))}
+              </Select>
+            ) : (
+              <TextField>
+              </TextField>
+            )}
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleGoFirst} autoFocus>Yes</Button>
-            <Button onClick={handleNoGoFirst}>No</Button>
-          </DialogActions>
-        </Dialog>
-        <Dialog id="reveal-companion-dialog"
-          open={openAskRevealCompanionDialog}
-          onClose={ () => setOpenAskRevealCompanionDialog(false)}
-        >
-          <DialogTitle id="alert-dialog-title">
-            {"Reveal Companion?"}
-          </DialogTitle>
-          <DialogContent>
-            <Select onChange={handleChangeCompanion} value={companion}>
-              {sideboardData.map(card => {
-                if (card.oracle_text?.startsWith("Companion")) {
-                  return (<MenuItem key={card.in_game_id} value={card.in_game_id}>{card.name}</MenuItem>)
-                }
-              })}
-            </Select>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleRevealCompanion} autoFocus>Reveal as Companion</Button>
-            <Button onClick={handleNoRevealCompanion}>{"Don't Reveal"}</Button>
+            <Button onClick={handleAnswer} autoFocus>Submit</Button>
           </DialogActions>
         </Dialog>
         <MulliganDialog
