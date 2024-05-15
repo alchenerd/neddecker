@@ -47,8 +47,12 @@ class GameRulesEngine:
     def __init__(self, consumer):
         self.consumer = consumer
         self._match = None
+        self.game = None
         self.input = None
         self.todo = []
+        self.line = None
+        self.items = []
+        self.changes = []
         self.placeholder = []
         self.rules = []
         self.rules.extend(SYSTEM_RULES)
@@ -64,24 +68,24 @@ class GameRulesEngine:
             self._read()
             self._evaluate()
             self._execute()
-            print(self.todo)
+            #print(self.todo)
             if not self.todo:
                 break
         #print(self.abort, self.halt)
 
     def _read(self) -> None:
+        """ Translate input into one or more todo items. """
         if self.input:
             match(self.input['type']):
                 case 'register_match': # initiated by user
                     self.register_match()
-                    return
                 case 'register_player': # initiated by user
                     self.register_player()
                     game = self._match.game
-                    if len(game.players) < game.max_players:
-                        return
                 case 'answer': # user's response to 'question'
                     self.handle_answer()
+                case 'reorder': # user's response to 'reorder'
+                    self.handle_reorder()
                 case 'mulligan': # user takes a mulligan
                     self.handle_mulligan()
                 case 'keep_hand': # user keeps their hand
@@ -105,13 +109,100 @@ class GameRulesEngine:
         self.input = None # consume
 
     def _evaluate(self):
+        """ Run through the todo stack and check for various rules. """
         if self.abort:
             return
-        require_checking = True
-        while require_checking:
-            require_checking = self.apply_rules()
+        while True:
+            try:
+                self.apply_changes_todo()
+            except ValueError: # reorder is required
+                print('value error')
+                return
+            self.generate_changes_by_rules()
+            if not self.changes: # all rules are checked
+                print('all rules are checked')
+                return
+
+    def apply_changes_todo(self):
+        print('apply_changes_todo')
+        print(self.changes)
+        if not self.changes:
+            return
+        # expecting self.changes to be a list of (item, callable)
+        assert all(callable(change[1]) for change in self.changes)
+        while self.todo:
+            #print(self.todo)
+            if not self.changes: # no changes to make
+                break
+            item = self.todo.pop()
+            relevant_changes = [ x for x in self.changes if x[0] == item ]
+            self.changes = [ x for x in self.changes if x[0] != item ]
+            if not relevant_changes:
+                print('no changes on ', item)
+                self.placeholder.append(item)
+                continue
+            """ # leave this here for future player-generated rules
+            if len(relevant_changes) > 1:
+                affected_player = [ element for element in item if isinstance(element, Player) ]
+                if not affected_player:
+                    affected_player = [ element.controller for element in item if hasattr(element, 'controller') ]
+                if not affected_player:
+                    affected_player = [ element.owner for element in item if hasattr(element, 'owner') ]
+                if len(affected_player) > 1:
+                    affected_player = affected_player[-1] # source would be in front of target
+                if affected_player:
+                    print(affected_player)
+                    self.todo.append(item)
+                    descriptions = [ f.__doc__ for i, f in relevant_changes ]
+                    self.todo.append(('reorder', affected_player, 'replacement_effect', descriptions))
+                    raise ValueError('Replacement effects require reordering')
+            """
+            to_apply = None
+            if isinstance(relevant_changes, list): # could still be a list of replacement effects (sorted)
+                to_apply = relevant_changes[:]
+            else:
+                to_apply = [ relevant_changes ]
+            self.items = [ item ]
+            print('item', item)
+            print('self items', self.items)
+            print('to_apply:', to_apply)
+            for i, f in to_apply:
+                print('applying', f)
+                f(self)
+            for item in self.items:
+                self.placeholder.append(item)
+        while self.placeholder:
+            self.todo.append(self.placeholder.pop())
+        self.changes = []
+
+    def generate_changes_by_rules(self):
+        print('generate_changes_by_rules')
+        for rule in self.rules:
+            for item in self.todo:
+                self.line = item
+                tracking = 'Given'
+                for statement in rule.gherkin:
+                    start = statement.split(' ')[0]
+                    if start == tracking or start == 'And' or start == 'But':
+                        start = tracking
+                    else:
+                        tracking = start
+                    f = rule.implementations.get(statement, lambda x: False)
+                    assert callable(f)
+                    print(statement)
+                    print(self.line)
+                    print(self.todo)
+                    match start:
+                        case 'Given' | 'When':
+                            if not f(self):
+                                break
+                        case 'Then':
+                            print('appending ', f)
+                            self.changes.append((item, f))
+        return bool(self.changes)
 
     def _execute(self):
+        """ Try to execute the todo stack if able; if can't then the item is pushed back when all is done. """
         if self.abort:
             return
         while self.todo:
@@ -125,31 +216,6 @@ class GameRulesEngine:
                 self.placeholder.append(args)
         while self.placeholder:
             self.todo.append(self.placeholder.pop())
-
-    def apply_rules(self):
-        changed = False
-        for rule in self.rules:
-            for i in range(len(self.todo)):
-                for statement in rule.gherkin:
-                    print(statement)
-                    tracking = 'Given'
-                    start = statement.split(' ')[0]
-                    if start == tracking or start == 'And' or start == 'But':
-                        start = tracking
-                    else:
-                        tracking = start
-                    f = rule.implementations.get(statement, lambda game, todo, i, placeholder: False)
-                    assert callable(f)
-                    match start:
-                        case 'Given' | 'When':
-                            if not f(self._match.game, self.todo, i, self.placeholder):
-                                break
-                        case 'Then':
-                            if f(self._match.game, self.todo, i, self.placeholder): # state changed
-                                changed = True
-                if changed:
-                    return True # requires another round
-        return False # all done
 
     def register_match(self):
         self._match = Match(
@@ -187,6 +253,7 @@ class GameRulesEngine:
                     'of': self._match.max_games,
             }
             self.consumer.send(text_data=json.dumps(payload)) # announce start of game
+            self.game = self._match.game # shorthand
             payload = game.get_payload(is_update=True)
             self.consumer.send(text_data=json.dumps(payload)) # update game state
             self.todo.append(['decide_who_goes_first'])
@@ -219,6 +286,23 @@ class GameRulesEngine:
             'who': player.player_name,
             'question': question,
             'options': options,
+        }
+        self.send_to_player(player, json.dumps(payload))
+        self.halt = True
+        self.abort = False
+
+    def reorder(self, *args):
+        player, description, to_reorder = args
+        payload = {
+            'type': 'log',
+            'message': f'Asking {player.player_name} to reorder {description}',
+        }
+        self.consumer.send(text_data=json.dumps(payload))
+        payload = {
+            'type': 'reorder',
+            'who': player.player_name,
+            'description': description,
+            'to_reorder': to_reorder,
         }
         self.send_to_player(player, json.dumps(payload))
         self.halt = True
@@ -281,6 +365,32 @@ class GameRulesEngine:
         self.halt = False
         self.abort = False
 
+    def shuffle(self, *args):
+        player, *_ = args
+        player.shuffle()
+        payload = {
+            'type': 'log',
+            'message': f'{player} shuffles',
+        }
+        self.consumer.send(text_data=json.dumps(payload))
+        payload = self.game.get_payload(is_update=True)
+        self.consumer.send(text_data=json.dumps(payload)) # update game state
+        self.halt = False
+        self.abort = False
+
+    def draw(self, *args):
+        player, amount, *_ = args
+        for _ in range(amount):
+            player.draw()
+        payload = {
+            'type': 'log',
+            'message': f'{player} draws {amount} card(s)',
+        }
+        self.consumer.send(text_data=json.dumps(payload))
+        payload = self.game.get_payload(is_update=True)
+        self.consumer.send(text_data=json.dumps(payload)) # update game state
+        self.halt = False
+        self.abort = False
 
     def get_turn_based_actions(self, game):
         match game.phase:
