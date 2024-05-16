@@ -130,16 +130,13 @@ class GameRulesEngine:
             return
         # expecting self.changes to be a list of (item, callable)
         assert all(callable(change[1]) for change in self.changes)
-        while self.todo:
+        for todo_line in self.todo:
             #print(self.todo)
             if not self.changes: # no changes to make
                 break
-            item = self.todo.pop()
-            relevant_changes = [ x for x in self.changes if x[0] == item ]
-            self.changes = [ x for x in self.changes if x[0] != item ]
+            relevant_changes = [ x for x in self.changes if x[0] == todo_line ]
+            self.changes = [ x for x in self.changes if x[0] != todo_line ]
             if not relevant_changes:
-                print('no changes on ', item)
-                self.placeholder.append(item)
                 continue
             """ # leave this here for future player-generated rules
             if len(relevant_changes) > 1:
@@ -162,17 +159,12 @@ class GameRulesEngine:
                 to_apply = relevant_changes[:]
             else:
                 to_apply = [ relevant_changes ]
-            self.items = [ item ]
-            print('item', item)
-            print('self items', self.items)
             print('to_apply:', to_apply)
-            for i, f in to_apply:
-                print('applying', f)
-                f(self)
-            for item in self.items:
-                self.placeholder.append(item)
-        while self.placeholder:
-            self.todo.append(self.placeholder.pop())
+            todo = [ line for line in self.todo ]
+            for line, f in to_apply:
+                print('applying', f, 'to', line)
+                todo = f(self.game, todo, line)
+        self.todo = todo
         self.changes = []
 
     def generate_changes_by_rules(self):
@@ -308,6 +300,17 @@ class GameRulesEngine:
         self.halt = True
         self.abort = False
 
+    def handle_mulligan(self):
+        print(self.input)
+        who_name = self.input['who']
+        self.todo.append(['mulligan', who_name])
+
+    def handle_keep_hand(self):
+        print(self.input)
+        who_name = self.input['who']
+        bottom = self.input['bottom']
+        self.todo.append(['keep_hand', who_name, bottom])
+
     def set_starting_player(self, *args):
         player, *_ = args
         players = self._match.game.players
@@ -391,6 +394,41 @@ class GameRulesEngine:
         self.consumer.send(text_data=json.dumps(payload)) # update game state
         self.halt = False
         self.abort = False
+
+    def ask_mulligan(self, *args):
+        player, to_bottom, *_ = args
+        payload = {
+            'type': 'mulligan',
+            'hand': player.hand,
+            'to_bottom': to_bottom
+        }
+        self.send_to_player(player, json.dumps(payload))
+        self.halt = True
+        self.abort = False
+
+    def bottom_cards(self, *args):
+        player, card_ids_to_bottom, *_ = args
+        print(player.hand)
+        print(card_ids_to_bottom)
+        amount = len(card_ids_to_bottom)
+        while card_ids_to_bottom:
+            card_id = card_ids_to_bottom.pop()
+            card = [ card for card in player.hand if card['in_game_id'] != card_id ][0]
+            player.hand.remove(card)
+            player.library.append(card)
+        payload = {
+            'type': 'log',
+            'message': f'{player} bottoms {amount} card(s)',
+        }
+        self.consumer.send(text_data=json.dumps(payload))
+        payload = self.game.get_payload(is_update=True)
+        self.consumer.send(text_data=json.dumps(payload)) # update game state
+        self.halt = False
+        self.abort = False
+
+    def start_of_game(self, *args):
+        """ Let's put a stop here for now and worry about start of game rules later. """
+        self.halt = True
 
     def get_turn_based_actions(self, game):
         match game.phase:
