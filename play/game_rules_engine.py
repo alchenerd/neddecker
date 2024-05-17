@@ -408,8 +408,6 @@ class GameRulesEngine:
 
     def bottom_cards(self, *args):
         player, card_ids_to_bottom, *_ = args
-        print(player.hand)
-        print(card_ids_to_bottom)
         amount = len(card_ids_to_bottom)
         while card_ids_to_bottom:
             card_id = card_ids_to_bottom.pop()
@@ -426,9 +424,22 @@ class GameRulesEngine:
         self.halt = False
         self.abort = False
 
-    def start_of_game(self, *args):
-        """ Let's put a stop here for now and worry about start of game rules later. """
+    def start_game(self, *_):
+        self._match.game.start()
+        payload = {
+            'type': 'log',
+            'message': f'mulligan phase has ended; checking for start of game actions',
+        }
+        self.consumer.send(text_data=json.dumps(payload))
+        payload = self.game.get_payload(is_update=True)
+        self.consumer.send(text_data=json.dumps(payload)) # update game state
+        self.halt = False
+        self.abort = False
+
+    # """ This is written here to temporarily halt the GRE.
+    def scan(self, *args):
         self.halt = True
+    # """
 
     def get_turn_based_actions(self, game):
         match game.phase:

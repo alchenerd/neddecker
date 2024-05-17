@@ -154,6 +154,7 @@ class PlayConsumer(WebsocketConsumer):
         if not hasattr(self.mtg_match.game, 'pending_companion'):
             self.start_mulligan()
 
+    @deprecated
     def next_mulligan_player(self, i):
         players = self.mtg_match.game.players
         i = (i + 1) % len(players)
@@ -165,6 +166,7 @@ class PlayConsumer(WebsocketConsumer):
                 return None
         return players[i]
 
+    @deprecated
     def start_mulligan(self):
         players = self.mtg_match.game.players
         for player in players:
@@ -175,6 +177,7 @@ class PlayConsumer(WebsocketConsumer):
                 player.hand.append(player.library.pop(0))
         self.mulligan_helper(players[0], 0)
 
+    @deprecated
     def mulligan(self, data):
         players = self.mtg_match.game.players
         next_player = players[0]
@@ -188,6 +191,7 @@ class PlayConsumer(WebsocketConsumer):
         [i] = [(i, p) for i, p in enumerate(players) if p.player_name == next_player.player_name]
         self.mulligan_helper(next_player, i)
 
+    @deprecated
     def mulligan_helper(self, player, i):
         while player.hand:
             player.library.append(player.hand.pop())
@@ -205,6 +209,7 @@ class PlayConsumer(WebsocketConsumer):
         player.to_bottom += 1
         self.send_to_player(player=player, text_data=json.dumps(payload))
 
+    @deprecated
     def player_keep_hand(self, data):
         # print(data)
         players = self.mtg_match.game.players
@@ -221,6 +226,7 @@ class PlayConsumer(WebsocketConsumer):
         }))
         self.check_all_mulligan_done(i)
 
+    @deprecated
     def check_all_mulligan_done(self, i):
         players = self.mtg_match.game.players
         if all([ hasattr(player, 'mulligan_done') for player in players ]):
@@ -237,6 +243,7 @@ class PlayConsumer(WebsocketConsumer):
             next_player = self.next_mulligan_player(i)
             self.mulligan_helper(next_player, i)
 
+    @deprecated
     def start_first_turn(self):
         self.mtg_match.game.start()
         player = self.mtg_match.game.whose_priority
