@@ -3,12 +3,12 @@ import re
 from random import shuffle
 from string import Formatter
 from copy import copy
-from dataclasses import dataclass
-from .models import Card, Face, get_card_by_name_as_dict, get_faces_by_name_as_dict
+from typing import Optional, List, Dict, Union, Literal, Any
+from langchain_core.pydantic_v1 import Field
+from .models import get_card_by_name_as_dict, get_faces_by_name_as_dict
 from .ned import Ned
 from .iterables import MtgTurnsAndPhases as MTGTNPS
 
-from dataclasses import dataclass
 
 class Player:
     def __init__(self):
@@ -101,6 +101,7 @@ class Player:
 
     def __repr__(self):
         return self.player_name
+
 
 class Game:
     def __init__(self, max_players=2, consumer=None):
@@ -246,6 +247,7 @@ class Game:
                     card['faces'] |= {'front': front, 'back': back}
                 card['counters'] = list()
                 card['annotations'] = dict()
+                card['rules'] = None
                 card['ai_annotations'] = self.get_ai_annotations(card)
                 player.library.append(card)
         for name, count in side.items():
@@ -262,6 +264,7 @@ class Game:
                     card['faces'] |= {'front': front, 'back': back}
                 card['counters'] = list()
                 card['annotations'] = dict()
+                card['rules'] = None
                 card['ai_annotations'] = self.get_ai_annotations(card)
                 player.sideboard.append(card)
 

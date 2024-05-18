@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from functools import wraps
 from .game import Match, Game, Player
 from .rules import Rule, SYSTEM_RULES
+from .game_rules_writer import GameRulesWriter as Naya
 
 STATE_BASED_ACTIONS = {
     "life_check": "check player life totals (win/loss)",
@@ -51,12 +52,11 @@ class GameRulesEngine:
         self.input = None
         self.todo = []
         self.line = None
-        self.items = []
         self.changes = []
         self.placeholder = []
         self.rules = []
         self.rules.extend(SYSTEM_RULES)
-        self.graph = None
+        self.naya = Naya()
         self.halt = True
         self.abort = False
 
@@ -162,6 +162,7 @@ class GameRulesEngine:
             print('to_apply:', to_apply)
             todo = [ line for line in self.todo ]
             for line, f in to_apply:
+                print('todo', todo)
                 print('applying', f, 'to', line)
                 todo = f(self.game, todo, line)
         self.todo = todo
@@ -191,6 +192,7 @@ class GameRulesEngine:
                         case 'Then':
                             print('appending ', f)
                             self.changes.append((item, f))
+        self.changes.reverse() # reverse the appending action so the todo will be executed in the gherkin order
         return bool(self.changes)
 
     def _execute(self):
@@ -436,8 +438,24 @@ class GameRulesEngine:
         self.halt = False
         self.abort = False
 
-    # """ This is written here to temporarily halt the GRE.
     def scan(self, *args):
+        who_id, zone_str, *_ = args
+        assert who_id is None or isinstance(who_id, int) and who_id < len(self._match.game.players)
+        player = self._match.game.players[who_id] if who_id is not None else None
+        assert zone_str in ('stack', 'battlefield', 'library', 'hand', 'graveyard', 'exile', 'command')
+        game = self._match.game
+        to_scan = getattr(player, zone_str) if player else getattr(game, zone_str)
+        to_scan = [x for x in to_scan if x['rules'] is None]
+        for card in to_scan:
+            self.consumer.send_log(f"scanning {card['name']}...")
+            card['rules'] = self.naya.get_abilities(card=card)
+            print(card['rules'])
+        self.todo.append(['scan_done'])
+        self.todo.append(['_manual_halt']) # FIXME: this is here for debug reasons
+
+
+    # """ This is for temporarily halting the GRE.
+    def _manual_halt(self, *args):
         self.halt = True
     # """
 
