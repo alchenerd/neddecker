@@ -448,8 +448,7 @@ class GameRulesEngine:
         to_scan = [x for x in to_scan if x['rules'] is None]
         for card in to_scan:
             self.consumer.send_log(f"scanning {card['name']}...")
-            card['rules'] = self.naya.get_abilities(card=card)
-            print(card['rules'])
+            card['rules'] = self.naya.write_rules(card=card)
         self.todo.append(['scan_done'])
         self.todo.append(['_manual_halt']) # FIXME: this is here for debug reasons
 

@@ -284,17 +284,7 @@ def current_player_could_mulligan(context) -> bool:
         # all lines must contain 'mulligan'
         return False
     players = context.game.players
-    # expecting interested_line = ['mulligan_state', player, has_keep_hand, to_bottom]
-    interested_lines = [l for l in context.todo if (l[0] if l else None) == 'mulligan_state']
-    interested_line = [l for l in interested_lines if players.index(l[1]) == context.line[1]]
-    if not interested_line:
-        return False
-    interested_line = interested_line[0]
-    has_keep_hand = interested_line[2]
-    to_bottom = interested_line[3]
-    print(has_keep_hand, to_bottom)
-    assert isinstance(has_keep_hand, bool)
-    return not has_keep_hand and to_bottom < 7
+    return context.line[1] < len(players)
 
 def ask_player_mulligan(game, todo, matched_line) -> List[Any]:
     ret = [line for line in todo]
