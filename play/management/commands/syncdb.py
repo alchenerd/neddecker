@@ -8,6 +8,9 @@ from bs4 import BeautifulSoup
 from django.core.management.base import BaseCommand, CommandError
 from django.db.models.functions import Length
 from django.contrib.postgres.search import TrigramSimilarity
+from langchain_openai.embeddings import OpenAIEmbeddings
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_chroma import Chroma
 from play.models import Deck, Card, Face
 
 class Command(BaseCommand):
@@ -170,6 +173,51 @@ class Command(BaseCommand):
             deck.decklist = new_decklist
             deck.save()
 
+    def get_comprehensive_rules(self):
+        rules_page = 'https://magic.wizards.com/en/rules'
+        page = requests.get(rules_page)
+        soup = BeautifulSoup(page.content, 'html.parser')
+        txt_spans = soup.find_all('span', 'txt')
+        txt = [x for x in txt_spans if x.text == 'TXT'][0]
+        a = txt.find('a', href=True)
+        comprehensive_rules_link = a['href']
+        print('Fetching Comprehension Rules from', comprehensive_rules_link)
+        directory = 'wotc'
+        fname = 'comprehensive_rules.txt'
+        fpath = path.join(directory, fname)
+        print(fpath)
+        response = requests.get(comprehensive_rules_link)
+        with open(fpath, 'wb') as f:
+            f.write(response.content)
+
+    def create_rag_database(self):
+        with open('wotc/comprehensive_rules.txt') as f:
+            raw_document = f.read()
+        header_pattern = r'^\d+\.\d+[a-z]?\.?'
+        text_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=1000, chunk_overlap=500,
+                length_function=len, separators=[header_pattern], is_separator_regex=True
+        )
+        documents = text_splitter.create_documents([raw_document])
+        db = Chroma.from_documents(documents, OpenAIEmbeddings(), persist_directory='./rag')
+        print('Chroma db is made')
+        docs = db.similarity_search('What is Ninjutsu?')
+        content = '\n'.join(p.page_content for p in (docs[0], docs[1]))
+        title_line = [x for x in content.split('\n') if x.endswith('. Ninjutsu')][0]
+        print(title_line)
+        header = title_line.split(' ')[0][:-1]
+        print(header)
+        filtered = '\n\n'.join(x for x in content.split('\n') if x.startswith(header))
+        print(filtered)
+
+    def make_rag(self):
+        """Make a RAG vector database for searching comprehensive rules."""
+        self.get_comprehensive_rules()
+        self.create_rag_database()
+
+    def add_arguments(self, parser):
+        parser.add_argument('--rag', action='store_true', help='Make a RAG database from comprehensive rules')
+
     def handle(self, *args, **kwargs):
         try:
             if self.is_goldfish_outdated():
@@ -187,3 +235,5 @@ class Command(BaseCommand):
             self.mtggoldfish_align_card_name()
         except Exception as e:
             raise CommandError('syncdb failed:', e)
+        if 'rag' in kwargs and kwargs['rag']:
+            self.make_rag()

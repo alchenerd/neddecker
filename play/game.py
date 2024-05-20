@@ -110,6 +110,8 @@ class Game:
         self.max_players = max_players
         self.card_map = {} # {id: cardname}
         self.players = []
+        self.starting_player_chooser = None
+        self.starting_player = None
         self.stack = []
         self.turn_count = 1
         self.whose_turn = ''
@@ -529,6 +531,8 @@ class Game:
         for player in self.players:
             player.clear()
         self.players.append(self.players.pop(0))
+        self.starting_player_chooser = None
+        self.starting_player = None
         self.turn_phase_tracker = iter(MTGTNPS([p.player_name for p in self.players]))
         # will be overwritten but set just in case
         self.turn_count = 1
