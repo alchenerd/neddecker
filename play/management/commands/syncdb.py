@@ -193,16 +193,15 @@ class Command(BaseCommand):
     def create_rag_database(self):
         with open('wotc/comprehensive_rules.txt') as f:
             raw_document = f.read()
-        header_pattern = r'^\d+\.\d+[a-z]?\.?'
-        text_splitter = RecursiveCharacterTextSplitter(
-                chunk_size=1000, chunk_overlap=500,
-                length_function=len, separators=[header_pattern], is_separator_regex=True
-        )
+        regex_expr = r"\d+\.\d+\. \w+"
+        text_splitter = RecursiveCharacterTextSplitter(regex_expr, chunk_size=1000, chunk_overlap=200)
         documents = text_splitter.create_documents([raw_document])
         db = Chroma.from_documents(documents, OpenAIEmbeddings(), persist_directory='./rag')
         print('Chroma db is made')
-        docs = db.similarity_search('What is Ninjutsu?')
+        docs = db.similarity_search('Detailed definition of keyword Ninjutsu that starts with 701 or 702')
+        print(docs[0])
         content = '\n'.join(p.page_content for p in (docs[0], docs[1]))
+        print(content)
         title_line = [x for x in content.split('\n') if x.endswith('. Ninjutsu')][0]
         print(title_line)
         header = title_line.split(' ')[0][:-1]

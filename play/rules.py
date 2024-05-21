@@ -268,8 +268,8 @@ def current_player_could_mulligan(context) -> bool:
     # expecting context.matched_event = ['mulligan_at', player_id]
     if context.matched_event[0] != 'mulligan_at':
         return False
-    if any(not 'mulligan' in line[0] for line in context.events):
-        # all events must contain 'mulligan'
+    if any(not 'mulligan_' in line[0] for line in context.events):
+        # all events must be 'mulligan_at' or 'mulligan_state'
         return False
     players = context.game.players
     return context.matched_event[1] < len(players)
@@ -279,7 +279,7 @@ def ask_player_mulligan(game, events, matched_event) -> List[Any]:
     if 'mulligan_at' != matched_event[0]:
         return ret
     players = game.players
-    if matched_event[1] > len(players):
+    if matched_event[1] >= len(players):
         return ret
     # expecting interested_line = ['mulligan_state', player, has_keep_hand, to_bottom]
     interested_lines = [l for l in events if (l[0] if l else None) == 'mulligan_state']

@@ -23,8 +23,8 @@ CR_ABILITY_TYPE_DESCRIPTION = """113.3. There are four general categories of abi
 113.3d Static abilities are written as statements. They’re simply true. Static abilities create continuous effects which are active while the permanent with the ability is on the battlefield and has the ability, or while the object with the ability is in the appropriate zone. See rule 604, “Handling Static Abilities.”"""
 
 class AbilityResponse(BaseModel):
-    """Parsed list of abilities."""
-    abilities: list[str] = Field(description="separated list of abilities, with each ability having a single effect")
+    """Parsed list of abilities rules text."""
+    abilities: list[str] = Field(description="a list of abilities quoting the original rules text; separator is usually '.' or new line")
 
 class AbilityTypeResponse(BaseModel):
     """Types of abilities."""
@@ -44,20 +44,44 @@ class GameRulesWriter:
     def __init__(self):
         self.keyword_actions = self.get_keyword_actions()
         self.keyword_abilities = self.get_keyword_abilities()
-        self.db = Chroma(persist_directory='./wotc', embedding_function=OpenAIEmbeddings())
+        self.db = Chroma(persist_directory='./rag', embedding_function=OpenAIEmbeddings())
+        self.kw_to_cr_map = {}
 
     def write_rules(self, card: Dict[str, Any]) -> List[Rule]:
         abilities = self.get_abilities(card)
-        #print(abilities)
+        print('[Abilities]:', abilities)
         rules = []
         for ability in abilities:
             if ability in self.seen:
                 rules.append(self.seen[ability])
-            ability_type = self.get_ability_type(ability)
+                continue
+            known_keywords = self.keyword_abilities
+            detected_keywords = [kw for kw in known_keywords if kw.lower() in ability.lower()]
+            print('[Detected keywords]:', detected_keywords)
+            for kw in detected_keywords:
+                if kw not in self.kw_to_cr_map:
+                    self.kw_to_cr_map[kw] = self.get_comprehensive_rules_by_keyword_ability(kw)
+            ability_type = self.get_ability_type(ability=ability, detected_keywords=detected_keywords)
             print(repr(ability), 'is', \
                     'an' if any(ability_type.lower().startswith(x) for x in 'aeiou') else 'a', \
                     ability_type, 'ability')
         return rules
+
+    def get_comprehensive_rules_by_keyword_ability(self, query) -> str:
+        assert isinstance(query, str)
+        retriever = self.db.as_retriever()
+        docs = retriever.invoke(f'702.__. {query}')
+        #print('DOCS:', docs)
+        data = '\n'.join(p.page_content for p in docs).split('\n')
+        #print(data)
+        title_lines = [x for x in data if x.endswith('. ' + query)] # '701.18. Scry'
+        title_line = title_lines[0] if title_lines else '702.'
+        header = title_line.split(' ')[0][:-1] # take the header and remove the dot for something like '701.18a'
+        #print(header)
+        filtered = '\n\n'.join(x for x in data if x.startswith(header))
+        print(filtered)
+        filtered.replace('{', '{{').replace('}', '}}')
+        return filtered
 
     def get_keyword_actions(self) -> List[str]:
         response = requests.get('https://api.scryfall.com/catalog/keyword-actions')
@@ -74,25 +98,31 @@ class GameRulesWriter:
         if not oracle_text:
             faces = card['faces']
             oracle_text = '---'.join(faces[face]['oracle_text'] for face in faces)
-        rules_text = str(oracle_text).replace(card['name'], '~')\
+        rules_text = str(oracle_text)\
+                .replace(card['name'], '~')\
                 .replace('your', "controller's")\
                 .replace('you', 'controller')
         prompt = ChatPromptTemplate.from_messages([
             ('system', "You are given a Magic: the Gathering card's card text."),
             ('system', CR_ABILITY_TYPE_DESCRIPTION),
-            ('user', "Given the rules text {rules_text}:\n\nHow many abilities are there in the rules text?"),
+            ('user', "Given the rules text {rules_text}:\n\nHow many abilities are there in the rules text? Answer with the rules text."),
         ])
         model = self.llm.bind_tools([AbilityResponse])
         parser = JsonOutputKeyToolsParser(key_name="AbilityResponse", first_tool_only=True)
         chain = prompt | model | parser
         return chain.invoke({'rules_text': rules_text})['abilities']
 
-    def get_ability_type(self, ability: str) -> Literal['spell', 'activated', 'triggered', 'static']:
+    def get_ability_type(self, ability: str, detected_keywords: List[str]) -> Literal['spell', 'activated', 'triggered', 'static']:
         prompt = ChatPromptTemplate.from_messages([
             ('system', "You are given a Magic: the Gathering ability rules text. You will classify the ability into one of a set of mutually exclusive categories."),
             ('system', CR_ABILITY_TYPE_DESCRIPTION),
-            ('user', "Given the rules text {ability}, catergorize what kind of ability it is. If you are unsure, choose the best one among them."),
         ])
+        keyword_knowledge = [('system', self.kw_to_cr_map[kw]) for kw in detected_keywords]
+        if keyword_knowledge:
+            prompt.extend(keyword_knowledge)
+        prompt.append(('system', "Keep in mind that an ability that allows the player to cast with an alternative cost is a static ability that functions when the spell is on the stack."))
+        prompt.append(('user', "Given the rules text {ability}, catergorize what kind of ability it is. If you are unsure, choose the best one among them."))
+        print('[Before invoke]:', prompt, ability)
         model = self.llm.bind_tools([AbilityTypeResponse])
         parser = JsonOutputKeyToolsParser(key_name="AbilityTypeResponse", first_tool_only=True)
         chain = prompt | model | parser
