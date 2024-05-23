@@ -194,15 +194,20 @@ class Command(BaseCommand):
         with open('wotc/comprehensive_rules.txt') as f:
             raw_document = f.read()
         regex_expr = r"\d+\.\d+\. \w+"
-        text_splitter = RecursiveCharacterTextSplitter(regex_expr, chunk_size=1000, chunk_overlap=200)
+        text_splitter = RecursiveCharacterTextSplitter(regex_expr, chunk_size=2000, chunk_overlap=300)
         documents = text_splitter.create_documents([raw_document])
         db = Chroma.from_documents(documents, OpenAIEmbeddings(), persist_directory='./rag')
         print('Chroma db is made')
-        docs = db.similarity_search('Detailed definition of keyword Ninjutsu that starts with 701 or 702')
+        self.db = db
+
+    def test_rag_database(self):
+        db = self.db
+        docs = db.similarity_search('70_.__. Ninjutsu')
         print(docs[0])
         content = '\n'.join(p.page_content for p in (docs[0], docs[1]))
         print(content)
-        title_line = [x for x in content.split('\n') if x.endswith('. Ninjutsu')][0]
+        title_lines = [x for x in content.split('\n') if x.endswith('. Ninjutsu')]
+        title_line = title_lines[0] if title_lines else '702.'
         print(title_line)
         header = title_line.split(' ')[0][:-1]
         print(header)
@@ -236,3 +241,4 @@ class Command(BaseCommand):
             raise CommandError('syncdb failed:', e)
         if 'rag' in kwargs and kwargs['rag']:
             self.make_rag()
+            self.test_rag_database()

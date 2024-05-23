@@ -2,10 +2,14 @@ import requests
 import json
 from typing import List, Dict, Any, Literal
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.pydantic_v1 import BaseModel, Field, validator
+from langchain_core.pydantic_v1 import BaseModel, Field, validator, ValidationError
 from langchain.output_parsers.openai_tools import JsonOutputKeyToolsParser
+from langchain_core.output_parsers.openai_tools import PydanticToolsParser
+from langchain_core.output_parsers import PydanticOutputParser
+from langchain.output_parsers import RetryOutputParser
 from langchain_openai import ChatOpenAI
 from langchain_openai.embeddings import OpenAIEmbeddings
+from langchain_core.runnables import RunnableLambda, RunnableParallel
 from langchain_chroma import Chroma
 from dotenv import load_dotenv
 load_dotenv()
@@ -24,7 +28,7 @@ CR_ABILITY_TYPE_DESCRIPTION = """113.3. There are four general categories of abi
 
 class AbilityResponse(BaseModel):
     """Parsed list of abilities rules text."""
-    abilities: list[str] = Field(description="a list of abilities quoting the original rules text; separator is usually '.' or new line")
+    abilities: List[str] = Field(description="a list of abilities quoting the original rules text; separator is usually '.' or new line")
 
 class AbilityTypeResponse(BaseModel):
     """Types of abilities."""
@@ -32,9 +36,29 @@ class AbilityTypeResponse(BaseModel):
 
 class GherkinResponse(BaseModel):
     """Custom gherkin rule that describes an ability."""
-    given: list[str] = Field(description="list of statements that checks the static game to determine whether When and Then statements fire; content starts with 'Given', 'And', or 'But'")
-    when: list[str] = Field(description="list of statements that checks a todo list: List[any] of the game engine; content starts with 'When', 'And', or 'But'")
-    then: list[str] = Field(description="list of statements that modifies the todo list representing an effect; content starts with 'Then', 'And', or 'But'")
+    game_state_check: List[str] = Field(description="list of statements that checks the static game object to determine whether When and Then statements fire; your input must start with 'Given', 'And', or 'But'")
+    game_event_check: List[str] = Field(description="list of statements that checks a todo list: List[any] of the game engine; your input must start with 'When', 'And', or 'But'")
+    ability_effect_statement: List[str] = Field(description="list of statements that modifies the todo list representing an effect; your input must start with 'Then', 'And', or 'But'")
+
+    """
+    @validator('given')
+    def must_start_with_given_keyword(cls, v):
+        for line in v:
+            if not any(line.lower().startswith(x) for x in ('given', 'and', 'but')):
+                raise ValueError('Must start with \"Given\", \"And\" or \"But\"')
+
+    @validator('when')
+    def must_start_with_when_keyword(cls, v):
+        for line in v:
+            if not any(line.lower().startswith(x) for x in ('when', 'and', 'but')):
+                raise ValueError('Must start with \"When\", \"And\" or \"But\"')
+
+    @validator('then')
+    def must_start_with_then_keyword(cls, v):
+        for line in v:
+            if not any(line.lower().startswith(x) for x in ('then', 'and', 'but')):
+                raise ValueError('Must start with \"Then\", \"And\" or \"But\"')
+    """
 
 
 class GameRulesWriter:
@@ -55,6 +79,7 @@ class GameRulesWriter:
             if ability in self.seen:
                 rules.append(self.seen[ability])
                 continue
+            #known_keywords = self.keyword_actions + self.keyword_abilities
             known_keywords = self.keyword_abilities
             detected_keywords = [kw for kw in known_keywords if kw.lower() in ability.lower()]
             print('[Detected keywords]:', detected_keywords)
@@ -65,23 +90,39 @@ class GameRulesWriter:
             print(repr(ability), 'is', \
                     'an' if any(ability_type.lower().startswith(x) for x in 'aeiou') else 'a', \
                     ability_type, 'ability')
+            play_gherkin = self.write_gherkin(ability, detected_keywords, ability_type, 'play')
+            print('\n[Play Gherkin]:')
+            print(play_gherkin)
+            print()
+            resolve_gherkin = self.write_gherkin(ability, detected_keywords, ability_type, 'resolve')
+            print('\n[Resolve Gherkin]:')
+            print(resolve_gherkin)
+            print()
         return rules
 
     def get_comprehensive_rules_by_keyword_ability(self, query) -> str:
         assert isinstance(query, str)
-        retriever = self.db.as_retriever()
-        docs = retriever.invoke(f'702.__. {query}')
-        #print('DOCS:', docs)
-        data = '\n'.join(p.page_content for p in docs).split('\n')
-        #print(data)
-        title_lines = [x for x in data if x.endswith('. ' + query)] # '701.18. Scry'
-        title_line = title_lines[0] if title_lines else '702.'
-        header = title_line.split(' ')[0][:-1] # take the header and remove the dot for something like '701.18a'
-        #print(header)
-        filtered = '\n\n'.join(x for x in data if x.startswith(header))
+        raw_document = None
+        with open('wotc/comprehensive_rules.txt') as f:
+            raw_document = f.read()
+        if not raw_document:
+            raise FileNotFoundError()
+        header = None
+        filtered = []
+        for line in raw_document.split('\n'):
+            #print(line)
+            if not header and f'. {query}' in line:
+                title_line = line
+                print(title_line)
+                header = title_line.split(' ')[0][:-1]
+                print(header)
+            if header:
+                if line.startswith(header):
+                    filtered.append(line)
         print(filtered)
-        filtered.replace('{', '{{').replace('}', '}}')
-        return filtered
+        ret = '\n'.join(filtered)
+        ret = ret.replace('{', '{{').replace('}', '}}')
+        return ret
 
     def get_keyword_actions(self) -> List[str]:
         response = requests.get('https://api.scryfall.com/catalog/keyword-actions')
@@ -118,6 +159,7 @@ class GameRulesWriter:
             ('system', CR_ABILITY_TYPE_DESCRIPTION),
         ])
         keyword_knowledge = [('system', self.kw_to_cr_map[kw]) for kw in detected_keywords]
+        print(keyword_knowledge)
         if keyword_knowledge:
             prompt.extend(keyword_knowledge)
         prompt.append(('system', "Keep in mind that an ability that allows the player to cast with an alternative cost is a static ability that functions when the spell is on the stack."))
@@ -128,13 +170,44 @@ class GameRulesWriter:
         chain = prompt | model | parser
         return chain.invoke({'ability': ability})['abilitity_type']
 
-    def write_gherkin(self, ability: str) -> List[str]:
+    def write_gherkin(self, ability: str, detected_keywords: List[str], ability_type: Literal['spell', 'activated', 'triggered', 'static'], gherkin_type: Literal['play', 'resolve']) -> List[str]:
+        if ability_type == 'static' and gherkin_type == 'play':
+            return None
         prompt = ChatPromptTemplate.from_messages([
-            ('system', "You are given a Magic: the Gathering ability rules text. You will write rules in the gherkin format that represents the ability."),
-            ('user', "Given the rules text {ability}:\n\nWrite a gherkin rule with following restrictions:\n'Given' statements are checks on a static game object like zone of card or phase of the game; 'When' statements are checks on a `todo` list which is a List[Any] that holds all pending game actions that will happen at the next instant; 'Then' statements are modifications on `todo` that represents the effect of the ability.\n\nFor example, if an ability reads \"this doesn't untap.\", then the gherkin rule would be something like:\n\n``` gherkin\nGiven this is on the battlefield\nWhen \"this untaps\" if present in `todo`\nThen remove this infromation from `todo`\n```\n\n Here is the ability text in case you forgot: {ability}"),
+            ('system', "You are given a Magic: the Gathering rules text of an ability. You will write its rules in gherkin format that properly represent the ability."),
         ])
+        # append relevant keyword knowledge
+        keyword_knowledge = [('system', self.kw_to_cr_map[kw]) for kw in detected_keywords]
+        if keyword_knowledge:
+            prompt.extend(keyword_knowledge)
+        # append writing rules
+        prompt.append(('user', 'Writing Rule for the Actors Referred by the Ability: In the gherkin rule you write, refer to the players \"owner\", \"controller\", \"opponent\" so that the game enging can pinpoint who is who.'))
+        prompt.append(('user', 'Writing Rule for referring to \"this object\": Use tilde (~) to represent the current object/this object/the object that has this ability.'))
+        prompt.append(('user', "Note that activated ability and triggered ability will create a game object on the top of the stack that has the ability's effect's relevant rules text. Make sure the \"Then\" statements create the ability object instead of taking those game actions."))
+        # append request
+        prompt.append(('user', "Given the rules text {ability}:\n\nWrite a gherkin rule with following restrictions:\n'Given' statements are checks on a static game object like what zone the card is in (e.g. library, hand, battlefield, graveyard, exile, command), and/or the timing in game (e.g. phase, step, priority, could cast an instant, could cast a sorcery); 'When' statements are checks on an event list which is a List[Any] that holds all pending game events that will happen next; 'Then' statements are modifications on `todo` that represents the effect of the ability.\n\nFor example, if an ability reads \"this permanent doesn't untap.\", then the gherkin rule would be something like:\n\n``` gherkin\nGiven this is on the battlefield\nWhen \"this untaps\" if present in `todo`\nThen remove this infromation from `todo`\n```\n\n Here is the ability text in case you forgot: {ability}"))
+        # generate gherkin template map
+        template_gherkin = {x: {} for x in ('spell', 'activated', 'triggered', 'static')}
+        template_gherkin['spell']['play'] = "Given ~ is in owner's [hand|graveyard|exile]\nAnd owner could [cast a sorcery|cast an instant|activate mana ability]\nWhen owner gets priority\nAnd owner chooses [choices specified by the ability, such as mode, alternative cost, additional cost, value of X, if any]\nAnd owner distributes [distribution actions specified by the ability, if any]\nAnd owner targets [targets specified by the ability, if any; each different target type uses a statement]\nAnd owner determines the cost [total cost if you can determine it]\nAnd owner pays the cost [total cost of you can determine it]\nThen ~ is cast"
+        template_gherkin['spell']['resolve'] = "Given ~ is the topmost object of the stack\nAnd ~ is not countered\nWhen ~ resolves\nThen [ability effect; each atomic game action uses a statement]"
+        template_gherkin['activated']['play'] = "Given ~ is [on the battlefield|in owner's hand|any zone that this ability could be activated\nAnd [owner|opponent|any player] could [cast a sorcery|cast an instant|activate mana ability]\nWhen [owner|opponent|any player] gets priority\nAnd [owner|opponent|any player] chooses [choices specified by the ability, such as mode, alternative cost, additional cost, value of X, if any]\nAnd [owner|opponent|any player] distributes [distribution actions specified by the ability, if any]\nAnd [owner|opponent|any player] targets [targets specified by the ability, if any; each different target type uses a statement]\nAnd [owner|opponent|any player] determines the cost [total cost if you can determine it]\nAnd [owner|opponent|any player] pays the cost [total cost of you can determine it]\nThen ~ is activated\nAnd put an activated ability that says [the rules text that describes the effect the ability has] on the top of the stack"
+        template_gherkin['activated']['resolve'] = "Given an activated ability that says [the rules text that describes the effect the ability has] is the topmost object of the stack\nAnd the ability that says [the rules text that describes the effect the ability has] is not countered\nWhen the activated ability that says [the rules text that describes the effect the ability has] resolves\nThen [ability effect; each atomic game action uses a Then statement; actions that happen at the same time are grouped using the And keyword; sequential actions are separated using the Then keyword]"
+        template_gherkin['triggered']['play'] = "Given ~ is [on the battlefield|in owner's hand|any zone that this ability could be triggered\nWhen [the requirements of the triggered ability; each atomic check uses a When statement]\nThen ~ is triggered\nAnd put a triggered ability that says [the rules text that describes the effect the ability has] on top of the stack"
+        template_gherkin['triggered']['resolve'] = "Given a triggered ability that says [the rules text that describes the effect the ability has] is the topmost object of the stack\nAnd the triggered ability that says [the rules text that describes the effect the ability has] is not countered\nWhen the triggered ability that says [the rules text that describes the effect the ability has] resolves\nThen [ability effect; each atomic game action uses a statement; actions that happen at the same time are grouped using the And keyword; sequential actions are separated using the Then keyword]"
+        template_gherkin['static']['resolve'] = "Given [the zone check that the static ability would work]\nThen [ability effect; each atomic game effect uses a statement; actions that happen at the same time are grouped using the And keyword; sequential actions are separated using the Then keyword]"
+        prompt.append(('system', 'Here is an automatically generated gherkin rule template that you can make changes from for your information:\n\n{}'.format(template_gherkin[ability_type][gherkin_type])))
+
         model = self.llm.bind_tools([GherkinResponse])
-        parser = JsonOutputKeyToolsParser(key_name="GherkinResponse", first_tool_only=True)
+        parser = JsonOutputKeyToolsParser(key_name='GherkinResponse')
+        #parser = PydanticOutputParser(pydantic_object=GherkinResponse)
+        #retry_parser = RetryOutputParser.from_llm(parser=parser, llm=self.llm)
         chain = prompt | model | parser
-        response = chain.invoke({'ability': ability})
-        return [str(gherkin_line) for gherkin_line in response.values()]
+        #main_chain = RunnableParallel(completion=chain, prompt_value=prompt) | \
+        #        RunnableLambda(lambda x: retry_parser.parse_with_prompt(**x))
+        responses = chain.invoke({'ability': ability})
+        print(responses)
+        ret = []
+        for response in responses:
+            for item in response.values():
+                ret.extend(item)
+        return '\n'.join(ret)
