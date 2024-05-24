@@ -573,7 +573,7 @@ SYSTEM_RULE_START_OF_GAME_SCAN_HAND = [
     ),
 ]
 
-# Make rules
+# Create rules for the engine
 DETERMINE_FIRST_PLAYER_RULES = [
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_DETERMINE_FIRST_PLAYER_ASK)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_DETERMINE_FIRST_PLAYER_HANDLE_ANSWER)),

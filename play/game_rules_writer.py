@@ -1,6 +1,6 @@
 import requests
 import json
-from typing import List, Dict, Any, Literal
+from typing import List, Dict, Any, Optional, Literal
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.pydantic_v1 import BaseModel, Field, validator, ValidationError
 from langchain.output_parsers.openai_tools import JsonOutputKeyToolsParser
@@ -60,6 +60,18 @@ class GherkinResponse(BaseModel):
                 raise ValueError('Must start with \"Then\", \"And\" or \"But\"')
     """
 
+class YesNoResponse(BaseModel):
+    """Answer a yes or no question."""
+    yes_or_no: Literal['y', 'n'] = Field('yes or no; \"y\"for yes and \"n\" for no')
+
+
+class RevisedGherkinResponse(BaseModel):
+    """Revised custom gherkin rule that describes an ability."""
+    game_state_check: List[str] = Field(description="list of statements that checks the static game object to determine whether When and Then statements fire; your input must start with 'Given', 'And', or 'But'")
+    game_event_check: List[str] = Field(description="list of statements that checks a todo list: List[any] of the game engine; your input must start with 'When', 'And', or 'But'")
+    ability_effect_statement: List[str] = Field(description="list of statements that modifies the todo list representing an effect; your input must start with 'Then', 'And', or 'But'")
+    explanation: Optional[str] = Field('explain your changes you\'ve made to the gherkin rule')
+
 
 class GameRulesWriter:
     llm = ChatOpenAI(model_name='gpt-3.5-turbo', temperature=0, max_tokens=4096)
@@ -86,19 +98,68 @@ class GameRulesWriter:
             for kw in detected_keywords:
                 if kw not in self.kw_to_cr_map:
                     self.kw_to_cr_map[kw] = self.get_comprehensive_rules_by_keyword_ability(kw)
+            # mana ability
+            is_mana_ability = self.is_mana_ability(ability=ability)
+            print(repr(ability), 'is' if is_mana_ability else 'is not', 'a mana ability')
+            # ability type
             ability_type = self.get_ability_type(ability=ability, detected_keywords=detected_keywords)
             print(repr(ability), 'is', \
                     'an' if any(ability_type.lower().startswith(x) for x in 'aeiou') else 'a', \
                     ability_type, 'ability')
+            # play gherkin
             play_gherkin = self.write_gherkin(ability, detected_keywords, ability_type, 'play')
+            play_gherkin = self.double_check_gherkin(card=card, ability=ability, gherkin=play_gherkin, ability_type=ability_type, gherkin_type='play')
             print('\n[Play Gherkin]:')
             print(play_gherkin)
             print()
+            # resolve gherkin
             resolve_gherkin = self.write_gherkin(ability, detected_keywords, ability_type, 'resolve')
+            resolve_gherkin = self.double_check_gherkin(card=card, ability=ability, gherkin=resolve_gherkin, ability_type=ability_type, gherkin_type='resolve')
             print('\n[Resolve Gherkin]:')
             print(resolve_gherkin)
             print()
         return rules
+
+    def is_mana_ability(self, ability: str) -> bool:
+        return 'add {' in ability.lower()
+
+    def double_check_gherkin( \
+            self, \
+            card: Dict[str, Any], \
+            ability: str, \
+            gherkin: Optional[str], \
+            ability_type: Literal['spell', 'activated', 'triggered', 'static'], \
+            gherkin_type: Literal['play', 'resolve'], \
+     ) -> Optional[str]:
+        """Ask LLM again to check the gherkin rule; returns the best gherkin string."""
+        if gherkin is None:
+            return None
+        prompt = ChatPromptTemplate.from_messages([
+            ('system', 'You are a gherkin rules checker: you will be given a card, an ability that is a part of the card, the type of the ability (spell ability, activated ability, triggered ability, and static ability), the type of the rule (play rule, which is the rule that cares from proposing to play to the ability to be consider played, and resolve rule, which is the rule that care about the effect when the ability resolves), and the resultant gherkin rule. The rule is written in gherkin format, with the following rules:\n1. \"Given\" rules check the game state, especially the location of the game object and the timing in game such as phases and steps\n2. \"When\" rules check the event todo list, which records actions and effects that will happen in game in the next instant\n3. \"Then\" rules describe the effect of the ability; for most \"play\" rules, the end result is creating an ability object on the top of the stack rather than action, event, or effect - those will be handled in \"resolve\" rule\'s \"Then\" rules, where spell ability, activated ability, and triggered ability are processed when the ability object resolves\n\n4. In the written gherkin rule, tilde (\'~\') means \"thie game object\"\n\n5. In the written gherkin rule, the actor is usually \"controller\", \"owner\", \"opponent\", but never \"you\"\n\nYour role as the gherkin rules checker is to inspect all data given to you and determine if the gherkin rule describes the ability correctly.'),
+            ('user', 'Card:\n{card}\n\nExtracted Ability:\n{ability}\n\nClassified Ability Type:\n{ability_type}\n\nWriting Gherkin Rules for:\n{gherkin_type}\n\nResultant Gherkin Rule:\n{gherkin}\n\n---\n\nGiven data above, answer yes(y) or no(n): Does this gherkin rule correctly describe the ability written on the card?'),
+        ])
+        model = self.llm.bind_tools([YesNoResponse])
+        parser = JsonOutputKeyToolsParser(key_name='YesNoResponse', first_tool_only=True)
+        chain = prompt | model | parser
+        yn = chain.invoke({'card': card, 'ability': ability, 'ability_type': ability_type, 'gherkin_type': gherkin_type, 'gherkin': gherkin})
+        print(yn)
+        print('Double check:', 'LGTM' if yn.get('yes_or_no', 'n') == 'y' else 'Bad Rule')
+        if yn.get('yes_or_no', 'n') == 'y':
+            return gherkin
+        # Revise the gherkin rule
+        prompt = ChatPromptTemplate.from_messages([
+            ('user', '{gherkin}\n\nThis gherkin rule was deemed incorrect.\n\nPlease revise the gherkin rule so that it better describes the ability on a card:\n\nCard:\n{card}\n\n{ability_type} Ability:\n{ability}\n\nPlease fix the fiven gherkin rule and state why.'),
+        ])
+        model = self.llm.bind_tools([RevisedGherkinResponse], tool_choice="RevisedGherkinResponse")
+        parser = JsonOutputKeyToolsParser(key_name='RevisedGherkinResponse', first_tool_only=True)
+        chain = prompt | model | parser
+        response = chain.invoke({'gherkin': gherkin, 'card': card, 'ability': ability, 'ability_type': ability_type.title()})
+        ret = []
+        print(response)
+        for key, item in response.items():
+            if key in ('game_state_check', 'game_event_check', 'ability_effect_statement'):
+                ret.extend(item)
+        return '\n'.join(ret)
 
     def get_comprehensive_rules_by_keyword_ability(self, query) -> str:
         assert isinstance(query, str)
@@ -171,7 +232,7 @@ class GameRulesWriter:
         return chain.invoke({'ability': ability})['abilitity_type']
 
     def write_gherkin(self, ability: str, detected_keywords: List[str], ability_type: Literal['spell', 'activated', 'triggered', 'static'], gherkin_type: Literal['play', 'resolve']) -> List[str]:
-        if ability_type == 'static' and gherkin_type == 'play':
+        if ability_type == 'static' and gherkin_type == 'resolve':
             return None
         prompt = ChatPromptTemplate.from_messages([
             ('system', "You are given a Magic: the Gathering rules text of an ability. You will write its rules in gherkin format that properly represent the ability."),
@@ -194,7 +255,7 @@ class GameRulesWriter:
         template_gherkin['activated']['resolve'] = "Given an activated ability that says [the rules text that describes the effect the ability has] is the topmost object of the stack\nAnd the ability that says [the rules text that describes the effect the ability has] is not countered\nWhen the activated ability that says [the rules text that describes the effect the ability has] resolves\nThen [ability effect; each atomic game action uses a Then statement; actions that happen at the same time are grouped using the And keyword; sequential actions are separated using the Then keyword]"
         template_gherkin['triggered']['play'] = "Given ~ is [on the battlefield|in owner's hand|any zone that this ability could be triggered\nWhen [the requirements of the triggered ability; each atomic check uses a When statement]\nThen ~ is triggered\nAnd put a triggered ability that says [the rules text that describes the effect the ability has] on top of the stack"
         template_gherkin['triggered']['resolve'] = "Given a triggered ability that says [the rules text that describes the effect the ability has] is the topmost object of the stack\nAnd the triggered ability that says [the rules text that describes the effect the ability has] is not countered\nWhen the triggered ability that says [the rules text that describes the effect the ability has] resolves\nThen [ability effect; each atomic game action uses a statement; actions that happen at the same time are grouped using the And keyword; sequential actions are separated using the Then keyword]"
-        template_gherkin['static']['resolve'] = "Given [the zone check that the static ability would work]\nThen [ability effect; each atomic game effect uses a statement; actions that happen at the same time are grouped using the And keyword; sequential actions are separated using the Then keyword]"
+        template_gherkin['static']['play'] = "Given [the zone check that the static ability would work]\nThen [ability effect; each atomic game effect uses a statement; actions that happen at the same time are grouped using the And keyword; sequential actions are separated using the Then keyword]"
         prompt.append(('system', 'Here is an automatically generated gherkin rule template that you can make changes from for your information:\n\n{}'.format(template_gherkin[ability_type][gherkin_type])))
 
         model = self.llm.bind_tools([GherkinResponse])
