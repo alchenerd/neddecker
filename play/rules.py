@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import List, OrderedDict, Callable, Any, Union
 from collections import OrderedDict as CollectionsOrderedDict
+from deprecated import deprecated
 import random
 import re
 from .game import Game
@@ -549,6 +550,7 @@ SYSTEM_RULE_START_OF_GAME_CHECK = [
     ),
 ]
 
+@deprecated
 def append_scan_hand(game, events, matched_event) -> List[Any]:
     ret = [line for line in events]
     # expect matched_event = ['check_start_of_game_action']
@@ -556,6 +558,15 @@ def append_scan_hand(game, events, matched_event) -> List[Any]:
     assert isinstance(who_id, int)
     ret.append(['scanning', who_id, 'hand']) # tell the engine that we are scanning
     ret.append(['scan', who_id, 'hand']) # tell the engine to scan the player's hand
+    return ret
+
+def append_find_start_of_game_card_in_hand(game, events, matched_event) -> List[Any]:
+    ret = [line for line in events]
+    # expect matched_event = ['check_start_of_game_action']
+    who_id = matched_event[1]
+    assert isinstance(who_id, int)
+    ret.append(['scanning', who_id, 'hand']) # tell the engine that we are scanning
+    ret.append(['scan_start_of_game_in_hand', who_id]) # tell the engine to scan the player's hand
     return ret
 
 SYSTEM_RULE_START_OF_GAME_SCAN_HAND = [
@@ -569,7 +580,7 @@ SYSTEM_RULE_START_OF_GAME_SCAN_HAND = [
     ),
     (
         "Then the game scans the current player's hand",
-        append_scan_hand,
+        append_find_start_of_game_card_in_hand,
     ),
 ]
 

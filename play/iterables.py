@@ -36,6 +36,13 @@ class MtgTurnsAndPhases():
         ('cleanup step', False, True),
     ]
 
+    ONE_SHOT_PSEUDO_PHASES = [
+        ('determine starting player', False, True),
+        ('reveal companion', True, True),
+        ('mulligan', True, True),
+        ('take start of game actions', True, True),
+    ]
+
     def __init__(self, players):
         assert (
             isinstance(players, list) and
@@ -46,8 +53,8 @@ class MtgTurnsAndPhases():
         self.turn_ring = players
         self.turn_stack = []
         self.turn_ring_length = len(self.turn_ring)
-        # Priority set to true to ensure both players have time to do things at start of game
-        self.phase_queue = [('start of game phase', True, True)]
+        self.phase_queue = []
+        self.phase_queue.extend(list(MtgTurnsAndPhases.ONE_SHOT_PSEUDO_PHASES))
         self.phase_queue.extend(list(MtgTurnsAndPhases.PHASES_AND_STEPS))
         # this is also seen at __iter__
         self.turn_count = 1
@@ -56,8 +63,8 @@ class MtgTurnsAndPhases():
     def __iter__(self):
         self.turn_count = 1
         self.turn_index = 0
-        # Priority set to true to ensure both players have time to do things at start of game
-        self.phase_queue = [('start of game phase', True, True)]
+        self.phase_queue = []
+        self.phase_queue.extend(list(MtgTurnsAndPhases.ONE_SHOT_PSEUDO_PHASES))
         self.phase_queue.extend(list(MtgTurnsAndPhases.PHASES_AND_STEPS))
         return self
 

@@ -64,6 +64,11 @@ class YesNoResponse(BaseModel):
     """Answer a yes or no question."""
     yes_or_no: Literal['y', 'n'] = Field('yes or no; \"y\"for yes and \"n\" for no')
 
+    @validator('yes_or_no')
+    def must_use_y_or_n(cls, v):
+        if not v in ('y', 'n'):
+            raise ValueError('Must use either \'y\' or \'n\'')
+
 
 class RevisedGherkinResponse(BaseModel):
     """Revised custom gherkin rule that describes an ability."""
@@ -272,3 +277,16 @@ class GameRulesWriter:
             for item in response.values():
                 ret.extend(item)
         return '\n'.join(ret)
+
+    def ask_yes_no(self, context, question):
+        prompt = ChatPromptTemplate.from_messages([
+            ('user', context),
+            ('user', '{question}'),
+        ])
+        model = self.llm.bind_tools([YesNoResponse], tool_choice='YesNoResponse')
+        parser = JsonOutputKeyToolsParser(key_name='YesNoResponse', first_tool_only=True)
+        chain = prompt | model | parser
+        yn = chain.invoke({'question': question.replace('{', '{{').replace('}', '}}')})
+        print(question)
+        print(yn)
+        return yn.get('yes_or_no', 'n') if yn else 'n'

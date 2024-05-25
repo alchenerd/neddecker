@@ -55,22 +55,20 @@ class GameRulesEngine:
                     self.handle_mulligan()
                 case 'keep_hand': # user keeps their hand
                     self.handle_keep_hand()
-                case 'play': # user plays an object with multiple possible actions
-                    self.handle_select()
+                case 'interact': # user interacts with an object
+                    self.handle_interaction()
                 case 'cast': # user casts a spell
                     self.handle_cast()
                 case 'activate': # user activates an ability
                     self.handle_activation()
                 case 'special_action': # user takes a special action
                     self.handle_special_action()
-                case 'abort': # user makes the previous action illegal and we rollback
+                case 'abort': # user makes the previous action illegal and the game rolls back
                     self.handle_abort()
                 case 'pay_cost': # user responds to 'ask_cost'
                     self.handle_pay_cost()
                 case 'pass_priority': # user passes priority
                     self.handle_pass_priority()
-                case 'resolve_stack': # user resolves the stack
-                    self.handle_resolve_stack()
         self.input = None # consume
 
     def _evaluate(self):
@@ -397,6 +395,26 @@ class GameRulesEngine:
         for card in to_scan:
             self.consumer.send_log(f"scanning {card['name']}...")
             card['rules'] = self.naya.write_rules(card=card)
+        self.events.append(['scan_done'])
+        self.events.append(['_manual_halt']) # FIXME: this is here for debug reasons
+
+    def scan_start_of_game_in_hand(self, *args):
+        """search in the player's hand for one or more start of game card"""
+        who_id, *_ = args
+        assert who_id is None or isinstance(who_id, int) and who_id < len(self._match.game.players)
+        player = self._match.game.players[who_id] if who_id is not None else None
+        zone = player.hand
+        CR_103_6_OPENING_HAND = """103.6a If a card allows a player to begin the game with that card on the battlefield, the player taking this action puts that card onto the battlefield.
+
+103.6b If a card allows a player to reveal it from their opening hand, the player taking this action does so. The card remains revealed until the first turn begins. Each card may be revealed this way only once.""".replace('{', '{{').replace('}', '}}')
+        interactible_cards = []
+        for card in zone:
+            oracle_text = card.get('oracle_text', None) or card['faces']['front']['oracle_text']
+            yn = self.naya.ask_yes_no(context=CR_103_6_OPENING_HAND, question=f"Given a card that says: \"{oracle_text}\"\n\nAnswer with YesNoResponse: Is the card described in rule 103.6? Answer \'y\' if the card should be revealed from the opening hand or begin on the battlefield since the game starts; answer \'n\' if the card has no such rules text.")
+            if 'y' in yn:
+                interactible_cards.append(card)
+        if interactible_cards:
+            self.events.append(['interactable', interactible_cards])
         self.events.append(['scan_done'])
         self.events.append(['_manual_halt']) # FIXME: this is here for debug reasons
 
