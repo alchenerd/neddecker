@@ -416,8 +416,16 @@ class GameRulesEngine:
         if interactible_cards:
             self.events.append(['interactable', interactible_cards])
         self.events.append(['scan_done'])
-        self.events.append(['_manual_halt']) # FIXME: this is here for debug reasons
 
+    def give_priority(self, *args):
+        who_id, *_ = args
+        assert who_id is None or isinstance(who_id, int) and who_id < len(self._match.game.players)
+        player = self._match.game.players[who_id] if who_id is not None else None
+        payload = self.game.get_payload()
+        interactable = [e for e in self.events if e[0] == 'interactable'][0][1]
+        payload['interactable'] = interactable
+        self.send_to_player(player=player, text_data=json.dumps(payload))
+        self.events.append(['_manual_halt']) # FIXME: this is here for debug reasons
 
     # """ This is for temporarily halting the GRE.
     def _manual_halt(self, *args):

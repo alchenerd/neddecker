@@ -576,11 +576,76 @@ SYSTEM_RULE_START_OF_GAME_SCAN_HAND = [
     ),
     (
         'And the game is not scanning anything',
-        lambda context: not any('scanning' in line[0] for line in context.events),
+        lambda context: not any('scan' in line[0] for line in context.events),
     ),
     (
         "Then the game scans the current player's hand",
         append_find_start_of_game_card_in_hand,
+    ),
+]
+
+SYSTEM_RULE_START_OF_GAME_END_SCAN = [
+    (
+        'When the game is checking start of game action',
+        lambda context: 'check_start_of_game_action' in context.matched_event,
+    ),
+    (
+        'And the game is scanning',
+        lambda context: any('scanning' in line[0] for line in context.events),
+    ),
+    (
+        'And the scan is done',
+        lambda context: any('scan_done' in line[0] for line in context.events),
+    ),
+    (
+        'Then the game consumes the scanning event',
+        lambda game, events, matched_event: [e for e in events if not 'scanning' in e[0]],
+    ),
+]
+
+SYSTEM_RULE_START_OF_GAME_GIVE_PRIORITY = [
+    (
+        'When the game is checking start of game action',
+        lambda context: 'check_start_of_game_action' in context.matched_event,
+    ),
+    (
+        'And the game is not scanning',
+        lambda context: not any('scanning' in line[0] for line in context.events),
+    ),
+    (
+        'And there are interactable cards',
+        lambda context: any('interactable' in line[0] and line[1] for line in context.events),
+    ),
+    (
+        'And the priority is not yet given',
+        lambda context: all('give_priority' not in line[0] for line in context.events),
+    ),
+    (
+        'Then the game gives priority to the player',
+        lambda game, events, matched_event: [*events, ['give_priority', matched_event[1]]],
+    ),
+]
+
+SYSTEM_RULE_START_OF_GAME_PROCEED_NEXT = [
+    (
+        'When the game is checking start of game action',
+        lambda context: 'check_start_of_game_action' in context.matched_event,
+    ),
+    (
+        'And the game is not scanning',
+        lambda context: not any('scanning' in line[0] for line in context.events),
+    ),
+    (
+        'And there are no interactable cards',
+        lambda context: any('interactable' in line[0] and not line[1] for line in context.events),
+    ),
+    (
+        'Then the game consumes interactable event',
+        lambda game, events, matched_event: [e for e in events if not 'interactable' in e[0]],
+    ),
+    (
+        'And the game increments check_start_of_game_action',
+        lambda game, events, matched_event: [*[e for e in events if not 'check_start_of_game_action' in e[0]], ['check_start_of_game_action', matched_event[1] + 1]],
     ),
 ]
 
@@ -610,6 +675,9 @@ MULLIGAN_RULES = [
 START_OF_GAME_RULES = [
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_START_OF_GAME_CHECK)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_START_OF_GAME_SCAN_HAND)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_START_OF_GAME_END_SCAN)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_START_OF_GAME_GIVE_PRIORITY)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_START_OF_GAME_PROCEED_NEXT)),
 ]
 
 # EVERYTHING
