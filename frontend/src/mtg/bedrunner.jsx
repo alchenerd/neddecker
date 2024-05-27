@@ -8,7 +8,10 @@ export function Bedrunner() {
   const whoseTurn = affectedGameData?.whose_turn;
   const phase = affectedGameData?.phase;
   const phaseMap = {
-    "start of game phase": "Start of Game Phase",
+    "determine starting player phase": "Determine Starting Player",
+    "reveal companion phase": "Reveal Companion",
+    "mulligan phase": "Mulligan Phase",
+    "take start of game actions phase": "Start of game actions",
     "beginning phase": "Beginning Phase",
     "untap step": "Beginning Phase : Untap",
     "upkeep step": "Beginning Phase: Upkeep",

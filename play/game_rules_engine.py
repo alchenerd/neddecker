@@ -71,6 +71,23 @@ class GameRulesEngine:
                     self.handle_pass_priority()
         self.input = None # consume
 
+        # return early if there is no game
+        if not hasattr(self, 'game') or not self.game:
+            return
+
+        # load rules based on game state
+        self.rules = []
+        for rule in SYSTEM_RULES:
+            given_statements = []
+            for statement in rule.gherkin:
+                if any(statement.startswith(x) for x in ('When', 'Then')):
+                    break
+                given_statements.append(statement)
+            if all(rule.implementations[s](self) for s in given_statements):
+                self.rules.append(rule)
+                print('\n'.join(rule.gherkin), '\nis loaded.')
+        assert self.rules
+
     def _evaluate(self):
         """ Run through the events and check rules. """
         if self.abort:
@@ -111,12 +128,11 @@ class GameRulesEngine:
             for event, effect in to_apply:
                 print('events', events)
                 print('applying', effect, 'to', event)
-                events = effect(self.game, events, matched_event)
-        self.events = events
+                self.events = effect(self)
         self.changes = []
 
     def generate_changes_by_rules(self):
-        print('generate_changes_by_rules')
+        print(f'generate_changes_by_rules: {len(self.rules)}')
         for rule in self.rules:
             for item in self.events:
                 self.matched_event = item
@@ -195,9 +211,10 @@ class GameRulesEngine:
             }
             self.consumer.send(text_data=json.dumps(payload)) # announce start of game
             self.game = self._match.game # shorthand
+            self.game.start()
             payload = game.get_payload(is_update=True)
             self.consumer.send(text_data=json.dumps(payload)) # update game state
-            self.events.append(['decide_who_goes_first'])
+            self.events.append([self.game.phase])
             self.halt = False
             self.abort = False
         else:
@@ -260,20 +277,24 @@ class GameRulesEngine:
         bottom = self.input['bottom']
         self.events.append(['keep_hand', who_name, bottom])
 
-    def set_starting_player(self, *args):
+    def set_starting_player_decider(self, *args):
         player, *_ = args
+        self.game.starting_player_decider = player
+        self.consumer.send_log(f'{player.player_name} decides who goes first.')
+
+    def set_starting_player(self, *args):
+        player = None
+        if args:
+            player, *_ = args
+        else:
+            player = self.game.starting_player_decider
         players = self._match.game.players
         idx = players.index(player)
         assert isinstance(idx, int)
         self._match.game.register_first_player(idx)
-        payload = {
-            'type': 'log',
-            'message': f'{player.player_name} goes first.'
-        }
-        self.consumer.send(text_data=json.dumps(payload))
-        self.events.append(['ask_reveal_companion', 0])
-        self.halt = False
-        self.abort = False
+        self.events.append(['starting_player_is_set'])
+        self.consumer.send_log(f'{player.player_name} goes first.')
+        self.update_game_state()
 
     def send_to_player(self, player, text_data):
         assert isinstance(player, Player)
@@ -295,6 +316,10 @@ class GameRulesEngine:
         self.consumer.send(text_data=json.dumps(payload))
         self.halt = True
         self.abort = False
+
+    def set_as_companion(self, *args):
+        in_game_id, *_ = args
+        self.set_annotation(in_game_id, 'is_companion', True)
 
     def set_annotation(self, *args):
         in_game_id, k, v, *_ = args
@@ -413,8 +438,7 @@ class GameRulesEngine:
             yn = self.naya.ask_yes_no(context=CR_103_6_OPENING_HAND, question=f"Given a card that says: \"{oracle_text}\"\n\nAnswer with YesNoResponse: Is the card described in rule 103.6? Answer \'y\' if the card should be revealed from the opening hand or begin on the battlefield since the game starts; answer \'n\' if the card has no such rules text.")
             if 'y' in yn:
                 interactible_cards.append(card)
-        if interactible_cards:
-            self.events.append(['interactable', interactible_cards])
+        self.events.append(['interactable', interactible_cards])
         self.events.append(['scan_done'])
 
     def give_priority(self, *args):
@@ -426,6 +450,24 @@ class GameRulesEngine:
         payload['interactable'] = interactable
         self.send_to_player(player=player, text_data=json.dumps(payload))
         self.events.append(['_manual_halt']) # FIXME: this is here for debug reasons
+
+    def update_game_state(self):
+        payload = self.game.get_payload(is_update=True)
+        self.consumer.send(text_data=json.dumps(payload)) # update game state
+
+    def next_phase(self, *args):
+        phase = self.game.phase
+        while not self.game.phase.endswith('phase') or self.game.phase == phase:
+            self.next_step()
+        self.events = [[self.game.phase]]
+
+    def next_step(self, *args):
+        self.game.next_step()
+        self.update_game_state()
+        self.events = [[self.game.phase]]
+
+    def halt(self, *args):
+        self.halt = True
 
     # """ This is for temporarily halting the GRE.
     def _manual_halt(self, *args):

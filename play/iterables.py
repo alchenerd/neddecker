@@ -18,7 +18,6 @@ class Players():
 class MtgTurnsAndPhases():
     PHASES_AND_STEPS = [
         # (name, playerGetsPriority, requirePlayerAct)
-        # ('start of game phase', False, True), # This is added in initialization
         ('beginning phase', False, False),
         ('untap step', False, True),
         ('upkeep step', True, True),
@@ -37,10 +36,11 @@ class MtgTurnsAndPhases():
     ]
 
     ONE_SHOT_PSEUDO_PHASES = [
-        ('determine starting player', False, True),
-        ('reveal companion', True, True),
-        ('mulligan', True, True),
-        ('take start of game actions', True, True),
+        # (name, playerGetsPriority, requirePlayerAct)
+        ('determine starting player phase', False, True),
+        ('reveal companion phase', True, True),
+        ('mulligan phase', True, True),
+        ('take start of game actions phase', True, True),
     ]
 
     def __init__(self, players):

@@ -93,7 +93,7 @@ class Ned():
     def question_ned(self, json_data):
         question = json_data['question']
         options = json_data.get('options', 'any')
-        prompt = ChatPromptTemplate.from_messages(["user", "(You are playing an online Magic: the Gathering game; a popup shows up and asks you a question; specify ID in your answer wherever applicable)\n\n{question}\n(options: {options})\n"])
+        prompt = ChatPromptTemplate.from_messages(["user", "(Your are Ned Decker. You are playing an online Magic: the Gathering game; a popup shows up and asks you a question; specify ID or name in your answer wherever applicable)\n\n{question}\n(IMPORTANT: your next reply must contain one of these options: {options})\n"])
         chain = prompt | self.llm | StrOutputParser()
         response = chain.invoke({'question': question, 'options': options})
         return response, response

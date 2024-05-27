@@ -20,6 +20,8 @@ class Player:
         self.hand = [] # {id, name, typeline, mana}
         self.graveyard = [] # {id, name}
         self.exile = [] # {id, name}
+        self.command = []
+        self.ante = []
         self.mana_pool = {'W': 0, 'U': 0, 'B': 0, 'R': 0, 'G': 0, 'C': 0}
         self.hp = 20
         self.counters = []
@@ -107,10 +109,13 @@ class Game:
     def __init__(self, max_players=2, consumer=None):
         self.consumer = consumer
         self.has_ended = False
+        self.end_reason = ''
+        self.winner = None
+        self.loser = None
         self.max_players = max_players
         self.card_map = {} # {id: cardname}
         self.players = []
-        self.starting_player_chooser = None
+        self.starting_player_decider = None
         self.starting_player = None
         self.stack = []
         self.turn_count = 1
@@ -140,6 +145,7 @@ class Game:
         if isinstance(index, int) and index:
             self.players = self.players[index:] + self.players[:index]
         self.turn_phase_tracker = iter(MTGTNPS([p.player_name for p in self.players]))
+        self.starting_player = self.players[0]
 
     def import_card_map(self, cards, name):
         player_id = name[0] # 'n' for ned and 'u' for user
@@ -557,6 +563,7 @@ class Match:
                 max_players = 2
         self.max_games = kwargs['games']
         self.games_played = 0
-        self.scores = [ 0, 0 ]
+        self.scores = [0, 0]
         self.consumer = kwargs['consumer']
         self.game = Game(max_players, self.consumer)
+        self.games = [self.game,]

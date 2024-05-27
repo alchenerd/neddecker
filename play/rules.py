@@ -14,12 +14,12 @@ class Rule:
 
     def ensure_ordered_dict(value):
         if not isinstance(value, CollectionsOrderedDict):
-            raise ValueError('data field must be an OrderedDict')
+            raise ValueError('Data field must be an OrderedDict')
         return value
 
     _validator_implementations = ensure_ordered_dict
 
-    def from_implementations(implementations: OrderedDict[str, Callable[..., bool]]) -> '__class__':
+    def from_implementations(implementations: OrderedDict[str, Callable[..., Union[bool, List[Any]]]]) -> '__class__':
         gherkin = [x for x in implementations]
         #print('Gherkin is:', gherkin)
         return Rule(gherkin, implementations)
@@ -28,65 +28,129 @@ class Rule:
 #
 # general event list manipulation
 #
-def consume_line(game, events, matched_event) -> List[Any]:
-    return [line for line in events if line != matched_event]
+def consume_line(context) -> List[Any]:
+    return [e for e in context.events if e != context.matched_event]
 
 
 #
 # starting player rules
 #
-ASK_GO_FIRST_STRING = 'Would you like to go first?';
-
-def ask_random_player_to_go_first(game, events, matched_event) -> List[Any]:
-    chooser = random.choice(game.players)
-    game.starting_player_chooser = chooser
-    return [*events, ['question', chooser, ASK_GO_FIRST_STRING, 'Yes', 'No']]
-
-SYSTEM_RULE_DETERMINE_FIRST_PLAYER_ASK = [
+SYSTEM_RULE_CHOOSE_STARTING_PLAYER_DECIDER_RANDOM = [
     (
-        'When the game wants to determine who goes first',
-        lambda context: 'decide_who_goes_first' == context.matched_event[0],
+        'Given the game is in the determine starting player phase',
+        lambda context: context.game.phase == 'determine starting player phase'
     ),
     (
-        'And there are no other events',
-        lambda context: len(context.events) == 1,
+        'And there is no starting player decider',
+        lambda context: not context.game.starting_player_decider
     ),
     (
-        'Then the game consumes the matched event line',
-        consume_line,
+        'And this is the first game',
+        lambda context: len(context._match.games) == 1
     ),
     (
-        'And the game chooses a random player to ask',
-        ask_random_player_to_go_first,
+        'When the game reaches the start of the phase',
+        lambda context: len(context.events) == 1 and context.matched_event[0] == context.game.phase
+    ),
+    (
+        'Then choose the starting player decider randomly',
+        lambda context: [*context.events, ['set_starting_player_decider', random.choice(context.game.players)]]
     ),
 ]
 
-def set_player_as_starting(game, events, matched_event) -> List[Any]:
-    who, question, answer = matched_event[1:]
-    players = game.players
-    [this_player_id] = [i for i, p in enumerate(players) if p.player_name == who.player_name]
-    next_player_id = (this_player_id + 1) % len(players)
-    yn = str(answer).lower().startswith('y')
-    starting_player = players[this_player_id if yn else next_player_id]
-    game.starting_player = starting_player
-    return [*events, ['set_starting_player', starting_player]]
+# TODO: Implement after a full game can be played
+SYSTEM_RULE_CHOOSE_STARTING_PLAYER_DECIDER_PREVIOUS_DRAW = None
+SYSTEM_RULE_CHOOSE_STARTING_PLAYER_DECIDER_PREVIOUS_LOST = None
 
-SYSTEM_RULE_DETERMINE_FIRST_PLAYER_HANDLE_ANSWER = [
+ASK_WHO_GO_FIRST_STRING = 'Who will you choose to take the first turn?';
+
+SYSTEM_RULE_CHOOSE_STARTING_PLAYER_ASK = [
     (
-        'When the chosen player answers whether they go first',
-        lambda context: 'answer_question' == context.matched_event[0] and \
-                ASK_GO_FIRST_STRING in str(context.matched_event),
+        'Given the game is in the determine starting player phase',
+        lambda context: context.game.phase == 'determine starting player phase'
     ),
     (
-        'Then the game consumes the matched event line',
-        consume_line,
+        'And there is a starting player decider',
+        lambda context: bool(context.game.starting_player_decider)
     ),
     (
-        'And the game sets the appropriate player to go first',
-        set_player_as_starting,
+        'But there is no starting player',
+        lambda context: not context.game.starting_player
+    ),
+    (
+        'When the game is at the start of the phase',
+        lambda context: len(context.events) == 1 and context.matched_event[0] == context.game.phase
+    ),
+    (
+        'Then ask the starting player decider who goes first',
+        lambda context: [
+            *context.events,
+            [
+                'question',
+                context.game.starting_player_decider,
+                ASK_WHO_GO_FIRST_STRING,
+                *(\
+                        p.player_name + ' (You)' if p == context.game.starting_player_decider \
+                        else p.player_name \
+                        for p in context.game.players\
+                ),
+            ],
+        ]
     ),
 ]
 
+SYSTEM_RULE_CHOOSE_STARTING_PLAYER_HANDLE_ANSWER = [
+    (
+        'Given the game is in the determine starting player phase',
+        lambda context: context.game.phase == 'determine starting player phase'
+    ),
+    (
+        'And there is a starting player decider',
+        lambda context: bool(context.game.starting_player_decider)
+    ),
+    (
+        'But there is no starting player',
+        lambda context: not context.game.starting_player
+    ),
+    (
+        'When the starting player decider answers who goes first',
+        lambda context: \
+                'answer_question' == context.matched_event[0] and \
+                context.game.starting_player_decider == context.matched_event[1] and \
+                ASK_WHO_GO_FIRST_STRING == context.matched_event[2],
+    ),
+    (
+        'Then set the starting player',
+        lambda context: [['set_starting_player', *[p for p in context.game.players if \
+                p.player_name.lower() in context.matched_event[-1].lower()]]]
+    ),
+]
+
+# TODO: implement when conspiracy draft is supported
+SYSTEM_RULE_CHOOSE_STARTING_PLAYER_HANDLE_POWER_PLAY = None
+
+SYSTEM_RULE_CHOOSE_STARTING_PLAYER_PROCEED = [
+    (
+        'Given the game is in the determine starting player phase',
+        lambda context: context.game.phase == 'determine starting player phase'
+    ),
+    (
+        'And there is a starting player decider',
+        lambda context: bool(context.game.starting_player_decider)
+    ),
+    (
+        'And there is a starting player',
+        lambda context: bool(context.game.starting_player)
+    ),
+    (
+        'When the game has a starting player',
+        lambda context: len(context.events) == 1 and context.matched_event[0] == 'starting_player_is_set'
+    ),
+    (
+        'Then proceed to the next phase',
+        lambda context: [['next_phase']]
+    ),
+]
 
 #
 # companion rules
@@ -105,25 +169,42 @@ def has_companion(context) -> bool:
             return True
     return False
 
-def companion_reveal_increment_player_id(game, events, matched_event) -> List[Any]:
-    assert 'ask_reveal_companion' == matched_event[0]
-    *others, player_id = matched_event
-    max_players = len(game.players)
-    ret = consume_line(game, events, matched_event)
-    ret.append([*others, player_id + 1])
-    return ret
+def companion_reveal_increment_player_id(context) -> List[Any]:
+    assert 'ask_reveal_companion' == context.matched_event[0]
+    *others, player_id = context.matched_event
+    return [*[e for e in context.events if e[0] != 'ask_reveal_companion'], [*others, player_id + 1]]
 
-def start_mulligan(game, events, matched_event) -> List[Any]:
-    return [['start_mulligan']]
+SYSTEM_RULE_REVEAL_COMPANION_KICKSTART = [
+    (
+        'Given the game is in the reveal companion phase',
+        lambda context: context.game.phase == 'reveal companion phase'
+    ),
+    (
+        'When a the game is at the beginning of the phase',
+        lambda context: len(context.events) == 1 and context.matched_event[0] == context.game.phase,
+    ),
+    (
+        'Then append an ask_reveal_companion marking',
+        lambda context: [*context.events, ['ask_reveal_companion', 0]],
+    ),
+    (
+        'And the game consumes the matched event',
+        consume_line,
+    ),
+]
 
 SYSTEM_RULE_REVEAL_COMPANION_CHECK = [
+    (
+        'Given the game is in the reveal companion phase',
+        lambda context: context.game.phase == 'reveal companion phase'
+    ),
     (
         'When a player could reveal a companion',
         lambda context: 'ask_reveal_companion' == context.matched_event[0],
     ),
     (
         'And the player index has not overflown',
-        lambda context: context.matched_event[1] < len(context._match.game.players),
+        lambda context: context.matched_event[1] < len(context.game.players),
     ),
     (
         'But the player has no companion in their sideboard',
@@ -137,6 +218,10 @@ SYSTEM_RULE_REVEAL_COMPANION_CHECK = [
 
 SYSTEM_RULE_REVEAL_COMPANION_OVERFLOW = [
     (
+        'Given the game is in the reveal companion phase',
+        lambda context: context.game.phase == 'reveal companion phase'
+    ),
+    (
         'When a player could reveal a companion',
         lambda context: 'ask_reveal_companion' == context.matched_event[0],
     ),
@@ -145,24 +230,28 @@ SYSTEM_RULE_REVEAL_COMPANION_OVERFLOW = [
         lambda context: context.matched_event[1] >= len(context._match.game.players),
     ),
     (
-        'Then the game consumes the matched events line',
-        consume_line,
+        'And the matched event is the only event',
+        lambda context: len(context.events) == 1
     ),
     (
-        'Then the game starts the mulligan phase',
-        start_mulligan,
+        'Then the game proceeds to the next phase',
+        lambda context: [['next_phase']]
     ),
 ]
 
 ASK_REVEAL_COMPANION_STRING = 'Which companion would you like to reveal so you could later in game put into hand from outside of game for the cost of paying {3}?';
 
-def ask_player_to_reveal_companion(game, events, matched_event) -> List[Any]:
-    *_, player_id = matched_event
-    player = game.players[player_id]
+def ask_player_to_reveal_companion(context) -> List[Any]:
+    *_, player_id = context.matched_event
+    player = context.game.players[int(player_id)]
     companions = [card['name'] + f" ({card['in_game_id']})" for card in player.sideboard if ('Companion' in str(card) and not 'Companion' in card['name'])]
-    return [*events, ['question', player, ASK_REVEAL_COMPANION_STRING, *companions, "Don't reveal"]]
+    return [*context.events, ['question', player, ASK_REVEAL_COMPANION_STRING, *companions, "Don't reveal"]]
 
 SYSTEM_RULE_REVEAL_COMPANION_ASK = [
+    (
+        'Given the game is in the reveal companion phase',
+        lambda context: context.game.phase == 'reveal companion phase'
+    ),
     (
         'When a player could reveal a companion',
         lambda context: 'ask_reveal_companion' == context.matched_event[0],
@@ -180,31 +269,34 @@ SYSTEM_RULE_REVEAL_COMPANION_ASK = [
         ask_player_to_reveal_companion,
     ),
     (
-        'And the game consumes the matched events line',
+        'And the game consumes the matched event',
         consume_line,
     ),
 ]
 
-def append_reveal_companion_next_step(game, events, matched_event) -> List[Any]:
-    _, who, question, answer = matched_event
-    players = game.players
+def append_reveal_companion_next_step(context) -> List[Any]:
+    _, who, question, answer = context.matched_event
+    players = context.game.players
     player_id = players.index(who)
-    max_players = len(players)
     assert isinstance(player_id, int)
-    return [*events, ['ask_reveal_companion', player_id + 1]]
+    return [*context.events, ['ask_reveal_companion', player_id + 1]]
 
-def annotate_as_companion(game, events, matched_event) -> bool:
-    *_, answer = matched_event
+def annotate_as_companion(context) -> bool:
+    *_, answer = context.matched_event
     # search in answer for a card's in_game_id e.g. n3#1
     expr = r'\b[a-zA-Z](\d+)\#(\d+)\b'
     result = re.search(expr, answer)
     if result is None:
-        return events
+        return context.events
     in_game_id = result.group(0)
     assert isinstance(in_game_id, str)
-    return [*events, ['set_annotation', in_game_id, 'is_companion', True]]
+    return [*context.events, ['set_as_companion', in_game_id]]
 
 SYSTEM_RULE_REVEAL_COMPANION_HANDLE_ANSWER = [
+    (
+        'Given the game is in the reveal companion phase',
+        lambda context: context.game.phase == 'reveal companion phase'
+    ),
     (
         'When a player announces to reveal a companion',
         lambda context: 'answer_question' == context.matched_event[0] and \
@@ -219,7 +311,7 @@ SYSTEM_RULE_REVEAL_COMPANION_HANDLE_ANSWER = [
         annotate_as_companion,
     ),
     (
-        'And the game consumes the matched events line',
+        'And the game consumes the matched event',
         consume_line,
     ),
 ]
@@ -647,15 +739,22 @@ SYSTEM_RULE_START_OF_GAME_PROCEED_NEXT = [
         'And the game increments check_start_of_game_action',
         lambda game, events, matched_event: [*[e for e in events if not 'check_start_of_game_action' in e[0]], ['check_start_of_game_action', matched_event[1] + 1]],
     ),
+    (
+        'And the game consumes the scan_done event',
+        lambda game, events, matched_event: [e for e in events if 'scan_done' not in e],
+    ),
 ]
 
 # Create rules for the engine
-DETERMINE_FIRST_PLAYER_RULES = [
-    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_DETERMINE_FIRST_PLAYER_ASK)),
-    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_DETERMINE_FIRST_PLAYER_HANDLE_ANSWER)),
-]
+CHOOSE_STARTING_PLAYER_RULES = (
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_CHOOSE_STARTING_PLAYER_DECIDER_RANDOM)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_CHOOSE_STARTING_PLAYER_ASK)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_CHOOSE_STARTING_PLAYER_HANDLE_ANSWER)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_CHOOSE_STARTING_PLAYER_PROCEED)),
+)
 
 REVEAL_COMPANION_RULES = [
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_REVEAL_COMPANION_KICKSTART)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_REVEAL_COMPANION_CHECK)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_REVEAL_COMPANION_OVERFLOW)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_REVEAL_COMPANION_ASK)),
@@ -681,9 +780,9 @@ START_OF_GAME_RULES = [
 ]
 
 # EVERYTHING
-SYSTEM_RULES = [
-    *DETERMINE_FIRST_PLAYER_RULES,
+SYSTEM_RULES = (
+    *CHOOSE_STARTING_PLAYER_RULES,
     *REVEAL_COMPANION_RULES,
-    *MULLIGAN_RULES,
-    *START_OF_GAME_RULES,
-]
+    #*MULLIGAN_RULES,
+    #*START_OF_GAME_RULES,
+)
