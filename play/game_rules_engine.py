@@ -124,10 +124,9 @@ class GameRulesEngine:
             else:
                 to_apply = [ relevant_changes ]
             print('to_apply:', to_apply)
-            events = [ line for line in self.events ]
             for event, effect in to_apply:
-                print('events', events)
                 print('applying', effect, 'to', event)
+                self.matched_event = event
                 self.events = effect(self)
         self.changes = []
 

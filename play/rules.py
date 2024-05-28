@@ -320,24 +320,28 @@ SYSTEM_RULE_REVEAL_COMPANION_HANDLE_ANSWER = [
 #
 # mulligan rules
 #
-def shuffle_all(game, events, matched_event) -> List[Any]:
-    additional_events = [['shuffle', player] for player in game.players]
-    return [*events, *additional_events]
+def shuffle_all(context) -> List[Any]:
+    additional_events = [['shuffle', player] for player in context.game.players]
+    return [*context.events, *additional_events]
 
-def draw_seven_all(game, events, matched_event) -> List[Any]:
-    additional_events = [['draw', player, 7] for player in game.players]
-    return [*events, *additional_events]
+def draw_seven_all(context) -> List[Any]:
+    additional_events = [['draw', player, 7] for player in context.game.players]
+    return [*context.events, *additional_events]
 
-def create_mulligan_states(game, events, matched_event) -> List[Any]:
+def create_mulligan_states(context) -> List[Any]:
     to_bottom = 0
     has_keep_hand = False
-    additional_events = [['mulligan_state', player, has_keep_hand, to_bottom] for player in game.players]
-    return [*events, *additional_events, ['mulligan_at', 0]]
+    additional_events = [['mulligan_state', player, has_keep_hand, to_bottom] for player in context.game.players]
+    return [*context.events, *additional_events, ['mulligan_at', 0]]
 
 SYSTEM_RULE_MULLIGAN_CHECK = [
     (
+        'Given the game is in the mulligan phase',
+        lambda context: context.game.phase == 'mulligan phase'
+    ),
+    (
         'When the game starts the mulligan phase',
-        lambda context: 'start_mulligan' == context.matched_event[0],
+        lambda context: context.matched_event[0] == 'mulligan phase' and len(context.events) == 1,
     ),
     (
         'Then the game creates the needed mulligan states',
@@ -367,22 +371,26 @@ def current_player_could_mulligan(context) -> bool:
     players = context.game.players
     return context.matched_event[1] < len(players)
 
-def ask_player_mulligan(game, events, matched_event) -> List[Any]:
-    ret = [line for line in events]
-    if 'mulligan_at' != matched_event[0]:
+def ask_player_mulligan(context) -> List[Any]:
+    ret = [line for line in context.events]
+    if 'mulligan_at' != context.matched_event[0]:
         return ret
-    players = game.players
-    if matched_event[1] >= len(players):
+    players = context.game.players
+    if context.matched_event[1] >= len(players):
         return ret
     # expecting interested_line = ['mulligan_state', player, has_keep_hand, to_bottom]
-    interested_lines = [l for l in events if (l[0] if l else None) == 'mulligan_state']
-    interested_line = [l for l in interested_lines if players.index(l[1]) == matched_event[1]][0]
+    interested_lines = [l for l in context.events if (l[0] if l else None) == 'mulligan_state']
+    interested_line = [l for l in interested_lines if players.index(l[1]) == context.matched_event[1]][0]
     player = interested_line[1]
     to_bottom = interested_line[3]
     ret.append(['ask_mulligan', player, to_bottom])
     return ret
 
 SYSTEM_RULE_MULLIGAN_ASK = [
+    (
+        'Given the game is in the mulligan phase',
+        lambda context: context.game.phase == 'mulligan phase'
+    ),
     (
         'When a player could take a mulligan',
         current_player_could_mulligan,
@@ -414,14 +422,18 @@ def current_player_has_kept_hand(context) -> bool:
     has_keep_hand = interested_line[2]
     return has_keep_hand
 
-def increment_mulligan_at(game, events, matched_event) -> List[Any]:
-    ret = [line for line in events]
+def increment_mulligan_at(context) -> List[Any]:
+    ret = [line for line in context.events]
     # expecting line = ['mulligan_at', who_id]
     mulligan_at = [line for line in ret if line[0] == 'mulligan_at'][0]
     mulligan_at[1] += 1
     return ret
 
 SYSTEM_RULE_MULLIGAN_SKIP = [
+    (
+        'Given the game is in the mulligan phase',
+        lambda context: context.game.phase == 'mulligan phase'
+    ),
     (
         'When a player could take a mulligan',
         current_player_could_mulligan,
@@ -445,17 +457,21 @@ def current_player_wants_to_mulligan(context) -> bool:
     mulligan_at = [line for line in context.events if line[0] == 'mulligan_at'][0]
     return who_id == mulligan_at[1]
 
-def increment_to_bottom(game, events, matched_event) -> List[Any]:
-    ret = [line for line in events]
+def increment_to_bottom(context) -> List[Any]:
+    ret = [line for line in context.events]
     # expecting matched line = ['mulligan', who_name]
-    who_name = matched_event[1]
-    who = [player for player in game.players if player.player_name == who_name][0]
+    who_name = context.matched_event[1]
+    who = [player for player in context.game.players if player.player_name == who_name][0]
     # expecting interested = ['mulligan_state', player, has_keep_hand, to_bottom]
     interested = [line for line in ret if 'mulligan_state' in line and line[1] == who][0]
     interested[3] += 1
     return ret
 
 SYSTEM_RULE_MULLIGAN_HANDLE_MULLIGAN_ANSWER = [
+    (
+        'Given the game is in the mulligan phase',
+        lambda context: context.game.phase == 'mulligan phase'
+    ),
     (
         'When a player answers to take a mulligan',
         current_player_wants_to_mulligan,
@@ -483,18 +499,18 @@ def current_player_wants_to_keep(context) -> bool:
     mulligan_at = [line for line in context.events if line[0] == 'mulligan_at'][0]
     return who_id == mulligan_at[1]
 
-def bottom_mulligan_player_cards(game, events, matched_event) -> List[Any]:
-    ret = [line for line in events]
+def bottom_mulligan_player_cards(context) -> List[Any]:
+    ret = [line for line in context.events]
     # expecting matched_event = ['keep_hand', who_name, to_bottom: list[Card]]
-    who_name = matched_event[1]
-    who = [player for player in game.players if player.player_name == who_name][0]
-    to_bottom = matched_event[2]
+    who_name = context.matched_event[1]
+    who = [player for player in context.game.players if player.player_name == who_name][0]
+    to_bottom = context.matched_event[2]
     ret.append(['bottom_cards', who, to_bottom])
     return ret
 
-def set_player_has_keep(game, events, matched_event) -> List[Any]:
-    ret = [line for line in events]
-    who_name = matched_event[1]
+def set_player_has_keep(context) -> List[Any]:
+    ret = [line for line in context.events]
+    who_name = context.matched_event[1]
     # search for 'mulligan_state'
     # expecting ['mulligan_state', player, has_keep_hand, to_bottom]
     interested = [line for line in ret if line[0] == 'mulligan_state' and line[1].player_name == who_name][0]
@@ -502,6 +518,10 @@ def set_player_has_keep(game, events, matched_event) -> List[Any]:
     return ret
 
 SYSTEM_RULE_MULLIGAN_HANDLE_KEEP_ANSWER = [
+    (
+        'Given the game is in the mulligan phase',
+        lambda context: context.game.phase == 'mulligan phase'
+    ),
     (
         'When a player answers to keep their hand',
         current_player_wants_to_keep,
@@ -524,37 +544,41 @@ SYSTEM_RULE_MULLIGAN_HANDLE_KEEP_ANSWER = [
     ),
 ]
 
-def empty_all_mulligan_player_hand(game, events, matched_event) -> List[Any]:
-    ret = [line for line in events]
+def empty_all_mulligan_player_hand(context) -> List[Any]:
+    ret = [line for line in context.events]
     # expecting [ 'mulligan_state', player, has_keep_hand, to_bottom ]
-    mulliganing_players = [line[1] for line in events if line[0] == 'mulligan_state' and not line[2]]
+    mulliganing_players = [line[1] for line in context.events if line[0] == 'mulligan_state' and not line[2]]
     for player in mulliganing_players:
         ret.append(['bottom_cards', player, [card for card in player.hand]])
     return ret
 
-def shuffle_all_mulligan_player_library(game, events, matched_event) -> List[Any]:
-    ret = [line for line in events]
+def shuffle_all_mulligan_player_library(context) -> List[Any]:
+    ret = [line for line in context.events]
     # expecting ['mulligan_state', player, has_keep_hand, to_bottom]
-    mulliganing_players = [line[1] for line in events if line[0] == 'mulligan_state' and not line[2]]
+    mulliganing_players = [line[1] for line in context.events if line[0] == 'mulligan_state' and not line[2]]
     for player in mulliganing_players:
         ret.append(['shuffle', player])
     return ret
 
-def deal_seven_to_all_mulligan_player(game, events, matched_event) -> List[Any]:
-    ret = [line for line in events]
+def deal_seven_to_all_mulligan_player(context) -> List[Any]:
+    ret = [line for line in context.events]
     # expecting [ 'mulligan_state', player, has_keep_hand, to_bottom ]
-    mulliganing_players = [line[1] for line in events if line[0] == 'mulligan_state' and not line[2]]
+    mulliganing_players = [line[1] for line in context.events if line[0] == 'mulligan_state' and not line[2]]
     for player in mulliganing_players:
         ret.append(['draw', player, 7])
     return ret
 
-def reset_mulligan_at(game, events, matched_event) -> List[Any]:
-    ret = [line for line in events]
-    line = [line for line in ret if line == matched_event][0]
+def reset_mulligan_at(context) -> List[Any]:
+    ret = [line for line in context.events]
+    line = [line for line in ret if line == context.matched_event][0]
     line[1] = 0
     return ret
 
 SYSTEM_RULE_MULLIGAN_HANDLE_OVERFLOW_CONTINUE = [
+    (
+        'Given the game is in the mulligan phase',
+        lambda context: context.game.phase == 'mulligan phase'
+    ),
     (
         'When mulligan_at exceeds the maximum player count',
         lambda context: 'mulligan_at' in context.matched_event and context.matched_event[1] >= len(context.game.players),
@@ -581,21 +605,11 @@ SYSTEM_RULE_MULLIGAN_HANDLE_OVERFLOW_CONTINUE = [
     ),
 ]
 
-def consume_all_mulligan_items(game, events, matched_event) -> List[Any]:
-    ret = [line for line in events if 'mulligan' not in line[0]]
-    return ret
-
-def push_start_game(game, events, matched_event) -> List[Any]:
-    ret = [line for line in events]
-    ret.append(['start_game'])
-    return ret
-
-def mark_start_of_game_in_events(game, events, matched_event) -> List[Any]:
-    ret = [line for line in events]
-    ret.append(['start_of_game'])
-    return ret
-
 SYSTEM_RULE_MULLIGAN_HANDLE_OVERFLOW_FINISH = [
+    (
+        'Given the game is in the mulligan phase',
+        lambda context: context.game.phase == 'mulligan phase'
+    ),
     (
         'When mulligan_at exceeds the maximum player count',
         lambda context: 'mulligan_at' in context.matched_event and context.matched_event[1] >= len(context.game.players),
@@ -609,32 +623,23 @@ SYSTEM_RULE_MULLIGAN_HANDLE_OVERFLOW_FINISH = [
         lambda context: all('mulligan' in line[0] for line in context.events)
     ),
     (
-        'Then the game marks the start of game in events',
-        mark_start_of_game_in_events,
-    ),
-    (
-        'And the game starts',
-        push_start_game,
-    ),
-    (
-        'And the game consumes all mulligan-related items',
-        consume_all_mulligan_items,
+        'Then the game proceeds to the next phase',
+        lambda context: [['next_phase']]
     ),
 ]
 
-def create_start_of_game_action_state(game, events, matched_event) -> List[Any]:
-    ret = [line for line in events]
-    ret.append(['check_start_of_game_action', 0])
-    return ret
-
 SYSTEM_RULE_START_OF_GAME_CHECK = [
     (
+        'Given the game is in the take start of game actions phase',
+        lambda context: context.game.phase == 'take start of game actions phase'
+    ),
+    (
         'When the game is in the start of game phase',
-        lambda context: 'start_of_game' in context.matched_event and len(context.events) == 1,
+        lambda context: 'take start of game actions phase' == context.matched_event[0] and len(context.events) == 1,
     ),
     (
         'Then the game creates check_start_of_game_action',
-        create_start_of_game_action_state,
+        lambda context: [*context.events, ['check_start_of_game_action', 0]]
     ),
     (
         'And the game consumes the matched events line',
@@ -642,26 +647,20 @@ SYSTEM_RULE_START_OF_GAME_CHECK = [
     ),
 ]
 
-@deprecated
-def append_scan_hand(game, events, matched_event) -> List[Any]:
-    ret = [line for line in events]
+def append_find_start_of_game_card_in_hand(context) -> List[Any]:
+    ret = [line for line in context.events]
     # expect matched_event = ['check_start_of_game_action']
-    who_id = matched_event[1]
-    assert isinstance(who_id, int)
-    ret.append(['scanning', who_id, 'hand']) # tell the engine that we are scanning
-    ret.append(['scan', who_id, 'hand']) # tell the engine to scan the player's hand
-    return ret
-
-def append_find_start_of_game_card_in_hand(game, events, matched_event) -> List[Any]:
-    ret = [line for line in events]
-    # expect matched_event = ['check_start_of_game_action']
-    who_id = matched_event[1]
+    who_id = context.matched_event[1]
     assert isinstance(who_id, int)
     ret.append(['scanning', who_id, 'hand']) # tell the engine that we are scanning
     ret.append(['scan_start_of_game_in_hand', who_id]) # tell the engine to scan the player's hand
     return ret
 
 SYSTEM_RULE_START_OF_GAME_SCAN_HAND = [
+    (
+        'Given the game is in the take start of game actions phase',
+        lambda context: context.game.phase == 'take start of game actions phase'
+    ),
     (
         'When the game checks for the current players for start of game action',
         lambda context: 'check_start_of_game_action' in context.matched_event,
@@ -678,6 +677,10 @@ SYSTEM_RULE_START_OF_GAME_SCAN_HAND = [
 
 SYSTEM_RULE_START_OF_GAME_END_SCAN = [
     (
+        'Given the game is in the take start of game actions phase',
+        lambda context: context.game.phase == 'take start of game actions phase'
+    ),
+    (
         'When the game is checking start of game action',
         lambda context: 'check_start_of_game_action' in context.matched_event,
     ),
@@ -691,11 +694,15 @@ SYSTEM_RULE_START_OF_GAME_END_SCAN = [
     ),
     (
         'Then the game consumes the scanning event',
-        lambda game, events, matched_event: [e for e in events if not 'scanning' in e[0]],
+        lambda context: [e for e in context.events if not 'scanning' in e[0]],
     ),
 ]
 
 SYSTEM_RULE_START_OF_GAME_GIVE_PRIORITY = [
+    (
+        'Given the game is in the take start of game actions phase',
+        lambda context: context.game.phase == 'take start of game actions phase'
+    ),
     (
         'When the game is checking start of game action',
         lambda context: 'check_start_of_game_action' in context.matched_event,
@@ -714,9 +721,14 @@ SYSTEM_RULE_START_OF_GAME_GIVE_PRIORITY = [
     ),
     (
         'Then the game gives priority to the player',
-        lambda game, events, matched_event: [*events, ['give_priority', matched_event[1]]],
+        lambda context: [*context.events, ['give_priority', context.matched_event[1]]],
     ),
 ]
+
+def increment_check_start_of_game_action(context) -> List[Any]:
+    new_marker = context.matched_event
+    new_marker[1] += 1
+    return context.events
 
 SYSTEM_RULE_START_OF_GAME_PROCEED_NEXT = [
     (
@@ -733,15 +745,15 @@ SYSTEM_RULE_START_OF_GAME_PROCEED_NEXT = [
     ),
     (
         'Then the game consumes interactable event',
-        lambda game, events, matched_event: [e for e in events if not 'interactable' in e[0]],
+        lambda context: [e for e in context.events if not 'interactable' in e[0]],
     ),
     (
         'And the game increments check_start_of_game_action',
-        lambda game, events, matched_event: [*[e for e in events if not 'check_start_of_game_action' in e[0]], ['check_start_of_game_action', matched_event[1] + 1]],
+        increment_check_start_of_game_action,
     ),
     (
         'And the game consumes the scan_done event',
-        lambda game, events, matched_event: [e for e in events if 'scan_done' not in e],
+        lambda context: [e for e in context.events if 'scan_done' not in e],
     ),
 ]
 
@@ -783,6 +795,6 @@ START_OF_GAME_RULES = [
 SYSTEM_RULES = (
     *CHOOSE_STARTING_PLAYER_RULES,
     *REVEAL_COMPANION_RULES,
-    #*MULLIGAN_RULES,
-    #*START_OF_GAME_RULES,
+    *MULLIGAN_RULES,
+    *START_OF_GAME_RULES,
 )
