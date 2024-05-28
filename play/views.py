@@ -12,7 +12,8 @@ from .models import get_card_orm_by_name
 from langchain_openai import ChatOpenAI
 from langchain.prompts.chat import ChatPromptTemplate
 from langchain.schema.messages import SystemMessage
-from langchain.agents import load_tools, initialize_agent, AgentType
+from langchain.agents import initialize_agent, AgentType
+from langchain_community.agent_toolkits.load_tools import load_tools
 from rest_framework import viewsets
 from rest_framework.decorators import api_view
 from rest_framework.parsers import JSONParser
