@@ -276,6 +276,13 @@ class GameRulesEngine:
         bottom = self.input['bottom']
         self.events.append(['keep_hand', who_name, bottom])
 
+    def handle_interaction(self):
+        print(self.input)
+        who = [p for p in self.game.players if p.player_name == self.input['who']][0]
+        card = self.game.find_card_by_id(self.input['targetId'])
+        self.events.append(['interact', who, card])
+        self.events.append(['_manual_halt'])
+
     def set_starting_player_decider(self, *args):
         player, *_ = args
         self.game.starting_player_decider = player
@@ -383,7 +390,7 @@ class GameRulesEngine:
         amount = len(card_ids_to_bottom)
         while card_ids_to_bottom:
             card_id = card_ids_to_bottom.pop()
-            card = [ card for card in player.hand if card['in_game_id'] != card_id ][0]
+            card = [ card for card in player.hand if card['in_game_id'] == card_id ][0]
             player.hand.remove(card)
             player.library.append(card)
         payload = {
@@ -431,13 +438,20 @@ class GameRulesEngine:
         CR_103_6_OPENING_HAND = """103.6a If a card allows a player to begin the game with that card on the battlefield, the player taking this action puts that card onto the battlefield.
 
 103.6b If a card allows a player to reveal it from their opening hand, the player taking this action does so. The card remains revealed until the first turn begins. Each card may be revealed this way only once.""".replace('{', '{{').replace('}', '}}')
-        interactible_cards = []
+        interactable_cards = []
         for card in zone:
+            if 'interactable' in card:
+                if card['interactable']:
+                    interactable_cards.append(card)
+                continue
             oracle_text = card.get('oracle_text', None) or card['faces']['front']['oracle_text']
             yn = self.naya.ask_yes_no(context=CR_103_6_OPENING_HAND, question=f"Given a card that says: \"{oracle_text}\"\n\nAnswer with YesNoResponse: Is the card described in rule 103.6? Answer \'y\' if the card should be revealed from the opening hand or begin on the battlefield since the game starts; answer \'n\' if the card has no such rules text.")
             if 'y' in yn:
-                interactible_cards.append(card)
-        self.events.append(['interactable', interactible_cards])
+                card['interactable'] = True
+                interactable_cards.append(card)
+            else:
+                card['interactable'] = False
+        self.events.append(['interactable', interactable_cards])
         self.events.append(['scan_done'])
 
     def give_priority(self, *args):
@@ -448,6 +462,11 @@ class GameRulesEngine:
         interactable = [e for e in self.events if e[0] == 'interactable'][0][1]
         payload['interactable'] = interactable
         self.send_to_player(player=player, text_data=json.dumps(payload))
+        self.events = [e for e in self.events if 'interactable' != e[0]]
+        self.halt = True
+
+    def take_start_of_game_action(self, *args):
+        self.events = [e for e in self.events if 'taking_start_of_game_action' != e[0]]
         self.events.append(['_manual_halt']) # FIXME: this is here for debug reasons
 
     def update_game_state(self):

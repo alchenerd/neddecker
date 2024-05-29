@@ -554,6 +554,18 @@ class Game:
         board_state['players'] = [p.get_board_state() for p in self.players]
         return board_state
 
+    def find_card_by_id(self, id_str: str) -> Dict[str, Any]:
+        for player in self.players:
+            for zone_str in ('library', 'hand', 'battlefield', 'graveyard', 'exile', 'command', 'ante'):
+                zone = getattr(player, zone_str)
+                filtered = [card for card in zone if card['in_game_id'] == id_str]
+                if filtered:
+                    return filtered[0]
+        filtered = [card for card in self.stack if card['in_game_id'] == id_str]
+        if filtered:
+            return filtered[0]
+        return None
+
 class Match:
     def __init__(self, **kwargs):
         self.mtg_format = kwargs['mtg_format']

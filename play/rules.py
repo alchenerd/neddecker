@@ -501,7 +501,7 @@ def current_player_wants_to_keep(context) -> bool:
 
 def bottom_mulligan_player_cards(context) -> List[Any]:
     ret = [line for line in context.events]
-    # expecting matched_event = ['keep_hand', who_name, to_bottom: list[Card]]
+    # expecting matched_event = ['keep_hand', who_name, to_bottom: list[in_game_id]]
     who_name = context.matched_event[1]
     who = [player for player in context.game.players if player.player_name == who_name][0]
     to_bottom = context.matched_event[2]
@@ -549,7 +549,7 @@ def empty_all_mulligan_player_hand(context) -> List[Any]:
     # expecting [ 'mulligan_state', player, has_keep_hand, to_bottom ]
     mulliganing_players = [line[1] for line in context.events if line[0] == 'mulligan_state' and not line[2]]
     for player in mulliganing_players:
-        ret.append(['bottom_cards', player, [card for card in player.hand]])
+        ret.append(['bottom_cards', player, [card['in_game_id'] for card in player.hand]])
     return ret
 
 def shuffle_all_mulligan_player_library(context) -> List[Any]:
@@ -708,20 +708,24 @@ SYSTEM_RULE_START_OF_GAME_GIVE_PRIORITY = [
         lambda context: 'check_start_of_game_action' in context.matched_event,
     ),
     (
-        'And the game is not scanning',
-        lambda context: not any('scanning' in line[0] for line in context.events),
+        'And the scan is done',
+        lambda context: any('scan_done' == line[0] for line in context.events),
     ),
     (
         'And there are interactable cards',
-        lambda context: any('interactable' in line[0] and line[1] for line in context.events),
+        lambda context: any('interactable' == line[0] and line[1] for line in context.events),
     ),
     (
         'And the priority is not yet given',
-        lambda context: all('give_priority' not in line[0] for line in context.events),
+        lambda context: not any('give_priority' == line[0] for line in context.events),
     ),
     (
         'Then the game gives priority to the player',
         lambda context: [*context.events, ['give_priority', context.matched_event[1]]],
+    ),
+    (
+        'And the game consumes the scan_done event',
+        lambda context: [e for e in context.events if 'scan_done' not in e],
     ),
 ]
 
@@ -732,12 +736,20 @@ def increment_check_start_of_game_action(context) -> List[Any]:
 
 SYSTEM_RULE_START_OF_GAME_PROCEED_NEXT = [
     (
+        'Given the game is in the take start of game actions phase',
+        lambda context: context.game.phase == 'take start of game actions phase'
+    ),
+    (
         'When the game is checking start of game action',
         lambda context: 'check_start_of_game_action' in context.matched_event,
     ),
     (
         'And the game is not scanning',
-        lambda context: not any('scanning' in line[0] for line in context.events),
+        lambda context: not any('scanning' == line[0] for line in context.events),
+    ),
+    (
+        'And the game is not taking start of game actions',
+        lambda context: not any('taking_start_of_game_action' == line[0] for line in context.events),
     ),
     (
         'And there are no interactable cards',
@@ -748,12 +760,35 @@ SYSTEM_RULE_START_OF_GAME_PROCEED_NEXT = [
         lambda context: [e for e in context.events if not 'interactable' in e[0]],
     ),
     (
+        'And the game consumes the scan_done event',
+        lambda context: [e for e in context.events if 'scan_done' not in e],
+    ),
+    (
         'And the game increments check_start_of_game_action',
         increment_check_start_of_game_action,
     ),
+]
+
+SYSTEM_RULE_START_OF_GAME_TAKE_ACTION = [
     (
-        'And the game consumes the scan_done event',
-        lambda context: [e for e in context.events if 'scan_done' not in e],
+        'Given the game is in the take start of game actions phase',
+        lambda context: context.game.phase == 'take start of game actions phase',
+    ),
+    (
+        'When the player responds to interact with a card',
+        lambda context: 'interact' == context.matched_event[0],
+    ),
+    (
+        'Then take start of game action with that card',
+        lambda context: [*context.events, ['take_start_of_game_action', *context.matched_event[1:]]],
+    ),
+    (
+        'And append taking_start_of_game_action',
+        lambda context: [*context.events, ['taking_start_of_game_action']],
+    ),
+    (
+        'And consume the interact event',
+        lambda context: [e for e in context.events if 'interact' != e[0]],
     ),
 ]
 
@@ -789,6 +824,7 @@ START_OF_GAME_RULES = [
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_START_OF_GAME_END_SCAN)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_START_OF_GAME_GIVE_PRIORITY)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_START_OF_GAME_PROCEED_NEXT)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_START_OF_GAME_TAKE_ACTION)),
 ]
 
 # EVERYTHING

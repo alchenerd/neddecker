@@ -85,7 +85,7 @@ export default function PlayPage() {
     store.dispatch(initialize());
   }, []);
   const wsUrl = 'ws://localhost:8000/ws/play/';
-  const { sendMessage, lastMessage, readyState } = useWebSocket(wsUrl);
+  const { sendMessage, lastMessage, readyState } = useWebSocket(wsUrl, {share: true});
   const [ questionData, setQuestionData ] = useState(null);
   const [ openQuestionDialog, setOpenQuestionDialog ] = useState(false);
   const [ answer, setAnswer ] = useState('');
