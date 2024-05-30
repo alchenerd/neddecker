@@ -281,7 +281,6 @@ class GameRulesEngine:
         who = [p for p in self.game.players if p.player_name == self.input['who']][0]
         card = self.game.find_card_by_id(self.input['targetId'])
         self.events.append(['interact', who, card])
-        self.events.append(['_manual_halt'])
 
     def set_starting_player_decider(self, *args):
         player, *_ = args
@@ -466,8 +465,60 @@ class GameRulesEngine:
         self.halt = True
 
     def take_start_of_game_action(self, *args):
+        # consume the taking action marker
         self.events = [e for e in self.events if 'taking_start_of_game_action' != e[0]]
-        self.events.append(['_manual_halt']) # FIXME: this is here for debug reasons
+        # expecting ['take_start_of_game_action', who, card]
+        who, card, *_ = args
+        assert isinstance(who, Player)
+        assert isinstance(card, dict)
+        oracle_text = card.get('oracle_text', None) or card['faces']['front']['oracle_text']
+        assert oracle_text and isinstance(oracle_text, str)
+        if 'from your opening hand' in oracle_text:
+            self.reveal(who, card)
+            ability = [ab for ab in oracle_text.split('\n') if 'from your opening hand' in ab][0]
+            assert ability and isinstance(ability, str)
+            when, what = self.naya.get_start_of_game_delayed_trigger_ability(card)
+            self.create_delayed_triggered_ability(who, card, ability, when, what, 'triggered once')
+        elif 'begin the game' in oracle_text:
+            if 'Gemstone Caverns' == card['name']:
+                self.set_counter(card, 'luck', 1)
+            _from = f'{who.player_name}.hand'
+            to = f'{who.player_name}.battlefield'
+            self.move(card, _from, to)
+
+    def reveal(self, *args):
+        who, card, *_ = args
+        assert isinstance(who, Player)
+        assert 'name' in card and 'in_game_id' in card
+        self.consumer.send_log(f"{who.player_name} reveals {card['name']} ({card['in_game_id']})")
+
+    def create_delayed_triggered_ability(self, *args):
+        who, card, ability, when, what, expire_when, *_ = args
+        action = {
+            'type': 'create_delayed_trigger',
+            'targetId': card['in_game_id'],
+            'targetCardName': card['name'],
+            'affectingWho': who,
+            'triggerWhen': when,
+            'triggerContent': what,
+            'expireWhen': expire_when,
+        }
+        self.consumer.send_log(f"Create a delayed triggered ability: {ability}")
+        self.game.apply_action(action)
+        self.update_game_state()
+
+    def move(self, *args):
+        card, _from, to, *_ = args
+        assert isinstance(_from, str) and isinstance(to, str)
+        action = {
+            'type': 'move',
+            'targetId': card['in_game_id'],
+            'from': _from,
+            'to': to,
+        }
+        self.consumer.send_log(f"Move {card} from {_from} to {to}")
+        self.game.apply_action(action)
+        self.update_game_state()
 
     def update_game_state(self):
         payload = self.game.get_payload(is_update=True)

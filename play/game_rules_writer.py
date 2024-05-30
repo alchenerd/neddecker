@@ -78,6 +78,12 @@ class RevisedGherkinResponse(BaseModel):
     explanation: Optional[str] = Field('explain your changes you\'ve made to the gherkin rule')
 
 
+class DelayedTriggerWhenWhatResponse(BaseModel):
+    """Describes the 'when' and 'what' of a delayed triggered ability."""
+    trigger_when: str = Field(description="when will the delayed triggered ability be triggered in game")
+    trigger_what: str = Field(description="the content of the trigger when the delayed ability is triggered")
+
+
 class GameRulesWriter:
     llm = ChatOpenAI(model_name='gpt-3.5-turbo', temperature=0, max_tokens=4096)
     seen = {}
@@ -290,3 +296,15 @@ class GameRulesWriter:
         print(question)
         print(yn)
         return yn.get('yes_or_no', 'n') if yn else 'n'
+
+    def get_start_of_game_delayed_trigger_ability(self, card):
+        assert 'oracle_text' in card
+        prompt = ChatPromptTemplate.from_messages([
+            ('user', card['oracle_text'].replace('{', '{{').replace('}', '}}')),
+            ('user', 'This card is a Magic: the Gathering card that has a delayed triggered ability at the start of the game. Please answer only using the excerpt of the rules text on this card: 1. When will this ability be triggered? 2. When triggered, a triggered ability will be created; what rules text describes the triggered ability?'),
+        ])
+        model = self.llm.bind_tools([DelayedTriggerWhenWhatResponse], tool_choice='DelayedTriggerWhenWhatResponse')
+        parser = JsonOutputKeyToolsParser(key_name='DelayedTriggerWhenWhatResponse', first_tool_only=True)
+        chain = prompt | model | parser
+        response = chain.invoke({})
+        return response['trigger_when'], response['trigger_what']
