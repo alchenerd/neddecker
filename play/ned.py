@@ -49,7 +49,7 @@ class Ned():
                 return speech, payload
             case 'who_goes_first': # deprecated
                 return 'Ned ALWAYS chooses to go first!', { 'type': 'who_goes_first', 'who': 'ned' }
-            case 'ask_reveal_companion':
+            case 'ask_reveal_companion': # deprecated
                 sideboard = json_data['sideboard']
                 companions = [ card for card in sideboard if 'Companion' in repr(card) ]
                 companion = random.choice(companions)
@@ -64,8 +64,9 @@ class Ned():
                 return thoughts, actions
             case 'receive_priority':
                 match json_data['phase']:
-                    case 'start of game phase':
-                        return self.ask_ned_decker(topic='start_of_game', data=json_data)
+                    case 'take start of game actions phase':
+                        # return self.ask_ned_decker(topic='start_of_game', data=json_data)
+                        return self.interact_one(data=json_data)
                     case 'upkeep step':
                         return self.ask_ned_decker(topic='upkeep', data=json_data)
                     # case 'draw step':
@@ -97,6 +98,34 @@ class Ned():
         chain = prompt | self.llm | StrOutputParser()
         response = chain.invoke({'question': question, 'options': options})
         return response, response
+
+    def interact_one(self, json_data):
+        """Interact with up to one card based on the board state"""
+        print(json_data)
+        # the player can see: all battlefields, all graveyards, all exiles, player's hand
+        prompt = ChatPromptTemplate.from_messages(["user", "(Your are Ned Decker. You are playing an online Magic: the Gathering game. You glance at {zone}, and see:\n\n```json\n{json_data}```\n\nPlease summarize the zone and describe what you see, highlighting what you should pay attention on as a player."])
+        chain = prompt | self.llm | StrOutputParser()
+        opponent = [p for p in json_data['board_state']['players'] if p.player_name != 'ned'][0]
+        ned = [p for p in json_data['board_state']['players'] if p is not opponent][0]
+        opponent_battlefield_human_readable_string = chain.invoke({'zone': "opponent's battlefield", 'json_data': opponent.battlefield})
+        self_battlefield_human_readable_string = chain.invoke({'zone': "your battlefield", 'json_data': ned.battlefield})
+        opponent_graveyard_human_readable_string = chain.invoke({'zone': "opponent's graveyard", 'json_data': opponent.graveyard})
+        self_graveyard_human_readable_string = chain.invoke({'zone': "your graveyard", 'json_data': ned.graveyard})
+        opponent_exile_human_readable_string = chain.invoke({'zone': "opponent's exile zone", 'json_data': opponent.exile})
+        self_exile_human_readable_string = chain.invoke({'zone': "your exile zone", 'json_data': ned.exile})
+        self_hand_human_readable_string = chain.invoke({'zone': "your hand", 'json_data': ned.hand})
+        interactable = json_data['interactable']
+        board_state_description = f"Opponent's battlefield:\n{opponent_battlefield_human_readable_string}\n\nYour battlefield:\n {self_battlefield_human_readable_string}\n\nOppponent's graveyard:\n{opponent_graveyard_human_readable_string}\n\nYour graveyard:\n{self_graveyard_human_readable_string}\n\nOpponent's exile zone:\n{opponent_exile_human_readable_string}\n\nYour exile zone:\n{self_exile_human_readable_string}\n\nYour hand:\n{self_hand_human_readable_string}"
+        prompt = ChatPromptTemplate.from_messages(["user", "(Your are Ned Decker. You are playing an online Magic: the Gathering game.\n\n{board_state}\n\nInteractable cards:\n\n{interactable}\n\nPlease answer with one sentence: the name and the in_game_id of the card that you want to interact with, or \"None\" if you want to pass the interaction window without doing anything."])
+        chain = prompt | self.llm | StrOutputParser()
+        response = chain.invoke({'board_state': board_state_description, 'interactable': interactable})
+        game_id_expr = r'\b[a-zA-Z](\d+)\#(\d+)\b'
+        result = re.search(game_id_expr, response)
+        target_id = result.group(0) or ''
+        if result is None:
+            return 'Pass', {'type': 'pass_priority', 'who': 'ned', 'actions': [], 'grouping': []}
+        else:
+            return 'Interact', {'type': 'interact', 'who': 'ned', 'targetId': target_id}
 
     def process_card(self, bulky_card):
         """Create a processed card by extracting crucial information for LLM to read.

@@ -666,6 +666,10 @@ SYSTEM_RULE_START_OF_GAME_SCAN_HAND = [
         lambda context: 'check_start_of_game_action' in context.matched_event,
     ),
     (
+        'And the player ID has not overflowed',
+        lambda context: context.matched_event[-1] < len(context.game.players),
+    ),
+    (
         'And the game is not scanning anything',
         lambda context: not any('scan' in line[0] for line in context.events),
     ),
@@ -792,6 +796,25 @@ SYSTEM_RULE_START_OF_GAME_TAKE_ACTION = [
     ),
 ]
 
+SYSTEM_RULE_START_OF_GAME_OVERFLOW = [
+    (
+        'Given the game is in the take start of game actions phase',
+        lambda context: context.game.phase == 'take start of game actions phase'
+    ),
+    (
+        'When the game checks for the current players for start of game action',
+        lambda context: 'check_start_of_game_action' in context.matched_event,
+    ),
+    (
+        'And the player index overflows',
+        lambda context: context.matched_event[-1] >= len(context.game.players),
+    ),
+    (
+        'Then the game proceeds to the next phase',
+        lambda context: [['next_phase']]
+    ),
+]
+
 # Create rules for the engine
 CHOOSE_STARTING_PLAYER_RULES = (
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_CHOOSE_STARTING_PLAYER_DECIDER_RANDOM)),
@@ -825,6 +848,7 @@ START_OF_GAME_RULES = [
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_START_OF_GAME_GIVE_PRIORITY)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_START_OF_GAME_PROCEED_NEXT)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_START_OF_GAME_TAKE_ACTION)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_START_OF_GAME_OVERFLOW)),
 ]
 
 # EVERYTHING
