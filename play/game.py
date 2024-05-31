@@ -395,10 +395,10 @@ class Game:
                 return
             case 'set_counter':
                 for key in found_card['counters']:
-                    if key == action.counterType:
-                        found_card['counters'] = action.counterAmount
+                    if key == action['counterType']:
+                        found_card['counters'] = action['counterAmount']
                         return
-                found_card['counters'][action.counterType] = action.counterAmount
+                found_card['counters'][action['counterType']] = action['counterAmount']
             case 'set_annotation':
                 if found_card:
                     found_card['annotations'][action['annotationKey']] = action['annotationValue']

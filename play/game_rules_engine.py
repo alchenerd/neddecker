@@ -509,6 +509,7 @@ class GameRulesEngine:
 
     def move(self, *args):
         card, _from, to, *_ = args
+        assert isinstance(card, dict)
         assert isinstance(_from, str) and isinstance(to, str)
         action = {
             'type': 'move',
@@ -516,9 +517,26 @@ class GameRulesEngine:
             'from': _from,
             'to': to,
         }
-        self.consumer.send_log(f"Move {card} from {_from} to {to}")
+        self.consumer.send_log(f"Move {card['name']} from {_from} to {to}")
         self.game.apply_action(action)
         self.update_game_state()
+
+    def set_counter(self, *args):
+        card, counter_type, amount, *_ = args
+        assert isinstance(card, dict)
+        assert isinstance(counter_type, str)
+        assert isinstance(amount, int)
+        amount = amount if amount >= 0 else 0
+        action = {
+            'type': 'set_counter',
+            'targetId': card['in_game_id'],
+            'counterType': counter_type,
+            'counterAmount': amount,
+        }
+        self.consumer.send_log(f"Set counter ({amount} {counter_type}) on {card['name']}")
+        self.game.apply_action(action)
+        self.update_game_state()
+        
 
     def update_game_state(self):
         payload = self.game.get_payload(is_update=True)
