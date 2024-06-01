@@ -815,6 +815,21 @@ SYSTEM_RULE_START_OF_GAME_OVERFLOW = [
     ),
 ]
 
+SYSTEM_RULE_BEGINNING_PHASE_PROCEED = [
+    (
+        'Given the game is in the beginning phase',
+        lambda context: context.game.phase == 'beginning phase',
+    ),
+    (
+        'When the game is at the beginning of beginning phase',
+        lambda context: len(context.events) == 1 and 'beginning phase' == context.matched_event[0],
+    ),
+    (
+        'Then the game proceeds to the next phase',
+        lambda context: [['next_step']]
+    ),
+]
+
 # Create rules for the engine
 CHOOSE_STARTING_PLAYER_RULES = (
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_CHOOSE_STARTING_PLAYER_DECIDER_RANDOM)),
@@ -851,10 +866,15 @@ START_OF_GAME_RULES = [
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_START_OF_GAME_OVERFLOW)),
 ]
 
+BEGINNING_PHASE_RULES = [
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_BEGINNING_PHASE_PROCEED)),
+]
+
 # EVERYTHING
 SYSTEM_RULES = (
     *CHOOSE_STARTING_PLAYER_RULES,
     *REVEAL_COMPANION_RULES,
     *MULLIGAN_RULES,
     *START_OF_GAME_RULES,
+    *BEGINNING_PHASE_RULES,
 )
