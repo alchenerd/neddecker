@@ -815,6 +815,29 @@ SYSTEM_RULE_START_OF_GAME_OVERFLOW = [
     ),
 ]
 
+SYSTEM_RULE_START_OF_GAME_PASS_PRIORITY = [
+    (
+        'Given the game is in the take start of game actions phase',
+        lambda context: context.game.phase == 'take start of game actions phase'
+    ),
+    (
+        'When the game checks for the current players for start of game action',
+        lambda context: 'check_start_of_game_action' in context.matched_event,
+    ),
+    (
+        'When a player passes priority',
+        lambda context: any('pass_priority' == e[0] for e in context.events),
+    ),
+    (
+        'And that player is the current target',
+        lambda context: context.game.players.index([e[1] for e in context.events if 'pass_priority' == e[0]][0]) == context.matched_event[1],
+    ),
+    (
+        'Then the game increments check_start_of_game_action',
+        increment_check_start_of_game_action,
+    ),
+]
+
 SYSTEM_RULE_BEGINNING_PHASE_PROCEED = [
     (
         'Given the game is in the beginning phase',
@@ -864,6 +887,7 @@ START_OF_GAME_RULES = [
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_START_OF_GAME_PROCEED_NEXT)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_START_OF_GAME_TAKE_ACTION)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_START_OF_GAME_OVERFLOW)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_START_OF_GAME_PASS_PRIORITY)),
 ]
 
 BEGINNING_PHASE_RULES = [

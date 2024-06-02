@@ -322,6 +322,19 @@ class GameRulesEngine:
         self.halt = True
         self.abort = False
 
+    def handle_pass_priority(self):
+        print(self.input)
+        who_str = self.input['who']
+        actions = self.input['actions']
+        grouping = self.input['grouping']
+        self.game.record_actions(actions, grouping)
+        while self.game.actions:
+            action = self.actions.pop(0)
+            self.game.apply_action(action)
+        who = [p for p in self.game.players if p.player_name == who_str][0]
+        assert who and isinstance(who, Player)
+        self.events.append(['pass_priority', who])
+
     def set_as_companion(self, *args):
         in_game_id, *_ = args
         self.set_annotation(in_game_id, 'is_companion', True)
