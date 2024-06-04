@@ -836,6 +836,15 @@ SYSTEM_RULE_START_OF_GAME_PASS_PRIORITY = [
         'Then the game increments check_start_of_game_action',
         increment_check_start_of_game_action,
     ),
+    (
+        'And consume all interactable data',
+        lambda context: [e for e in context.events if e[0] != 'interactable'],
+    ),
+    (
+        'And consume the current line',
+        consume_line,
+    ),
+
 ]
 
 SYSTEM_RULE_BEGINNING_PHASE_PROCEED = [
@@ -850,6 +859,78 @@ SYSTEM_RULE_BEGINNING_PHASE_PROCEED = [
     (
         'Then the game proceeds to the next phase',
         lambda context: [['next_step']]
+    ),
+]
+
+SYSTEM_RULE_UNTAP_STEP_PHASING = [
+    (
+        'Given the game is in the untap step',
+        lambda context: context.game.phase == 'untap step',
+    ),
+    (
+        'When the game is at the begining of the untap step',
+        lambda context: len(context.events) == 1 and 'untap step' == context.matched_event[0],
+    ),
+    (
+        'Then call handle_phasing',
+        lambda context: [*context.events, ['handle_phasing']],
+    ),
+    (
+        'And consume the current line',
+        consume_line,
+    ),
+]
+
+SYSTEM_RULE_UNTAP_STEP_DAY_NIGHT = [
+    (
+        'Given the game is in the untap step',
+        lambda context: context.game.phase == 'untap step',
+    ),
+    (
+        'When the game is done handling checking phasing',
+        lambda context: len(context.events) == 1 and 'handle_phasing_done' == context.matched_event[0],
+    ),
+    (
+        'Then call handle_day_night',
+        lambda context: [*context.events, ['handle_day_night']],
+    ),
+    (
+        'And consume the current line',
+        consume_line,
+    ),
+]
+
+SYSTEM_RULE_UNTAP_STEP_UNTAP = [
+    (
+        'Given the game is in the untap step',
+        lambda context: context.game.phase == 'untap step',
+    ),
+    (
+        'When the game is done handling day and night',
+        lambda context: len(context.events) == 1 and 'handle_day_night_done' == context.matched_event[0],
+    ),
+    (
+        'Then call handle_untap_step',
+        lambda context: [*context.events, ['handle_untap_step']],
+    ),
+    (
+        'And consume the current line',
+        consume_line,
+    ),
+]
+
+SYSTEM_RULE_UNTAP_STEP_PROCEED = [
+    (
+        'Given the game is in the untap step',
+        lambda context: context.game.phase == 'untap step',
+    ),
+    (
+        'When the game is done handling untap step',
+        lambda context: len(context.events) == 1 and 'handle_untap_step_done' == context.matched_event[0],
+    ),
+    (
+        'Then call handle_untap_step',
+        lambda context: [['next_step']],
     ),
 ]
 
@@ -894,6 +975,13 @@ BEGINNING_PHASE_RULES = [
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_BEGINNING_PHASE_PROCEED)),
 ]
 
+UNTAP_STEP_RULES = [
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_UNTAP_STEP_PHASING)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_UNTAP_STEP_DAY_NIGHT)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_UNTAP_STEP_UNTAP)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_UNTAP_STEP_PROCEED)),
+]
+
 # EVERYTHING
 SYSTEM_RULES = (
     *CHOOSE_STARTING_PLAYER_RULES,
@@ -901,4 +989,5 @@ SYSTEM_RULES = (
     *MULLIGAN_RULES,
     *START_OF_GAME_RULES,
     *BEGINNING_PHASE_RULES,
+    *UNTAP_STEP_RULES,
 )

@@ -550,6 +550,39 @@ class GameRulesEngine:
         self.game.apply_action(action)
         self.update_game_state()
         
+    def handle_phasing(self, *args):
+        who = [p for p in self.game.players if p.player_name == self.game.whose_turn][0]
+        battlefield = who.battlefield
+        for permanent in battlefield:
+            if 'is_phased_out' in permanent.annotations:
+                permanent['is_phased_out'] = not permanent['is_phased_out']
+                continue
+            if 'phasing' in permanent.get('abilities', []) and not permanent.get('is_phased_out', False):
+                permanent['is_phased_out'] = True
+        self.events = [['handle_phasing_done']]
+
+    def handle_day_night(self, *args):
+        game = self.game
+        if not getattr(game, 'is_day', None):
+            self.events = [['handle_day_night_done']]
+            return
+        is_day = game.is_day
+        if is_day and game.active_player_spell_count_previous_turn == 0:
+            self.events.append(['it becomes night'])
+        if not is_day and game.active_player_spell_count_previous_turn >= 2:
+            self.events.append(['it becomes day'])
+        self.events.append(['handle_day_night_done'])
+
+    def handle_untap_step(self, *args):
+        who = [p for p in self.game.players if p.player_name == self.game.whose_turn][0]
+        battlefield = who.battlefield
+        for permanent in battlefield:
+            self.events.append(['untap', permanent])
+        self.events.append(['handle_untap_step_done'])
+
+    def untap(self, *args):
+        permanent, *_ = args
+        permanent['annotations']['is_tapped'] = False
 
     def update_game_state(self):
         payload = self.game.get_payload(is_update=True)
