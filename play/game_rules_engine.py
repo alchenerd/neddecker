@@ -36,6 +36,11 @@ class GameRulesEngine:
             #print(self.events)
             if not self.events:
                 break
+            """
+            print('[* end of cycle report *]')
+            print('\n'.join(map(str, self.events)))
+            _ = input('[* end of cycle press any key to continue *]')
+            """
         #print(self.abort, self.halt)
 
     def _read(self) -> None:
@@ -439,7 +444,7 @@ class GameRulesEngine:
             self.consumer.send_log(f"scanning {card['name']}...")
             card['rules'] = self.naya.write_rules(card=card)
         self.events.append(['scan_done'])
-        self.events.append(['_manual_halt']) # FIXME: this is here for debug reasons
+        #self.events.append(['_manual_halt']) # FIXME: this is here for debug reasons
 
     def scan_start_of_game_in_hand(self, *args):
         """search in the player's hand for one or more start of game card"""
@@ -463,18 +468,19 @@ class GameRulesEngine:
                 interactable_cards.append(card)
             else:
                 card['interactable'] = False
+        self.events = [e for e in self.events if e[0] != 'scanning']
         self.events.append(['interactable', interactable_cards])
         self.events.append(['scan_done'])
 
     def give_priority(self, *args):
-        who_id, *_ = args
+        who_id, interactable, *_ = args
         assert who_id is None or isinstance(who_id, int) and who_id < len(self._match.game.players)
         player = self._match.game.players[who_id] if who_id is not None else None
         payload = self.game.get_payload()
-        interactable = [e for e in self.events if e[0] == 'interactable'][0][1]
         payload['interactable'] = interactable
         self.send_to_player(player=player, text_data=json.dumps(payload))
-        self.events = [e for e in self.events if 'interactable' != e[0]]
+        self.events = [e for e in self.events if 'interactable' not in e[0]]
+        self.events.append(['pending_pass_priority', who_id])
         self.halt = True
 
     def take_start_of_game_action(self, *args):
@@ -498,6 +504,7 @@ class GameRulesEngine:
             _from = f'{who.player_name}.hand'
             to = f'{who.player_name}.battlefield'
             self.move(card, _from, to)
+        self.events = [e for e in self.events if e[0] == 'check_start_of_game_action']
 
     def reveal(self, *args):
         who, card, *_ = args

@@ -118,6 +118,7 @@ class Game:
         self.starting_player_decider = None
         self.starting_player = None
         self.stack = []
+        self.pending_triggers = []
         self.turn_count = 1
         self.whose_turn = ''
         self.phase = ''
@@ -283,6 +284,17 @@ class Game:
                 if card['in_game_id'] == _id:
                     card['annotations']['isCompanion'] = True
                     return
+
+    def get_visible_cards(self):
+        cards = []
+        cards.extend(self.stack)
+        for player in self.players:
+            cards.extend(player.hand)
+            cards.extend(player.battlefield)
+            cards.extend(player.graveyard)
+            cards.extend(player.exile)
+            cards.extend(player.command)
+        return cards
 
     def start(self):
         self.next_step()
@@ -536,6 +548,7 @@ class Game:
             self.move_to_owner(card, _from=self.stack, to='library')
         for player in self.players:
             player.clear()
+        self.pending_triggeres = []
         self.players.append(self.players.pop(0))
         self.starting_player_chooser = None
         self.starting_player = None

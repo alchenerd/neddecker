@@ -5,6 +5,7 @@ from deprecated import deprecated
 import random
 import re
 from .game import Game
+from .iterables import MtgTurnsAndPhases as MtgTnP
 
 @dataclass
 class Rule:
@@ -663,7 +664,7 @@ SYSTEM_RULE_START_OF_GAME_SCAN_HAND = [
     ),
     (
         'When the game checks for the current players for start of game action',
-        lambda context: 'check_start_of_game_action' in context.matched_event,
+        lambda context: 'check_start_of_game_action' in context.matched_event and len(context.events) == 1,
     ),
     (
         'And the player ID has not overflowed',
@@ -679,53 +680,30 @@ SYSTEM_RULE_START_OF_GAME_SCAN_HAND = [
     ),
 ]
 
-SYSTEM_RULE_START_OF_GAME_END_SCAN = [
-    (
-        'Given the game is in the take start of game actions phase',
-        lambda context: context.game.phase == 'take start of game actions phase'
-    ),
-    (
-        'When the game is checking start of game action',
-        lambda context: 'check_start_of_game_action' in context.matched_event,
-    ),
-    (
-        'And the game is scanning',
-        lambda context: any('scanning' in line[0] for line in context.events),
-    ),
-    (
-        'And the scan is done',
-        lambda context: any('scan_done' in line[0] for line in context.events),
-    ),
-    (
-        'Then the game consumes the scanning event',
-        lambda context: [e for e in context.events if not 'scanning' in e[0]],
-    ),
-]
-
 SYSTEM_RULE_START_OF_GAME_GIVE_PRIORITY = [
     (
         'Given the game is in the take start of game actions phase',
         lambda context: context.game.phase == 'take start of game actions phase'
     ),
     (
-        'When the game is checking start of game action',
-        lambda context: 'check_start_of_game_action' in context.matched_event,
+        'When there are interactable cards',
+        lambda context: 'interactable' == context.matched_event[0] and context.matched_event[1],
+    ),
+    (
+        'And the game is checking start of game action',
+        lambda context: any('check_start_of_game_action' == e[0] for e in context.events),
     ),
     (
         'And the scan is done',
         lambda context: any('scan_done' == line[0] for line in context.events),
     ),
     (
-        'And there are interactable cards',
-        lambda context: any('interactable' == line[0] and line[1] for line in context.events),
-    ),
-    (
         'And the priority is not yet given',
-        lambda context: not any('give_priority' == line[0] for line in context.events),
+        lambda context: all('give_priority' != line[0] for line in context.events),
     ),
     (
         'Then the game gives priority to the player',
-        lambda context: [*context.events, ['give_priority', context.matched_event[1]]],
+        lambda context: [*context.events, ['give_priority', [e for e in context.events if e[0] == 'check_start_of_game_action'][0][1], context.matched_event[1]]],
     ),
     (
         'And the game consumes the scan_done event',
@@ -734,7 +712,7 @@ SYSTEM_RULE_START_OF_GAME_GIVE_PRIORITY = [
 ]
 
 def increment_check_start_of_game_action(context) -> List[Any]:
-    new_marker = context.matched_event
+    new_marker = [e for e in context.events if 'check_start_of_game_action' == e[0]][0]
     new_marker[1] += 1
     return context.events
 
@@ -744,20 +722,16 @@ SYSTEM_RULE_START_OF_GAME_PROCEED_NEXT = [
         lambda context: context.game.phase == 'take start of game actions phase'
     ),
     (
-        'When the game is checking start of game action',
-        lambda context: 'check_start_of_game_action' in context.matched_event,
+        'When there are no interactable cards',
+        lambda context: 'interactable' == context.matched_event[0] and not context.matched_event[1],
     ),
     (
-        'And the game is not scanning',
-        lambda context: not any('scanning' == line[0] for line in context.events),
+        'And the game is checking start of game action',
+        lambda context: any('check_start_of_game_action' == e[0] for e in context.events),
     ),
     (
         'And the game is not taking start of game actions',
         lambda context: not any('taking_start_of_game_action' == line[0] for line in context.events),
-    ),
-    (
-        'And there are no interactable cards',
-        lambda context: any('interactable' in line[0] and not line[1] for line in context.events),
     ),
     (
         'Then the game consumes interactable event',
@@ -783,7 +757,15 @@ SYSTEM_RULE_START_OF_GAME_TAKE_ACTION = [
         lambda context: 'interact' == context.matched_event[0],
     ),
     (
-        'Then take start of game action with that card',
+        'And the game is pending pass priority',
+        lambda context: any('pending_pass_priority' == e[0] for e in context.events)
+    ),
+    (
+        'Then consume the pending_pass_priority event',
+        lambda context: [e for e in context.events if 'pending_pass_priority' != e[0]],
+    ),
+    (
+        'And take start of game action with that card',
         lambda context: [*context.events, ['take_start_of_game_action', *context.matched_event[1:]]],
     ),
     (
@@ -803,7 +785,7 @@ SYSTEM_RULE_START_OF_GAME_OVERFLOW = [
     ),
     (
         'When the game checks for the current players for start of game action',
-        lambda context: 'check_start_of_game_action' in context.matched_event,
+        lambda context: 'check_start_of_game_action' in context.matched_event and len(context.events) == 1,
     ),
     (
         'And the player index overflows',
@@ -821,30 +803,29 @@ SYSTEM_RULE_START_OF_GAME_PASS_PRIORITY = [
         lambda context: context.game.phase == 'take start of game actions phase'
     ),
     (
-        'When the game checks for the current players for start of game action',
-        lambda context: 'check_start_of_game_action' in context.matched_event,
+        'When a player passes priority',
+        lambda context: 'pass_priority' == context.matched_event[0],
     ),
     (
-        'When a player passes priority',
-        lambda context: any('pass_priority' == e[0] for e in context.events),
+        'And the game checks for the current players for start of game action',
+        lambda context: any('check_start_of_game_action' == e[0] for e in context.events),
     ),
     (
         'And that player is the current target',
-        lambda context: context.game.players.index([e[1] for e in context.events if 'pass_priority' == e[0]][0]) == context.matched_event[1],
+        lambda context: context.game.players.index(context.matched_event[1]) == [e for e in context.events if 'check_start_of_game_action' == e[0]][1],
     ),
     (
-        'Then the game increments check_start_of_game_action',
+        'Then consume the current line',
+        consume_line,
+    ),
+    (
+        'And the game increments check_start_of_game_action',
         increment_check_start_of_game_action,
     ),
     (
-        'And consume all interactable data',
-        lambda context: [e for e in context.events if e[0] != 'interactable'],
+        'And consume all other data',
+        lambda context: [e for e in context.events if e[0] == 'check_start_of_game_action'],
     ),
-    (
-        'And consume the current line',
-        consume_line,
-    ),
-
 ]
 
 SYSTEM_RULE_BEGINNING_PHASE_PROCEED = [
@@ -934,6 +915,37 @@ SYSTEM_RULE_UNTAP_STEP_PROCEED = [
     ),
 ]
 
+def scan_all_visible_zones(context):
+    ret = [*context.events]
+    ret.append(['scan', None, 'stack'])
+    for i, player in enumerate(context.game.players):
+        ret.append(['scan', i, 'hand'])
+        ret.append(['scan', i, 'battlefield'])
+        ret.append(['scan', i, 'graveyard'])
+        ret.append(['scan', i, 'exile'])
+        ret.append(['scan', i, 'command'])
+    ret.append(['scanning'])
+    return ret
+
+SYSTEM_RULE_SCAN_CARD = [
+    (
+        'Given the game is in any of phases and steps of a turn cycle',
+        lambda context: any(context.game.phase == PNS[0] for PNS in MtgTnP.PHASES_AND_STEPS),
+    ),
+    (
+        'And there exists more than one unscanned card in visible zone',
+        lambda context: any(card.get('rules', None) == None for card in context.game.get_visible_cards())
+    ),
+    (
+        'When the game is not scanning',
+        lambda context: not any('scanning' in e for e in context.events),
+    ),
+    (
+        'Then scan all visible zones',
+        scan_all_visible_zones,
+    ),
+]
+
 # Create rules for the engine
 CHOOSE_STARTING_PLAYER_RULES = (
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_CHOOSE_STARTING_PLAYER_DECIDER_RANDOM)),
@@ -963,12 +975,11 @@ MULLIGAN_RULES = [
 START_OF_GAME_RULES = [
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_START_OF_GAME_CHECK)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_START_OF_GAME_SCAN_HAND)),
-    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_START_OF_GAME_END_SCAN)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_START_OF_GAME_PASS_PRIORITY)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_START_OF_GAME_GIVE_PRIORITY)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_START_OF_GAME_PROCEED_NEXT)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_START_OF_GAME_TAKE_ACTION)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_START_OF_GAME_OVERFLOW)),
-    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_START_OF_GAME_PASS_PRIORITY)),
 ]
 
 BEGINNING_PHASE_RULES = [
@@ -988,6 +999,7 @@ SYSTEM_RULES = (
     *REVEAL_COMPANION_RULES,
     *MULLIGAN_RULES,
     *START_OF_GAME_RULES,
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SCAN_CARD)), # always scan all cards before turn loop
     *BEGINNING_PHASE_RULES,
     *UNTAP_STEP_RULES,
 )

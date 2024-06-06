@@ -14,6 +14,7 @@ from langchain_chroma import Chroma
 from dotenv import load_dotenv
 load_dotenv()
 from .rules import Rule
+from .models import GameRule, get_card_orm_by_name
 
 # Comprehensive Rules
 CR_ABILITY_TYPE_DESCRIPTION = """113.3. There are four general categories of abilities:
@@ -129,10 +130,17 @@ class GameRulesWriter:
             print('\n[Resolve Gherkin]:')
             print(resolve_gherkin)
             print()
+            i = 0
+            for gherkin in (play_gherkin, resolve_gherkin):
+                if not gherkin:
+                    continue
+                for line in gherkin.split('\n'):
+                    GameRule.objects.create(card=get_card_orm_by_name(card['name']), ability=ability, ability_type=('mana' if is_mana_ability else ability_type), gherkin=line, order=i, lambda_code='lambda context: None')
+                    i += 1
         return rules
 
     def is_mana_ability(self, ability: str) -> bool:
-        return 'add {' in ability.lower()
+        return 'add {' in ability.lower() and not 'target' in ability.lower()
 
     def double_check_gherkin( \
             self, \
