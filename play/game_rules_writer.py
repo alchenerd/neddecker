@@ -100,6 +100,18 @@ class GameRulesWriter:
         print('[Abilities]:', abilities)
         rules = []
         for ability in abilities:
+            rule_query_set = GameRule.objects.filter(card=get_card_orm_by_name(card['name']), ability=ability)
+            if rule_query_set.exists():
+                rule_query_set = rule_query_set.order_by('order')
+                first_rule = rule_query_set.first()
+                rule = {'ability': ability, 'ability_type': first_rule.ability_type, 'gherkins': [], 'lambdas': []}
+                for obj in rule_query_set:
+                    rule['gherkins'].append(obj.gherkin)
+                    rule['lambdas'].append(obj.lambda_code)
+                if ability not in self.seen:
+                    self.seen[ability] = rule
+                rules.append(rule)
+                continue
             if ability in self.seen:
                 rules.append(self.seen[ability])
                 continue
@@ -131,12 +143,17 @@ class GameRulesWriter:
             print(resolve_gherkin)
             print()
             i = 0
+            rule = {'ability': ability, 'ability_type': ability_type, 'gherkins': [], 'lambdas': []}
             for gherkin in (play_gherkin, resolve_gherkin):
                 if not gherkin:
                     continue
                 for line in gherkin.split('\n'):
+                    rule['gherkins'].append(line)
+                    rule['lambdas'].append('lambda context: None')
                     GameRule.objects.create(card=get_card_orm_by_name(card['name']), ability=ability, ability_type=('mana' if is_mana_ability else ability_type), gherkin=line, order=i, lambda_code='lambda context: None')
                     i += 1
+            self.seen[ability] = rule
+            rules.append(rule)
         return rules
 
     def is_mana_ability(self, ability: str) -> bool:
