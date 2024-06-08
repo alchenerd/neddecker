@@ -812,7 +812,7 @@ SYSTEM_RULE_START_OF_GAME_PASS_PRIORITY = [
     ),
     (
         'And that player is the current target',
-        lambda context: context.game.players.index(context.matched_event[1]) == [e for e in context.events if 'check_start_of_game_action' == e[0]][1],
+        lambda context: context.game.players.index(context.matched_event[1]) == [e for e in context.events if 'check_start_of_game_action' == e[0]][0][1],
     ),
     (
         'Then consume the current line',

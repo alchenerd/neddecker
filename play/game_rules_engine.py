@@ -1,7 +1,8 @@
-from typing import Dict, List, Any, Optional, Callable
-from langgraph.graph import END, StateGraph
 import json
 import random
+import pdb
+from typing import Dict, List, Any, Optional, Callable
+from langgraph.graph import END, StateGraph
 from dataclasses import dataclass, field
 from functools import wraps
 from .game import Match, Game, Player
@@ -103,7 +104,10 @@ class GameRulesEngine:
             except ValueError: # reorder is required
                 print('value error')
                 return
-            self.generate_changes_by_rules()
+            try:
+                self.generate_changes_by_rules()
+            except IndexError:
+                pdb.set_trace()
             if not self.changes: # all rules are checked
                 print('all rules are checked')
                 return
@@ -478,9 +482,9 @@ class GameRulesEngine:
         player = self._match.game.players[who_id] if who_id is not None else None
         payload = self.game.get_payload()
         payload['interactable'] = interactable
-        self.send_to_player(player=player, text_data=json.dumps(payload))
         self.events = [e for e in self.events if 'interactable' not in e[0]]
         self.events.append(['pending_pass_priority', who_id])
+        self.send_to_player(player=player, text_data=json.dumps(payload))
         self.halt = True
 
     def take_start_of_game_action(self, *args):
@@ -504,6 +508,16 @@ class GameRulesEngine:
             _from = f'{who.player_name}.hand'
             to = f'{who.player_name}.battlefield'
             self.move(card, _from, to)
+        else:
+            # mark the matched card as un-interactable
+            interactable_event = [e for e in self.events if e[0] == 'interactable']
+            if not interactable_event:
+                return
+            interactable_event = interactable_event[0]
+            for interactable_card in interactable_event[1]:
+                if interactable_card['in_game_id'] == card['in_game_id']:
+                    interactable_card['interactable'] = False
+            interactable_event[1] = [card for card in interactable_event[1] if card['interactable']]
         self.events = [e for e in self.events if e[0] == 'check_start_of_game_action']
 
     def reveal(self, *args):
