@@ -8,6 +8,7 @@ const CreaturePermanent = ({
   whoIsAskingAttackTarget, setWhoIsAskingAttackTarget,
   whoIsAskingBlockTarget, setWhoIsAskingBlockTarget,
   combatTargetCard, setCombatTargetCard,
+  setOpenInspectGherkinDialog,
   ...props
 }) => {
   const gameData = selectAffectedGameData(store.getState());
@@ -84,7 +85,7 @@ const CreaturePermanent = ({
 
   return (
     <>
-      <Permanent {...props} onClick={handleClick}/>
+      <Permanent {...props} onClick={handleClick} setOpenInspectGherkinDialog={setOpenInspectGherkinDialog}/>
     </>
   )
 }

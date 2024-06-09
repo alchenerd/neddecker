@@ -447,6 +447,7 @@ class GameRulesEngine:
         for card in to_scan:
             self.consumer.send_log(f"scanning {card['name']}...")
             card['rules'] = self.naya.write_rules(card=card)
+            self.update_game_state()
         self.events.append(['scan_done'])
         #self.events.append(['_manual_halt']) # FIXME: this is here for debug reasons
 

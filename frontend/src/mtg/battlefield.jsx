@@ -36,6 +36,7 @@ const Battlefield = ({
   combatTargetCard,
   setCombatTargetCard,
   setOpenCreateTokenDialog,
+  setOpenInspectGherkinDialog,
 }) => {
   const gameData = selectAffectedGameData(store.getState());
   const owner = gameData?.board_state?.players.find((player) => player.player_name === ownerName);
@@ -153,6 +154,7 @@ const Battlefield = ({
                 {...{whoIsAskingBlockTarget, setWhoIsAskingBlockTarget}}
                 {...{combatTargetCard, setCombatTargetCard}}
                 setOpenCreateTokenDialog={setOpenCreateTokenDialog}
+                setOpenInspectGherkinDialog={setOpenInspectGherkinDialog}
               />
             )
           })}
@@ -193,6 +195,7 @@ const Battlefield = ({
                   setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
                   setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
                   setOpenCreateTokenDialog={setOpenCreateTokenDialog}
+                  setOpenInspectGherkinDialog={setOpenInspectGherkinDialog}
                 />
               )
             })}
@@ -226,6 +229,7 @@ const Battlefield = ({
                   {...{whoIsAskingAttackTarget, setWhoIsAskingAttackTarget}}
                   {...{combatTargetCard, setCombatTargetCard}}
                   setOpenCreateTokenDialog={setOpenCreateTokenDialog}
+                  setOpenInspectGherkinDialog={setOpenInspectGherkinDialog}
                 />
               )
             })}

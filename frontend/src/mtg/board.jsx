@@ -19,6 +19,7 @@ export function Board({
   setOpenCreateTriggerDialog,
   setOpenCreateDelayedTriggerDialog,
   setOpenCreateTokenDialog,
+  setOpenInspectGherkinDialog,
 }) {
   const [ whoIsAskingAttackTarget, setWhoIsAskingAttackTarget ] = useState(null);
   const [ whoIsAskingBlockTarget, setWhoIsAskingBlockTarget ] = useState(null);
@@ -50,6 +51,7 @@ export function Board({
             setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
             setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
             setOpenCreateTokenDialog={setOpenCreateTokenDialog}
+            setOpenInspectGherkinDialog={setOpenInspectGherkinDialog}
           />
         </Grid>
         <Grid item xs={12} sx={{backgroundColor: "Magenta", height: "32vh"}}>
@@ -71,6 +73,7 @@ export function Board({
             {...{whoIsAskingBlockTarget, setWhoIsAskingBlockTarget}}
             {...{combatTargetCard, setCombatTargetCard}}
             setOpenCreateTokenDialog={setOpenCreateTokenDialog}
+            setOpenInspectGherkinDialog={setOpenInspectGherkinDialog}
           />
         </Grid>
         <Grid item xs={12} sx={{backgroundColor: "Magenta", height: "4vh",
@@ -96,6 +99,7 @@ export function Board({
             {...{whoIsAskingBlockTarget, setWhoIsAskingBlockTarget}}
             {...{combatTargetCard, setCombatTargetCard}}
             setOpenCreateTokenDialog={setOpenCreateTokenDialog}
+            setOpenInspectGherkinDialog={setOpenInspectGherkinDialog}
           />
         </Grid>
         <Grid item xs={3} sx={{backgroundColor: "Magenta", height: "16vh"}} alignSelf="end">
@@ -121,6 +125,7 @@ export function Board({
             setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
             setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
             setOpenCreateTokenDialog={setOpenCreateTokenDialog}
+            setOpenInspectGherkinDialog={setOpenInspectGherkinDialog}
           />
         </Grid>
       </Grid>

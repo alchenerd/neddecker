@@ -16,6 +16,7 @@ const Hand = ({
   setOpenCreateTriggerDialog,
   setOpenCreateDelayedTriggerDialog,
   setOpenCreateTokenDialog,
+  setOpenInspectGherkinDialog,
 }) => {
   const gameData = selectAffectedGameData(store.getState());
   const owner = gameData?.board_state?.players.find((player) => player.player_name === ownerName);
@@ -71,12 +72,17 @@ const Hand = ({
           setActionTargetCard(card);
           setOpenCreateTokenDialog(true);
         }
+        const inspectGherkin = () => {
+          setActionTargetCard(card);
+          setOpenInspectGherkinDialog(true);
+        }
         const functions = [
           {name: "move", _function: handleMove},
           {name: "create trigger", _function: handleCreateTrigger},
           {name: "create delayed trigger", _function: handleCreateDelayedTrigger},
           {name: "create token copy", _function: createTokenCopy},
-        ];
+          card.rules? {name: "inspect gherkin", _function: inspectGherkin} : null,
+        ].filter(x => x);
         return (
           <Card
             key={card.in_game_id}

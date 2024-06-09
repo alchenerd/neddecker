@@ -29,6 +29,7 @@ import CreateTriggerDialog from './mtg/create-trigger-dialog';
 import CreateDelayedTriggerDialog from './mtg/create-delayed-trigger-dialog';
 import DelayedTriggerMemoDrawer from './mtg/delayed-trigger-memo-drawer';
 import CreateTokenDialog from './mtg/create-token-dialog';
+import InspectGherkinDialog from './mtg/inspect-gherkin-dialog';
 
 import './play.css';
 
@@ -126,6 +127,7 @@ export default function PlayPage() {
   const [ openCreateDelayedTriggerDialog, setOpenCreateDelayedTriggerDialog ] = useState(false);
   const [ openDelayedTriggerMemoDrawer, setOpenDelayedTriggerMemoDrawer ] = useState(false);
   const [ openCreateTokenDialog, setOpenCreateTokenDialog ] = useState(false);
+  const [ openInspectGherkinDialog, setOpenInspectGherkinDialog ] = useState(true);
   const [ isResolving, setIsResolving ] = useState(false);
 
   useEffect(() => {
@@ -479,6 +481,7 @@ export default function PlayPage() {
               setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
               setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
               setOpenCreateTokenDialog={setOpenCreateTokenDialog}
+              setOpenInspectGherkinDialog={setOpenInspectGherkinDialog}
             />
           </Grid>
           <Grid item xs={4} width='100%'>
@@ -591,6 +594,10 @@ export default function PlayPage() {
         />
         <CreateTokenDialog
           open={openCreateTokenDialog} setOpen={setOpenCreateTokenDialog}
+          actionTargetCard={actionTargetCard}
+        />
+        <InspectGherkinDialog
+          open={openInspectGherkinDialog} setOpen={setOpenInspectGherkinDialog}
           actionTargetCard={actionTargetCard}
         />
       </>

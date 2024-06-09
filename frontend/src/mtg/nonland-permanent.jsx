@@ -7,6 +7,7 @@ import store from './../store/store';
 const NonlandPermanent = ({
   controller,
   whoIsAskingAttackTarget, setWhoIsAskingAttackTarget,
+  setOpenInspectGherkinDialog,
   ...props
 }) => {
   const gameData = selectAffectedGameData(store.getState());
@@ -42,7 +43,7 @@ const NonlandPermanent = ({
 
   return (
     <>
-      <Permanent {...props} onClick={handleClick}/>
+      <Permanent {...props} onClick={handleClick} setOpenInspectGherkinDialog={setOpenInspectGherkinDialog}/>
     </>
   )
 }
