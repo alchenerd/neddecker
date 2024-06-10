@@ -127,7 +127,7 @@ export default function PlayPage() {
   const [ openCreateDelayedTriggerDialog, setOpenCreateDelayedTriggerDialog ] = useState(false);
   const [ openDelayedTriggerMemoDrawer, setOpenDelayedTriggerMemoDrawer ] = useState(false);
   const [ openCreateTokenDialog, setOpenCreateTokenDialog ] = useState(false);
-  const [ openInspectGherkinDialog, setOpenInspectGherkinDialog ] = useState(true);
+  const [ openInspectGherkinDialog, setOpenInspectGherkinDialog ] = useState(false);
   const [ isResolving, setIsResolving ] = useState(false);
 
   useEffect(() => {

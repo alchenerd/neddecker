@@ -1,5 +1,6 @@
 import requests
 import json
+import re
 from typing import List, Dict, Any, Optional, Literal
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.pydantic_v1 import BaseModel, Field, validator, ValidationError
@@ -132,13 +133,13 @@ class GameRulesWriter:
                     ability_type, 'ability')
             # play gherkin
             play_gherkin = self.write_gherkin(ability, detected_keywords, ability_type, 'play')
-            play_gherkin = self.double_check_gherkin(card=card, ability=ability, gherkin=play_gherkin, ability_type=ability_type, gherkin_type='play')
+            #play_gherkin = self.double_check_gherkin(card=card, ability=ability, gherkin=play_gherkin, ability_type=ability_type, gherkin_type='play')
             print('\n[Play Gherkin]:')
             print(play_gherkin)
             print()
             # resolve gherkin
             resolve_gherkin = self.write_gherkin(ability, detected_keywords, ability_type, 'resolve')
-            resolve_gherkin = self.double_check_gherkin(card=card, ability=ability, gherkin=resolve_gherkin, ability_type=ability_type, gherkin_type='resolve')
+            #resolve_gherkin = self.double_check_gherkin(card=card, ability=ability, gherkin=resolve_gherkin, ability_type=ability_type, gherkin_type='resolve')
             print('\n[Resolve Gherkin]:')
             print(resolve_gherkin)
             print()
@@ -251,6 +252,15 @@ class GameRulesWriter:
         return chain.invoke({'rules_text': rules_text})['abilities']
 
     def get_ability_type(self, ability: str, detected_keywords: List[str]) -> Literal['spell', 'activated', 'triggered', 'static']:
+        #1. an ability with a colon is an activated ability
+        if ':' in ability:
+            return 'activated'
+        #2. an ability with 'when', 'whenever', 'at' is a triggered ability
+        triggered_expression = r'\b(when|whenever|at)\b'
+        re_reply = re.match(triggered_expression, ability.lower())
+        if re_reply:
+            return 'triggered'
+        # 3. LLM fallback
         prompt = ChatPromptTemplate.from_messages([
             ('system', "You are given a Magic: the Gathering ability rules text. You will classify the ability into one of a set of mutually exclusive categories."),
             ('system', CR_ABILITY_TYPE_DESCRIPTION),
@@ -259,7 +269,7 @@ class GameRulesWriter:
         print(keyword_knowledge)
         if keyword_knowledge:
             prompt.extend(keyword_knowledge)
-        prompt.append(('system', "Keep in mind that an ability that allows the player to cast with an alternative cost is a static ability that functions when the spell is on the stack."))
+        prompt.append(('system', "Keep in mind that an ability that is continuously true when it's in a zone would be count as a static ability."))
         prompt.append(('user', "Given the rules text {ability}, catergorize what kind of ability it is. If you are unsure, choose the best one among them."))
         print('[Before invoke]:', prompt, ability)
         model = self.llm.bind_tools([AbilityTypeResponse])
@@ -287,7 +297,7 @@ class GameRulesWriter:
         template_gherkin = {x: {} for x in ('spell', 'activated', 'triggered', 'static')}
         template_gherkin['spell']['play'] = "Given ~ is in owner's [hand|graveyard|exile]\nAnd owner could [cast a sorcery|cast an instant|activate mana ability]\nWhen owner gets priority\nAnd owner chooses [choices specified by the ability, such as mode, alternative cost, additional cost, value of X, if any]\nAnd owner distributes [distribution actions specified by the ability, if any]\nAnd owner targets [targets specified by the ability, if any; each different target type uses a statement]\nAnd owner determines the cost [total cost if you can determine it]\nAnd owner pays the cost [total cost of you can determine it]\nThen ~ is cast"
         template_gherkin['spell']['resolve'] = "Given ~ is the topmost object of the stack\nAnd ~ is not countered\nWhen ~ resolves\nThen [ability effect; each atomic game action uses a statement]"
-        template_gherkin['activated']['play'] = "Given ~ is [on the battlefield|in owner's hand|any zone that this ability could be activated\nAnd [owner|opponent|any player] could [cast a sorcery|cast an instant|activate mana ability]\nWhen [owner|opponent|any player] gets priority\nAnd [owner|opponent|any player] chooses [choices specified by the ability, such as mode, alternative cost, additional cost, value of X, if any]\nAnd [owner|opponent|any player] distributes [distribution actions specified by the ability, if any]\nAnd [owner|opponent|any player] targets [targets specified by the ability, if any; each different target type uses a statement]\nAnd [owner|opponent|any player] determines the cost [total cost if you can determine it]\nAnd [owner|opponent|any player] pays the cost [total cost of you can determine it]\nThen ~ is activated\nAnd put an activated ability that says [the rules text that describes the effect the ability has] on the top of the stack"
+        template_gherkin['activated']['play'] = "Given ~ is [on the battlefield|in owner's hand|any zone that this ability could be activated\nAnd [owner|opponent|any player] could [cast a sorcery|cast an instant|activate mana ability] (default is cast an instant)\nWhen [owner|opponent|any player] gets priority\nAnd [owner|opponent|any player] chooses [choices specified by the ability, such as mode, alternative cost, additional cost, value of X, if any]\nAnd [owner|opponent|any player] distributes [distribution actions specified by the ability, if any]\nAnd [owner|opponent|any player] targets [targets specified by the ability, if any; each different target type uses a statement]\nAnd [owner|opponent|any player] determines the cost [total cost if you can determine it]\nAnd [owner|opponent|any player] pays the cost [total cost of you can determine it]\nThen ~ is activated\nAnd put an activated ability that says [the rules text that describes the effect the ability has] on the top of the stack"
         template_gherkin['activated']['resolve'] = "Given an activated ability that says [the rules text that describes the effect the ability has] is the topmost object of the stack\nAnd the ability that says [the rules text that describes the effect the ability has] is not countered\nWhen the activated ability that says [the rules text that describes the effect the ability has] resolves\nThen [ability effect; each atomic game action uses a Then statement; actions that happen at the same time are grouped using the And keyword; sequential actions are separated using the Then keyword]"
         template_gherkin['triggered']['play'] = "Given ~ is [on the battlefield|in owner's hand|any zone that this ability could be triggered\nWhen [the requirements of the triggered ability; each atomic check uses a When statement]\nThen ~ is triggered\nAnd put a triggered ability that says [the rules text that describes the effect the ability has] on top of the stack"
         template_gherkin['triggered']['resolve'] = "Given a triggered ability that says [the rules text that describes the effect the ability has] is the topmost object of the stack\nAnd the triggered ability that says [the rules text that describes the effect the ability has] is not countered\nWhen the triggered ability that says [the rules text that describes the effect the ability has] resolves\nThen [ability effect; each atomic game action uses a statement; actions that happen at the same time are grouped using the And keyword; sequential actions are separated using the Then keyword]"
