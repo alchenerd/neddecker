@@ -236,45 +236,63 @@ class GameRulesWriter:
         oracle_text = card.get('oracle_text', None)
         if not oracle_text:
             faces = card['faces']
-            oracle_text = '---'.join(faces[face]['oracle_text'] for face in faces)
-        rules_text = str(oracle_text)\
-                .replace(card['name'], '~')\
-                .replace('your', "controller's")\
+            oracle_text = '\n\n'.join(faces[face]['oracle_text'] for face in faces)
+        rules_text = str(oracle_text) \
+                .replace(card['name'], '~') \
+                .replace('your', "controller's") \
                 .replace('you', 'controller')
         prompt = ChatPromptTemplate.from_messages([
             ('system', "You are given a Magic: the Gathering card's card text."),
             ('system', CR_ABILITY_TYPE_DESCRIPTION),
-            ('user', "Given the rules text {rules_text}:\n\nHow many abilities are there in the rules text? Answer with the rules text."),
+            ('user', "Given the rules text \"{rules_text}\", split the rules text into atomic abilities."),
         ])
         model = self.llm.bind_tools([AbilityResponse])
         parser = JsonOutputKeyToolsParser(key_name="AbilityResponse", first_tool_only=True)
         chain = prompt | model | parser
-        return chain.invoke({'rules_text': rules_text})['abilities']
+        retry = 3
+        while retry:
+            abilities = chain.invoke({'rules_text': rules_text})['abilities']
+            if all(ability in rules_text for ability in abilities):
+                return abilities
+            if retry == 3:
+                prompt.append(('ai', '\n'.join(abilities).replace('{', '{{').replace('}', '}}')))
+                prompt.append(('user', "Error: All ability texts must be excerpts of the original rule text. Please retry using the AbilityResponse."))
+            retry -= 1
+        if not retry:
+            # fall back to split('\n')
+            return rules_text.split('\n')
 
     def get_ability_type(self, ability: str, detected_keywords: List[str]) -> Literal['spell', 'activated', 'triggered', 'static']:
-        #1. an ability with a colon is an activated ability
+        # 1. an ability with a colon is an activated ability
         if ':' in ability:
             return 'activated'
-        #2. an ability with 'when', 'whenever', 'at' is a triggered ability
+
+        # 2. an ability with 'when', 'whenever', 'at' is a triggered ability
         triggered_expression = r'\b(when|whenever|at)\b'
         re_reply = re.match(triggered_expression, ability.lower())
         if re_reply:
             return 'triggered'
+
         # 3. LLM fallback
         prompt = ChatPromptTemplate.from_messages([
             ('system', "You are given a Magic: the Gathering ability rules text. You will classify the ability into one of a set of mutually exclusive categories."),
             ('system', CR_ABILITY_TYPE_DESCRIPTION),
         ])
+
         keyword_knowledge = [('system', self.kw_to_cr_map[kw]) for kw in detected_keywords]
         print(keyword_knowledge)
         if keyword_knowledge:
             prompt.extend(keyword_knowledge)
+
         prompt.append(('system', "Keep in mind that an ability that is continuously true when it's in a zone would be count as a static ability."))
         prompt.append(('user', "Given the rules text {ability}, catergorize what kind of ability it is. If you are unsure, choose the best one among them."))
+
         print('[Before invoke]:', prompt, ability)
+
         model = self.llm.bind_tools([AbilityTypeResponse])
         parser = JsonOutputKeyToolsParser(key_name="AbilityTypeResponse", first_tool_only=True)
         chain = prompt | model | parser
+
         return chain.invoke({'ability': ability})['abilitity_type']
 
     def write_gherkin(self, ability: str, detected_keywords: List[str], ability_type: Literal['spell', 'activated', 'triggered', 'static'], gherkin_type: Literal['play', 'resolve']) -> List[str]:
