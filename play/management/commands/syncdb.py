@@ -7,11 +7,26 @@ from os import path, listdir, unlink, utime
 from bs4 import BeautifulSoup
 from django.core.management.base import BaseCommand, CommandError
 from django.db.models.functions import Length
-from django.contrib.postgres.search import TrigramSimilarity
+from django.contrib.postgres.search import TrigramSimilarity, TrigramWordDistance
+from langchain_openai import ChatOpenAI
 from langchain_openai.embeddings import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
+from contextlib import suppress
 from play.models import Deck, Card, Face
+
+import sys
+import os
+import inspect
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+rootdir = os.path.dirname(currentdir + '/../../../')
+sys.path.insert(0, rootdir)
+
+from play.game_rules_writer import GameRulesWriter
+
+from dotenv import load_dotenv, find_dotenv
+load_dotenv(find_dotenv())
+
 
 class Command(BaseCommand):
     """
@@ -181,6 +196,10 @@ class Command(BaseCommand):
         txt = [x for x in txt_spans if x.text == 'TXT'][0]
         a = txt.find('a', href=True)
         comprehensive_rules_link = a['href']
+
+        # FIXME: temp hack because the site was buggy; remove when wotc fix the problem
+        comprehensive_rules_link = comprehensive_rules_link.replace(r'MagicCompRules', r'/MagicCompRules')
+
         print('Fetching Comprehension Rules from', comprehensive_rules_link)
         directory = 'wotc'
         fname = 'comprehensive_rules.txt'
@@ -219,6 +238,66 @@ class Command(BaseCommand):
         self.get_comprehensive_rules()
         self.create_rag_database()
 
+    def extract_keyword_abilities(self):
+        raw_document = None
+        with open('wotc/comprehensive_rules.txt') as f:
+            raw_document = f.read()
+        lines = [l for l in raw_document.split('\n') if l.startswith('702.')]
+        header = None
+        filename = ''
+        content = []
+        for line in lines:
+            detected = line.split(' ')[0].translate({ord(c): None for c in 'abcdefghijklmnopqrstuvwxyz'}).strip('.')
+            if detected != header:
+                # save content we've read so far
+                if content and filename:
+                    with open(filename, 'w') as f:
+                        f.write('\n'.join(content))
+                header = detected
+                if header in ('702', '702.1'):
+                    continue
+                ability = ('_'.join(line.split(' ')[1:]).lower())
+                ability = ''.join(c for c in ability if c.isalpha() or c == '_')
+                filename = 'wotc/keyword_abilities/' + ability + '.txt'
+                print(f'Saving keyword ability to {filename}')
+                content = []
+            content.append(line)
+        # save the last ability
+        if content and filename:
+            with open(filename, 'w') as f:
+                f.write('\n'.join(content))
+
+    def write_keyword_ability_gherkin_features(self):
+        self.naya = GameRulesWriter()
+        for filename in os.listdir('wotc/keyword_abilities/'):
+            skip = ('more_than_meets_the_eye.txt', 'ravenous.txt')
+            if filename in skip:
+                continue
+            if os.path.exists('wotc/regex/' + filename):
+                continue
+            print('writing rules for', filename)
+            ability_name = filename.split('.')[0].replace('_', ' ')
+            #example_card = Card.objects.filter(oracle_text__contains=ability_name).first()
+            # get the card that mentions the ability but its name not like the ability
+            try:
+                example_card = Card.objects.annotate(oracle_distance=TrigramWordDistance(ability_name.title(), 'oracle_text')).annotate(name_distance=TrigramWordDistance(ability_name.title(), 'name')).filter(oracle_distance__lte=0.3).filter(name_distance__gte=0.5).order_by(Length('type_line').desc(), '-oracle_distance', 'name_distance').first()
+                print('found example card', example_card)
+            except:
+                example_card = Face.objects.annotate(oracle_distance=TrigramWordDistance(ability_name.title(), 'oracle_text')).annotate(name_distance=TrigramWordDistance(ability_name.title(), 'name')).filter(oracle_distance__lte=0.3).filter(name_distance__gte=0.5).order_by(Length('type_line').desc(), '-oracle_distance', 'name_distance').first()
+                print('found example face', example_card)
+            finally:
+                example_rules_text = example_card.oracle_text.replace('{', '{{').replace('}', '}}') if example_card else ''
+            with open('wotc/keyword_abilities/' + filename) as f:
+                comprehensive_rules_text = f.read()
+            print(comprehensive_rules_text)
+            print(example_rules_text)
+            ability_regex = self.naya.write_regex(comprehensive_rules_text, example_rules_text)
+            print('regex:', ability_regex)
+            with open('wotc/regex/' + filename, 'w') as f:
+                f.write('\n'.join[*ability_regex, '\n', example_rules_text])
+            #abilities = self.naya.interpret_abilities(comprehensive_rules_text)
+            #print(abilities)
+
     def add_arguments(self, parser):
         parser.add_argument('--rag', action='store_true', help='Make a RAG database from comprehensive rules')
 
@@ -237,6 +316,9 @@ class Command(BaseCommand):
                 print('Updating scryfall...')
                 self.update_scryfall()
             self.mtggoldfish_align_card_name()
+            self.get_comprehensive_rules()
+            self.extract_keyword_abilities()
+            self.write_keyword_ability_gherkin_features()
         except Exception as e:
             raise CommandError('syncdb failed:', e)
         if 'rag' in kwargs and kwargs['rag']:

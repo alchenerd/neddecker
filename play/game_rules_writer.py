@@ -12,6 +12,7 @@ from langchain_openai import ChatOpenAI
 from langchain_openai.embeddings import OpenAIEmbeddings
 from langchain_core.runnables import RunnableLambda, RunnableParallel
 from langchain_chroma import Chroma
+from django.db.models import CharField, Value, F
 from dotenv import load_dotenv
 load_dotenv()
 from .rules import Rule
@@ -30,7 +31,7 @@ CR_ABILITY_TYPE_DESCRIPTION = """113.3. There are four general categories of abi
 
 class AbilityResponse(BaseModel):
     """Parsed list of abilities rules text."""
-    abilities: List[str] = Field(description="a list of abilities quoting the original rules text; separator is usually '.' or new line")
+    abilities: List[str] = Field(description="a list of interpreted abilities derived from the rules text")
 
 class AbilityTypeResponse(BaseModel):
     """Types of abilities."""
@@ -64,7 +65,7 @@ class GherkinResponse(BaseModel):
 
 class YesNoResponse(BaseModel):
     """Answer a yes or no question."""
-    yes_or_no: Literal['y', 'n'] = Field('yes or no; \"y\"for yes and \"n\" for no')
+    yes_or_no: Literal['y', 'n'] = Field('response to a yes-or-no question; answer \"y\"for yes or \"n\" for no')
 
     @validator('yes_or_no')
     def must_use_y_or_n(cls, v):
@@ -86,6 +87,15 @@ class DelayedTriggerWhenWhatResponse(BaseModel):
     trigger_what: str = Field(description="the content of the trigger when the delayed ability is triggered")
 
 
+class WriteRegexResponse(BaseModel):
+    """Submits a regex response."""
+    regex_expression: str = Field(description="the regex expression that can match the ability from the card text")
+    matches_example: str = Field(description="a mock rules text that the regex expression would match")
+
+class MultiWriteRegexResponse(BaseModel):
+    """Submits one or more regex responses."""
+    regex_list: List[WriteRegexResponse] = Field(description="one or more expressions that can match the ability (and its variants, if any) from the card text")
+
 class GameRulesWriter:
     llm = ChatOpenAI(model_name='gpt-3.5-turbo', temperature=0, max_tokens=4096)
     seen = {}
@@ -97,11 +107,15 @@ class GameRulesWriter:
         self.kw_to_cr_map = {}
 
     def write_rules(self, card: Dict[str, Any]) -> List[Rule]:
-        abilities = self.get_abilities(card)
+        rules_texts = self.split_rules_text(card)
+        print('[Rules Texts]:', rules_texts)
+        abilities = self.interpret_abilities(rules_texts)
         print('[Abilities]:', abilities)
         rules = []
         for ability in abilities:
-            rule_query_set = GameRule.objects.filter(card=get_card_orm_by_name(card['name']), ability=ability)
+            # check if our database has this ability
+            rule_query_set = GameRule.objects.annotate(value=Value(ability, output_field=CharField())
+                                                       ).filter(value__regex=F('ability_regex_expression'))
             if rule_query_set.exists():
                 rule_query_set = rule_query_set.order_by('order')
                 first_rule = rule_query_set.first()
@@ -151,14 +165,14 @@ class GameRulesWriter:
                 for line in gherkin.split('\n'):
                     rule['gherkins'].append(line)
                     rule['lambdas'].append('lambda context: None')
-                    GameRule.objects.create(card=get_card_orm_by_name(card['name']), ability=ability, ability_type=('mana' if is_mana_ability else ability_type), gherkin=line, order=i, lambda_code='lambda context: None')
+                    GameRule.objects.create(ability_regex_expression=ability, ability_type=('mana' if is_mana_ability else ability_type), gherkin=line, order=i, lambda_code='lambda context: None')
                     i += 1
             self.seen[ability] = rule
             rules.append(rule)
         return rules
 
     def is_mana_ability(self, ability: str) -> bool:
-        return 'add {' in ability.lower() and not 'target' in ability.lower()
+        return 'add {' in ability.lower() and 'target' not in ability.lower()
 
     def double_check_gherkin( \
             self, \
@@ -232,35 +246,89 @@ class GameRulesWriter:
         data = json.loads(response.content.decode('utf-8')).get('data')
         return data
 
-    def get_abilities(self, card: Dict[str, Any]) -> List[str]:
+    def get_oracle_text(self, card: Dict[str, Any]) -> str:
         oracle_text = card.get('oracle_text', None)
         if not oracle_text:
             faces = card['faces']
-            oracle_text = '\n\n'.join(faces[face]['oracle_text'] for face in faces)
-        rules_text = str(oracle_text) \
-                .replace(card['name'], '~') \
+            oracle_text = '\n'.join(faces[face]['oracle_text'] for face in faces)
+        name = card['name']
+        front_name = card.get('faces', {}).get('front', card['name'])
+        # In case of no back side, we need a name that WotC will never ever print on a card.
+        # WotC will never tell players to shread themselves, right?
+        # ...right?
+        back_name = card.get('faces', {}).get('back', 'Form of the Chaos Confetti')
+        oracle_text = str(oracle_text) \
+                .replace(name, '~') \
+                .replace(front_name, '~') \
+                .replace(back_name, '~') \
                 .replace('your', "controller's") \
-                .replace('you', 'controller')
+                .replace('you', 'controller') \
+                .lower()
+        return oracle_text
+
+    def group_listed_text(self, rules_texts: List[str]) -> List[str]:
+        """ Some rules text on the card represents a table or a list.
+        They and the previous word chunk will be merged into one single ability text. """
+        ret = []
+        buffer = []
+        for line in rules_texts:
+            if '|' in line:
+                buffer.append(line)
+            elif '•' in line:
+                buffer.append(line)
+            elif buffer:
+                ret[-1] = ret[-1] + '\n'.join(buffer)
+                buffer = []
+            else:
+                ret.append(line)
+        return ret
+
+    def split_rules_text(self, card: Dict[str, Any]) -> List[str]:
+        oracle_text = self.get_oracle_text(card)
+        splitted = oracle_text.split('\n')
+        grouped = self.group_listed_text(oracle_text)
+        # from this point oracle_text becomes rules_text that one element maps to one or more abilities
+        return grouped
+
+    def write_regex(self, info: str, example: str) -> List[str]:
+        """ Write a regex expression using the information given. """
+        prompt = ChatPromptTemplate.from_messages([
+            ('system', "You are a skilled, competent regex writing expert. You will be given rules about a specific Magic: the Gathering ability. Write the regex expression that will match the described ability from card texts."),
+            ('user', '{info}'),
+            ('user', 'Regex expressions for one-word or one-phrase abilities should be wrapped with word boundaries.'),
+            ('user', "Also, keep in mind that there won't be any square brackets in actual card texts (except for the special-case abiliity 'Cleave'.)"),
+            ('user', "Example target card text: {example}"),
+        ])
+        model = self.llm.bind_tools([MultiWriteRegexResponse])
+        parser = JsonOutputKeyToolsParser(key_name="MultiWriteRegexResponse", first_tool_only=True)
+        chain = prompt | model | parser
+        reply = chain.invoke({'info': info, 'example': example})
+        print('LLM replies:', reply)
+        try:
+            regex_list = reply['regex_list']
+            ret = [regex['regex_expression'] for regex in regex_list]
+        except:
+            ret = None
+        return ret or ['',]
+
+    def interpret_abilities(self, rules_texts: List[str], additional_information=None) -> List[str]:
         prompt = ChatPromptTemplate.from_messages([
             ('system', "You are given a Magic: the Gathering card's card text."),
             ('system', CR_ABILITY_TYPE_DESCRIPTION),
-            ('user', "Given the rules text \"{rules_text}\", split the rules text into atomic abilities."),
         ])
+        if additional_information:
+            prompt.append(('system', '{additional_information}'))
+        prompt.append(('user', "Given the rules text \"{rules_text}\", interpret the rules text into one or more abilities."))
         model = self.llm.bind_tools([AbilityResponse])
         parser = JsonOutputKeyToolsParser(key_name="AbilityResponse", first_tool_only=True)
         chain = prompt | model | parser
-        retry = 3
-        while retry:
-            abilities = chain.invoke({'rules_text': rules_text})['abilities']
-            if all(ability in rules_text for ability in abilities):
-                return abilities
-            if retry == 3:
-                prompt.append(('ai', '\n'.join(abilities).replace('{', '{{').replace('}', '}}')))
-                prompt.append(('user', "Error: All ability texts must be excerpts of the original rule text. Please retry using the AbilityResponse."))
-            retry -= 1
-        if not retry:
-            # fall back to split('\n')
-            return rules_text.split('\n')
+        ret = []
+        for rules_text in rules_texts:
+            parameters = {'rules_text': rules_text}
+            if additional_information:
+                parameters['additional_information'] = additional_information
+            abilities = chain.invoke(parameters)['abilities']
+            ret.extend(abilities)
 
     def get_ability_type(self, ability: str, detected_keywords: List[str]) -> Literal['spell', 'activated', 'triggered', 'static']:
         # 1. an ability with a colon is an activated ability

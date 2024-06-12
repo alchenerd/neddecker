@@ -124,15 +124,14 @@ class GameRule(models.Model):
     """
     Rule of a single ability printed on a card
     """
-    card = models.ForeignKey(Card, on_delete=models.CASCADE, related_name='game_rule', verbose_name="Card this rule applies to")
-    ability = models.CharField(max_length=1023, verbose_name="Text describing a single effect of the card")
-    order = models.IntegerField(verbose_name="Order of execution. Lower numbers are executed first. Sort by gherkin statement order.")
+    ability_regex_expression = models.CharField(max_length=1023, verbose_name="Regex expression that matches target Magic: the Gathering ability.")
+    gherkin_order = models.IntegerField(verbose_name="Order of execution of the gherkin rules. Lower numbers are executed first.")
     ability_type = models.CharField(max_length=255, verbose_name="Type of the ability", choices=ABILITY_TYPES)
     gherkin = models.CharField(max_length=1023, verbose_name="One-line statement in Gherkin syntax describing the card's effect. Can be a Given, When, or Then statement. And and But are allowed as well.")
     lambda_code = models.TextField(verbose_name="Python lambda function implementing the game logic based on the gherkin statement. Provided by the LLM coder. Function signature: Callable[[context: Any], bool] for Given/When statements, Callable[[context: Any], List[Any]] for Then statements.")
 
     class Meta:
-        unique_together = (('card', 'ability', 'order'),)  # Composite key
+        unique_together = (('ability_regex_expression', 'gherkin_order'),)  # Composite key
 
     def __str__(self):
-        return f"{self.card.name} - {self.ability}"
+        return f"GameRule <{self.ability_regex_expression}>"
