@@ -117,7 +117,7 @@ class GameRulesWriter:
             rule_query_set = GameRule.objects.annotate(value=Value(ability, output_field=CharField())
                                                        ).filter(value__regex=F('ability_regex_expression'))
             if rule_query_set.exists():
-                rule_query_set = rule_query_set.order_by('order')
+                rule_query_set = rule_query_set.order_by('gherkin_order')
                 first_rule = rule_query_set.first()
                 rule = {'ability': ability, 'ability_type': first_rule.ability_type, 'gherkins': [], 'lambdas': []}
                 for obj in rule_query_set:
@@ -165,7 +165,7 @@ class GameRulesWriter:
                 for line in gherkin.split('\n'):
                     rule['gherkins'].append(line)
                     rule['lambdas'].append('lambda context: None')
-                    GameRule.objects.create(ability_regex_expression=ability, ability_type=('mana' if is_mana_ability else ability_type), gherkin=line, order=i, lambda_code='lambda context: None')
+                    GameRule.objects.create(ability_regex_expression=ability, ability_type=('mana' if is_mana_ability else ability_type), gherkin=line, gherkin_order=i, lambda_code='lambda context: None')
                     i += 1
             self.seen[ability] = rule
             rules.append(rule)
@@ -286,7 +286,7 @@ class GameRulesWriter:
     def split_rules_text(self, card: Dict[str, Any]) -> List[str]:
         oracle_text = self.get_oracle_text(card)
         splitted = oracle_text.split('\n')
-        grouped = self.group_listed_text(oracle_text)
+        grouped = self.group_listed_text(splitted)
         # from this point oracle_text becomes rules_text that one element maps to one or more abilities
         return grouped
 
@@ -329,6 +329,7 @@ class GameRulesWriter:
                 parameters['additional_information'] = additional_information
             abilities = chain.invoke(parameters)['abilities']
             ret.extend(abilities)
+        return ret
 
     def get_ability_type(self, ability: str, detected_keywords: List[str]) -> Literal['spell', 'activated', 'triggered', 'static']:
         # 1. an ability with a colon is an activated ability

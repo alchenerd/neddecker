@@ -135,3 +135,15 @@ class GameRule(models.Model):
 
     def __str__(self):
         return f"GameRule <{self.ability_regex_expression}>"
+
+class KeywordAbility(models.Model):
+    """Records the keyword abilities of a card"""
+    card = models.ForeignKey(Card, on_delete=models.CASCADE)
+    ability = models.CharField(max_length=255, verbose_name="Keyword ability of the card")
+
+    class Meta:
+        unique_together = ['card', 'ability']
+        indexes = [models.Index(fields=['card'])]
+
+    def __str__(self):
+        return f"kw_ability <{self.card} - {self.ability}>"

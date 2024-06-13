@@ -13,7 +13,7 @@ from langchain_openai.embeddings import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
 from contextlib import suppress
-from play.models import Deck, Card, Face
+from play.models import Deck, Card, Face, KeywordAbility
 
 import sys
 import os
@@ -117,6 +117,7 @@ class Command(BaseCommand):
         fname = listdir(directory)[0]
         fpath = path.join(directory, fname)
         obj_cards = []
+        obj_kwabs = []
         obj_faces = []
         with open(fpath, 'r', encoding='utf-8') as f:
             for cards in ijson.items(f, ''):
@@ -140,6 +141,11 @@ class Command(BaseCommand):
                             layout=card.get('layout', ''),
                             )
                     obj_cards.append(obj_card)
+
+                    if card.get('keywords', []):
+                        for ability in card.get('keywords'):
+                            obj_kwabs.append(KeywordAbility(card=obj_card, ability=ability))
+
                     if card.get('card_faces', None):
                         print(f"Processing faces of {card['name']}")
                         faces = card['card_faces']
@@ -160,6 +166,7 @@ class Command(BaseCommand):
                             )
                             obj_faces.append(obj_face)
         Card.objects.bulk_create(obj_cards, batch_size=100)
+        KeywordAbility.objects.bulk_create(obj_kwabs, batch_size=100)
         Face.objects.bulk_create(obj_faces, batch_size=100)
         print(f'Scyfall JSON file parsed and added.')
         with open(fpath + '.done', 'a'):
@@ -270,7 +277,11 @@ class Command(BaseCommand):
     def write_keyword_ability_gherkin_features(self):
         self.naya = GameRulesWriter()
         for filename in os.listdir('wotc/keyword_abilities/'):
-            skip = ('more_than_meets_the_eye.txt', 'ravenous.txt')
+            skip = (
+                'more_than_meets_the_eye.txt',
+                'ravenous.txt',
+                'assist.txt',
+            )
             if filename in skip:
                 continue
             if os.path.exists('wotc/regex/' + filename):
@@ -294,9 +305,15 @@ class Command(BaseCommand):
             ability_regex = self.naya.write_regex(comprehensive_rules_text, example_rules_text)
             print('regex:', ability_regex)
             with open('wotc/regex/' + filename, 'w') as f:
-                f.write('\n'.join[*ability_regex, '\n', example_rules_text])
+                f.write('\n'.join([*ability_regex, '\n', example_rules_text]))
             #abilities = self.naya.interpret_abilities(comprehensive_rules_text)
             #print(abilities)
+
+    def enumerate_keyword_abilities_and_save(self):
+        abilities = KeywordAbility.objects.values_list('ability', flat=True).distinct()
+        with open('wotc/keyword_abilities.txt', 'w') as f:
+            f.write('\n'.join(abilities))
+        print(f'{len(abilities)} kw abilities have been written to the toplevel list')
 
     def add_arguments(self, parser):
         parser.add_argument('--rag', action='store_true', help='Make a RAG database from comprehensive rules')
@@ -318,6 +335,7 @@ class Command(BaseCommand):
             self.mtggoldfish_align_card_name()
             self.get_comprehensive_rules()
             self.extract_keyword_abilities()
+            self.enumerate_keyword_abilities_and_save()
             self.write_keyword_ability_gherkin_features()
         except Exception as e:
             raise CommandError('syncdb failed:', e)
