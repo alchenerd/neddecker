@@ -23,6 +23,7 @@ rootdir = os.path.dirname(currentdir + '/../../../')
 sys.path.insert(0, rootdir)
 
 from play.game_rules_writer import GameRulesWriter
+from play.models import get_card_orm_by_name
 
 from dotenv import load_dotenv, find_dotenv
 load_dotenv(find_dotenv())
@@ -82,13 +83,9 @@ class Command(BaseCommand):
         Checks scryfall API for latest default card bulk data; if there is unseen bulk data available, download it and save it in scryfall/; all other files in scryfall/ will be purged.
         """
         # fetch the metadata from scryfall api
-        response = requests.get('https://api.scryfall.com/bulk-data')
+        response = requests.get('https://api.scryfall.com/bulk-data/oracle-cards')
         r_json = json.loads(response.content.decode('utf-8'))
-        data = r_json['data']
-        uri = ''
-        for record in data:
-            if record['type'] == 'default_cards':
-                uri = record['download_uri']
+        uri = r_json['download_uri']
         fname = uri.split('/')[-1]
         directory = 'scryfall'
         fpath = path.join(directory, fname)
@@ -103,6 +100,7 @@ class Command(BaseCommand):
             except OSError as e:
                 print(f'Failed to delete {fpath_}. Reason: {e}')
         # download bulk data from scryfall
+        print(uri)
         response = requests.get(uri)
         with open(fpath, 'wb') as f:
             f.write(response.content)
@@ -122,7 +120,7 @@ class Command(BaseCommand):
         with open(fpath, 'r', encoding='utf-8') as f:
             for cards in ijson.items(f, ''):
                 for card in cards:
-                    if card['booster'] == False or card['textless'] == True:
+                    if card['textless'] == True:
                         continue
                     print(f"Processing {card['name']}")
                     obj_card = Card(
@@ -185,10 +183,10 @@ class Command(BaseCommand):
                 splitted = line.split(' ')
                 count = splitted[0]
                 name = ' '.join(splitted[1:])
-                searched_card = Card.objects.filter(name=name).first()
+                searched_card = get_card_orm_by_name(name)
                 if not searched_card:
                     print(f'Before: {name}')
-                    trig_card = Card.objects.annotate(similarity=TrigramSimilarity('name', name),).filter(similarity__gt=0.3).order_by('-similarity', Length('card_image_uri').desc()).first()
+                    trig_card = Card.objects.annotate(similarity=TrigramSimilarity('name', name),).filter(similarity__gt=0.3).order_by('-similarity', Length('oracle_text').desc()).first()
                     name = trig_card.name
                     print(f'After: {name}')
                 new_decklist += ' '.join((count, name)) + '\r\n'
@@ -203,10 +201,6 @@ class Command(BaseCommand):
         txt = [x for x in txt_spans if x.text == 'TXT'][0]
         a = txt.find('a', href=True)
         comprehensive_rules_link = a['href']
-
-        # FIXME: temp hack because the site was buggy; remove when wotc fix the problem
-        comprehensive_rules_link = comprehensive_rules_link.replace(r'MagicCompRules', r'/MagicCompRules')
-
         print('Fetching Comprehension Rules from', comprehensive_rules_link)
         directory = 'wotc'
         fname = 'comprehensive_rules.txt'

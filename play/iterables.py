@@ -61,11 +61,6 @@ class MtgTurnsAndPhases():
         self.turn_index = 0
 
     def __iter__(self):
-        self.turn_count = 1
-        self.turn_index = 0
-        self.phase_queue = []
-        self.phase_queue.extend(list(MtgTurnsAndPhases.ONE_SHOT_PSEUDO_PHASES))
-        self.phase_queue.extend(list(MtgTurnsAndPhases.PHASES_AND_STEPS))
         return self
 
     def __next__(self):

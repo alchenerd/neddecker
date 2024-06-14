@@ -26,7 +26,7 @@ class Card(models.Model):
     loyalty = models.CharField(max_length=255, blank=True) # for planeswalkers
     mana_cost = models.CharField(max_length=255, blank=True) # e.g. "{4}{G}{G}"
     name = models.CharField(max_length=255) # e.g. "Colossal Dreadmaw"
-    oracle_text = models.CharField(max_length=1023, blank=True) # e.g. "Trample"
+    oracle_text = models.CharField(blank=True) # e.g. "Trample"
     power = models.CharField(max_length=255, blank=True) # e.g. "6"
     produced_mana = models.CharField(max_length=255, blank=True) # for mana sources, see colors
     toughness = models.CharField(max_length=255, blank=True) # e.g. "6"
@@ -67,7 +67,7 @@ class Face(models.Model):
     loyalty = models.CharField(max_length=255, blank=True)
     mana_cost = models.CharField(max_length=255, blank=True)
     name = models.CharField(max_length=255) # name of this face
-    oracle_text = models.TextField(max_length=1023, blank=True)
+    oracle_text = models.TextField(blank=True)
     power = models.CharField(max_length=255, blank=True)
     toughness = models.CharField(max_length=255, blank=True)
     type_line = models.CharField(max_length=255, blank=True)

@@ -849,7 +849,7 @@ SYSTEM_RULE_UNTAP_STEP_PHASING = [
         lambda context: context.game.phase == 'untap step',
     ),
     (
-        'When the game is at the begining of the untap step',
+        'When the game is at the beginning of the untap step',
         lambda context: len(context.events) == 1 and 'untap step' == context.matched_event[0],
     ),
     (
@@ -910,41 +910,27 @@ SYSTEM_RULE_UNTAP_STEP_PROCEED = [
         lambda context: len(context.events) == 1 and 'handle_untap_step_done' == context.matched_event[0],
     ),
     (
-        'Then call handle_untap_step',
+        'Then proceed to the upkeep step',
         lambda context: [['next_step']],
     ),
 ]
 
-def scan_all_visible_zones(context):
-    ret = [*context.events]
-    ret.append(['scan', None, 'stack'])
-    for i, player in enumerate(context.game.players):
-        ret.append(['scan', i, 'hand'])
-        ret.append(['scan', i, 'battlefield'])
-        ret.append(['scan', i, 'graveyard'])
-        ret.append(['scan', i, 'exile'])
-        ret.append(['scan', i, 'command'])
-    ret.append(['scanning'])
-    return ret
-
-SYSTEM_RULE_SCAN_CARD = [
+# FIXME: make generic priority giver rules
+SYSTEM_RULE_UPKEEP_STEP_GIVE_PRIORITY = [
     (
-        'Given the game is in any of phases and steps of a turn cycle',
-        lambda context: any(context.game.phase == PNS[0] for PNS in MtgTnP.PHASES_AND_STEPS),
+        'Given the game is in the upkeep step',
+        lambda context: context.game.phase == 'upkeep step'
     ),
     (
-        'And there exists more than one unscanned card in visible zone',
-        lambda context: any(card.get('rules', None) == None for card in context.game.get_visible_cards())
+        'When the game is at the beginning of the upkeep step',
+        lambda context: len(context.events) == 1 and 'upkeep step' == context.matched_event[0],
     ),
     (
-        'When the game is not scanning',
-        lambda context: not any('scanning' in e for e in context.events),
-    ),
-    (
-        'Then scan all visible zones',
-        scan_all_visible_zones,
+        'Then the game gives priority to an appropriate player',
+        lambda context: [*context.events, ['give_priority', [n for n in range(len(context.game.players)) if ['pass_priotity', context.game.players[n]] not in context.events][0], []]],
     ),
 ]
+
 
 # Create rules for the engine
 CHOOSE_STARTING_PLAYER_RULES = (
@@ -993,13 +979,17 @@ UNTAP_STEP_RULES = [
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_UNTAP_STEP_PROCEED)),
 ]
 
+UPKEEP_STEP_RULES = [
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_UPKEEP_STEP_GIVE_PRIORITY)),
+]
+
 # EVERYTHING
 SYSTEM_RULES = (
     *CHOOSE_STARTING_PLAYER_RULES,
     *REVEAL_COMPANION_RULES,
     *MULLIGAN_RULES,
     *START_OF_GAME_RULES,
-    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SCAN_CARD)), # always scan all cards before turn loop
     *BEGINNING_PHASE_RULES,
     *UNTAP_STEP_RULES,
+    *UPKEEP_STEP_RULES,
 )

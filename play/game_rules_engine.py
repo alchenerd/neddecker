@@ -27,22 +27,25 @@ class GameRulesEngine:
         self.abort = False
 
     def _repl(self, data:str) -> None:
-        self.input = json.loads(data)
-        self.halt = False
-        self.abort = False
-        while not self.abort and not self.halt:
-            self._read()
-            self._evaluate()
-            self._execute()
-            #print(self.events)
-            if not self.events:
-                break
-            """
-            print('[* end of cycle report *]')
-            print('\n'.join(map(str, self.events)))
-            _ = input('[* end of cycle press any key to continue *]')
-            """
-        #print(self.abort, self.halt)
+        try:
+            self.input = json.loads(data)
+            self.halt = False
+            self.abort = False
+            while not self.abort and not self.halt:
+                self._read()
+                self._evaluate()
+                self._execute()
+                #print(self.events)
+                if not self.events:
+                    break
+                """
+                print('[* end of cycle report *]')
+                print('\n'.join(map(str, self.events)))
+                _ = input('[* end of cycle press any key to continue *]')
+                """
+            #print(self.abort, self.halt)
+        except Exception as e:
+            self.consumer.send_log(f'Something went wrong: {str(e)}')
 
     def _read(self) -> None:
         """ Translate input into one or more event. """
@@ -335,7 +338,7 @@ class GameRulesEngine:
         print(self.input)
         who_str = self.input['who']
         actions = self.input['actions']
-        grouping = self.input['grouping']
+        grouping = self.input.get('grouping', [])
         self.game.record_actions(actions, grouping)
         while self.game.actions:
             action = self.actions.pop(0)
@@ -481,6 +484,7 @@ class GameRulesEngine:
         who_id, interactable, *_ = args
         assert who_id is None or isinstance(who_id, int) and who_id < len(self._match.game.players)
         player = self._match.game.players[who_id] if who_id is not None else None
+        self.consumer.send_log(f'{player.player_name} gets priority')
         payload = self.game.get_payload()
         payload['interactable'] = interactable
         self.events = [e for e in self.events if 'interactable' not in e[0]]
@@ -573,10 +577,11 @@ class GameRulesEngine:
         self.update_game_state()
         
     def handle_phasing(self, *args):
+        self.consumer.send_log(f"Beginning phase - Untap step - SBA: handle phasing")
         who = [p for p in self.game.players if p.player_name == self.game.whose_turn][0]
         battlefield = who.battlefield
         for permanent in battlefield:
-            if 'is_phased_out' in permanent.annotations:
+            if 'is_phased_out' in permanent['annotations']:
                 permanent['is_phased_out'] = not permanent['is_phased_out']
                 continue
             if 'phasing' in permanent.get('abilities', []) and not permanent.get('is_phased_out', False):
@@ -584,6 +589,7 @@ class GameRulesEngine:
         self.events = [['handle_phasing_done']]
 
     def handle_day_night(self, *args):
+        self.consumer.send_log(f"Beginning phase - Untap step - SBA: handle day/night")
         game = self.game
         if not getattr(game, 'is_day', None):
             self.events = [['handle_day_night_done']]
@@ -596,6 +602,7 @@ class GameRulesEngine:
         self.events.append(['handle_day_night_done'])
 
     def handle_untap_step(self, *args):
+        self.consumer.send_log(f"Beginning phase - Untap step - SBA: untap all")
         who = [p for p in self.game.players if p.player_name == self.game.whose_turn][0]
         battlefield = who.battlefield
         for permanent in battlefield:
