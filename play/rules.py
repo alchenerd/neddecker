@@ -926,10 +926,77 @@ SYSTEM_RULE_UPKEEP_STEP_GIVE_PRIORITY = [
         lambda context: len(context.events) == 1 and 'upkeep step' == context.matched_event[0],
     ),
     (
-        'Then the game gives priority to an appropriate player',
-        lambda context: [*context.events, ['give_priority', [n for n in range(len(context.game.players)) if ['pass_priotity', context.game.players[n]] not in context.events][0], []]],
+        'Then the player has priority',
+        lambda context: [*context.events, ['player_has_priority']],
     ),
 ]
+
+
+# before giving priority, state-based actions are checked
+SYSTEM_RULE_PRIORITY_CHECK_SBA = [
+    (
+        'Given the game is in a phase or step that gives players priority',
+        lambda context: bool(context.game.stack) or context.game.player_has_priority,
+    ),
+    (
+        'When the game is ready to give priority to players',
+        lambda context: 'player_has_priority' == context.matched_event[0],
+    ),
+    (
+        'And state-based actions are untouched',
+        lambda context: not any('sba' in e[0] for e in context.events),
+    ),
+    (
+        'Then call check_sba',
+        lambda context: [*context.events, ['check_sba']],
+    ),
+]
+
+def give_priority_to_appropriate_player(context) -> List[Any]:
+    game = context.game
+    players = game.players
+    stack = game.stack
+    # initialize i as the active_player
+    i = [i for i, p in enumerate(players) if p.player_name == game.whose_turn][0]
+    # if stack is not empty, check starts from the controller of top of stack
+    if stack:
+        card = stack[-1]
+        i = card.get('annotations', {}).get('controller')
+    passed_ids = {e[1] for e in context.events if e[0] == 'pass_priotity'}
+    n = len(players)
+    for _ in range(n):
+        if i not in passed_ids:
+            return [*context.events, ['give_priority', i, []]]
+        i = (i + 1) % n
+
+# then if sba check is done, give priority
+SYSTEM_RULE_PRIORITY_GIVE_PRIORITY = [
+    (
+        'Given the game is in a phase or step that gives players priority',
+        lambda context: bool(context.game.stack) or context.game.player_has_priority,
+    ),
+    (
+        'When the game has done checking state-based action',
+        lambda context: 'check_sba_done' == context.matched_event[0],
+    ),
+    (
+        'And the game is not giving out priority',
+        lambda context: not any('give_priority' == e[0] for e in context.events),
+    ),
+    (
+        'And the game is not pending pass priority',
+        lambda context: not any('pending_pass_priority' == e[0] for e in context.events),
+    ),
+    (
+        'Then call give_priority with appropriate player',
+        give_priority_to_appropriate_player,
+    ),
+]
+
+# then player passes priority
+SYSTEM_RULE_PRIORITY_HANDLE_PASS_PRIORITY = []
+# when all players pass priority, resolve top of stack or move to next step/phase
+SYSTEM_RULE_PRIORITY_HANDLE_ALL_PASS_PRIORITY = []
 
 
 # Create rules for the engine
@@ -983,6 +1050,11 @@ UPKEEP_STEP_RULES = [
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_UPKEEP_STEP_GIVE_PRIORITY)),
 ]
 
+GENERAL_PRIORITY_RULES = [
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_PRIORITY_CHECK_SBA)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_PRIORITY_GIVE_PRIORITY)),
+]
+
 # EVERYTHING
 SYSTEM_RULES = (
     *CHOOSE_STARTING_PLAYER_RULES,
@@ -991,5 +1063,6 @@ SYSTEM_RULES = (
     *START_OF_GAME_RULES,
     *BEGINNING_PHASE_RULES,
     *UNTAP_STEP_RULES,
+    *GENERAL_PRIORITY_RULES,
     *UPKEEP_STEP_RULES,
 )

@@ -341,7 +341,7 @@ class GameRulesEngine:
         grouping = self.input.get('grouping', [])
         self.game.record_actions(actions, grouping)
         while self.game.actions:
-            action = self.actions.pop(0)
+            action = self.game.actions.pop(0)
             self.game.apply_action(action)
         who = [p for p in self.game.players if p.player_name == who_str][0]
         assert who and isinstance(who, Player)
@@ -577,7 +577,7 @@ class GameRulesEngine:
         self.update_game_state()
         
     def handle_phasing(self, *args):
-        self.consumer.send_log(f"Beginning phase - Untap step - SBA: handle phasing")
+        self.consumer.send_log(f"Beginning phase - Untap step - TBA: handle phasing")
         who = [p for p in self.game.players if p.player_name == self.game.whose_turn][0]
         battlefield = who.battlefield
         for permanent in battlefield:
@@ -589,7 +589,7 @@ class GameRulesEngine:
         self.events = [['handle_phasing_done']]
 
     def handle_day_night(self, *args):
-        self.consumer.send_log(f"Beginning phase - Untap step - SBA: handle day/night")
+        self.consumer.send_log(f"Beginning phase - Untap step - TBA: handle day/night")
         game = self.game
         if not getattr(game, 'is_day', None):
             self.events = [['handle_day_night_done']]
@@ -602,16 +602,21 @@ class GameRulesEngine:
         self.events.append(['handle_day_night_done'])
 
     def handle_untap_step(self, *args):
-        self.consumer.send_log(f"Beginning phase - Untap step - SBA: untap all")
+        self.consumer.send_log(f"Beginning phase - Untap step - TBA: untap all")
         who = [p for p in self.game.players if p.player_name == self.game.whose_turn][0]
         battlefield = who.battlefield
         for permanent in battlefield:
             self.events.append(['untap', permanent])
         self.events.append(['handle_untap_step_done'])
 
+    def check_sba(self, *args):
+        # FIXME: implement state-based action checks here
+        #raise Exception('check sba')
+        self.events.append(['check_sba_done'])
+
     def untap(self, *args):
         permanent, *_ = args
-        permanent['annotations']['is_tapped'] = False
+        permanent['annotations']['isTapped'] = False
 
     def update_game_state(self):
         payload = self.game.get_payload(is_update=True)

@@ -102,7 +102,7 @@ class Ned():
 
     def interact_one(self, data):
         """Interact with up to one card based on the board state"""
-        print(data)
+        #print(data)
         # the player can see: all battlefields, all graveyards, all exiles, player's hand
         prompt = ChatPromptTemplate.from_messages(["user", "(Your are Ned Decker. You are playing an online Magic: the Gathering game. You glance at {zone}, and see:\n\n```json\n{data}```\n\nPlease summarize the zone and describe what you see, highlighting what you should pay attention on as a player."])
         chain = prompt | self.llm | StrOutputParser()
@@ -119,7 +119,11 @@ class Ned():
         board_state_description = f"Opponent's battlefield:\n{opponent_battlefield_human_readable_string}\n\nYour battlefield:\n {self_battlefield_human_readable_string}\n\nOppponent's graveyard:\n{opponent_graveyard_human_readable_string}\n\nYour graveyard:\n{self_graveyard_human_readable_string}\n\nOpponent's exile zone:\n{opponent_exile_human_readable_string}\n\nYour exile zone:\n{self_exile_human_readable_string}\n\nYour hand:\n{self_hand_human_readable_string}"
         prompt = ChatPromptTemplate.from_messages(["user", "(Your are Ned Decker. You are playing an online Magic: the Gathering game.\n\n{board_state}\n\nInteractable cards:\n\n{interactable}\n\nPlease answer with one sentence: the name and the in_game_id of the card that you want to interact with, or \"None\" if you want to pass the interaction window without doing anything."])
         chain = prompt | self.llm | StrOutputParser()
+        print(prompt)
+        print(board_state_description)
+        print(interactable)
         response = chain.invoke({'board_state': board_state_description, 'interactable': interactable})
+        print(response)
         game_id_expr = r'\b[a-zA-Z](\d+)\#(\d+)\b'
         result = re.search(game_id_expr, response)
         if result is None:
