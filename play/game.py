@@ -341,9 +341,13 @@ class Game:
         self.actions = grouped
 
     def apply_action(self, action):
+        if 'group' in action:
+            action = action.get('group')
+        if isinstance(action, list):
+            action = action[0]
         print("Applying an action!")
         print(action)
-        target_id = action['targetId']
+        target_id = action.get('targetId', None)
         who = action.get('who', None)
         if not who and target_id:
             who = target_id[0] # n for ned or u for user
@@ -436,6 +440,10 @@ class Game:
                 assert player
                 player.hp = action['value']
                 return
+            case 'pass':
+                pass
+            case _:
+                raise Exception('Unknown action type')
 
 
     def is_board_sane(self, board):

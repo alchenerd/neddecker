@@ -961,13 +961,15 @@ def give_priority_to_appropriate_player(context) -> List[Any]:
     # if stack is not empty, check starts from the controller of top of stack
     if stack:
         card = stack[-1]
-        i = card.get('annotations', {}).get('controller')
-    passed_ids = {e[1] for e in context.events if e[0] == 'pass_priotity'}
+        who_name = card.get('annotations', {}).get('controller')
+        i = [i for i, p in enumerate(players) if p.players == who_name][0]
+    passed_players = {e[1] for e in context.events if e[0] == 'pass_priority'}
     n = len(players)
     for _ in range(n):
-        if i not in passed_ids:
+        if players[i] not in passed_players:
             return [*context.events, ['give_priority', i, []]]
         i = (i + 1) % n
+    return [['next_step']]
 
 # then if sba check is done, give priority
 SYSTEM_RULE_PRIORITY_GIVE_PRIORITY = [
@@ -993,8 +995,34 @@ SYSTEM_RULE_PRIORITY_GIVE_PRIORITY = [
     ),
 ]
 
+def current_player_passed_priority(context) -> bool:
+    events = context.events
+    passed_events = [e for e in events if e[0] == 'pass_priority']
+    if not passed_events:
+        return False
+    pending_event = [e for e in events if e[0] == 'pending_pass_priority'][0]
+    pending_player = context.game.players[pending_event[1]]
+    return any(e[1] == pending_player for e in passed_events)
+
 # then player passes priority
-SYSTEM_RULE_PRIORITY_HANDLE_PASS_PRIORITY = []
+SYSTEM_RULE_PRIORITY_HANDLE_PASS_PRIORITY = [
+    (
+        'Given the game is in a phase or step that gives players priority',
+        lambda context: bool(context.game.stack) or context.game.player_has_priority,
+    ),
+    (
+        'When the game is waiting for a player to pass priority',
+        lambda context: 'pending_pass_priority' == context.matched_event[0],
+    ),
+    (
+        'And that player has passed priority',
+        current_player_passed_priority,
+    ),
+    (
+        'Then consume the pending priority event',
+        consume_line,
+    ),
+]
 # when all players pass priority, resolve top of stack or move to next step/phase
 SYSTEM_RULE_PRIORITY_HANDLE_ALL_PASS_PRIORITY = []
 
@@ -1053,6 +1081,7 @@ UPKEEP_STEP_RULES = [
 GENERAL_PRIORITY_RULES = [
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_PRIORITY_CHECK_SBA)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_PRIORITY_GIVE_PRIORITY)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_PRIORITY_HANDLE_PASS_PRIORITY)),
 ]
 
 # EVERYTHING
