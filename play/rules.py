@@ -962,7 +962,7 @@ def give_priority_to_appropriate_player(context) -> List[Any]:
     if stack:
         card = stack[-1]
         who_name = card.get('annotations', {}).get('controller')
-        i = [i for i, p in enumerate(players) if p.players == who_name][0]
+        i = [i for i, p in enumerate(players) if p.player_name == who_name][0]
     passed_players = {e[1] for e in context.events if e[0] == 'pass_priority'}
     n = len(players)
     for _ in range(n):
