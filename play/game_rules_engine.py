@@ -482,6 +482,8 @@ class GameRulesEngine:
 
     def give_priority(self, *args):
         who_id, interactable, *_ = args
+        if interactable is None:
+            interactable = self.suggest_interactable_objects(who_id)
         assert who_id is None or isinstance(who_id, int) and who_id < len(self._match.game.players)
         player = self._match.game.players[who_id] if who_id is not None else None
         self.consumer.send_log(f'{player.player_name} gets priority')
@@ -491,6 +493,10 @@ class GameRulesEngine:
         self.events.append(['pending_pass_priority', who_id])
         self.send_to_player(player=player, text_data=json.dumps(payload))
         self.halt = True
+
+    def suggest_interactable_objects(self, player_id):
+        # FIXME: implelent calculate interactable after state-based actions are checked (need static effects)
+        return []
 
     def take_start_of_game_action(self, *args):
         # consume the taking action marker
@@ -611,12 +617,16 @@ class GameRulesEngine:
 
     def check_sba(self, *args):
         # FIXME: implement state-based action checks here
-        #raise Exception('check sba')
         self.events.append(['check_sba_done'])
 
     def untap(self, *args):
         permanent, *_ = args
         permanent['annotations']['isTapped'] = False
+
+    def resolve(self, *args):
+        # FIXME: implement top of stack resolving
+        game_object, *_ = args
+        print(game_object)
 
     def update_game_state(self):
         payload = self.game.get_payload(is_update=True)

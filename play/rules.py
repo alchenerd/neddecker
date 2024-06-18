@@ -967,9 +967,9 @@ def give_priority_to_appropriate_player(context) -> List[Any]:
     n = len(players)
     for _ in range(n):
         if players[i] not in passed_players:
-            return [*context.events, ['give_priority', i, []]]
+            return [*context.events, ['give_priority', i, None]]
         i = (i + 1) % n
-    return [['next_step']]
+    return [['resolve', stack[-1]]] if stack else [['next_step']]
 
 # then if sba check is done, give priority
 SYSTEM_RULE_PRIORITY_GIVE_PRIORITY = [
