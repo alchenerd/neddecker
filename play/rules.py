@@ -1023,9 +1023,33 @@ SYSTEM_RULE_PRIORITY_HANDLE_PASS_PRIORITY = [
         consume_line,
     ),
 ]
-# when all players pass priority, resolve top of stack or move to next step/phase
-SYSTEM_RULE_PRIORITY_HANDLE_ALL_PASS_PRIORITY = []
 
+
+def check_zero_or_less_life(context) -> List[Any]:
+    print('check_zero_or_less_life')
+    events = [*context.events]
+    players = context.game.players
+    for player in players:
+        if player.hp <= 0:
+            events.append(['lose_the_game', player])
+    matched_event = [e for e in events if e[0] == 'sba_check_zero_or_less_life'][0]
+    matched_event[0] = matched_event[0].replace('sba', 'done')
+    return events
+
+SYSTEM_RULE_SBA_CHECK_ZERO_OR_LESS_LIFE = [
+    (
+        'Given the game is in a phase or step that gives players priority',
+        lambda context: bool(context.game.stack) or context.game.player_has_priority,
+    ),
+    (
+        'When the game is waiting for a player to pass priority',
+        lambda context: 'sba_check_zero_or_less_life' == context.matched_event[0],
+    ),
+    (
+        'Then check for zero or less life',
+        check_zero_or_less_life,
+    ),
+]
 
 # Create rules for the engine
 CHOOSE_STARTING_PLAYER_RULES = (
@@ -1084,6 +1108,10 @@ GENERAL_PRIORITY_RULES = [
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_PRIORITY_HANDLE_PASS_PRIORITY)),
 ]
 
+SBA_RULES = [
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_ZERO_OR_LESS_LIFE)),
+]
+
 # EVERYTHING
 SYSTEM_RULES = (
     *CHOOSE_STARTING_PLAYER_RULES,
@@ -1093,5 +1121,6 @@ SYSTEM_RULES = (
     *BEGINNING_PHASE_RULES,
     *UNTAP_STEP_RULES,
     *GENERAL_PRIORITY_RULES,
+    *SBA_RULES,
     *UPKEEP_STEP_RULES,
 )

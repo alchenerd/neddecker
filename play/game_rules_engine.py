@@ -343,6 +343,9 @@ class GameRulesEngine:
         while self.game.actions:
             action = self.game.actions.pop(0)
             self.game.apply_action(action)
+        # recount pass priority if stack changes
+        if hash(str(self.game.stack)) != self.game.last_known_stack_hash:
+            self.events = [e for e in self.events if 'pass_priority' != e[0]]
         who = [p for p in self.game.players if p.player_name == who_str][0]
         assert who and isinstance(who, Player)
         self.events.append(['pass_priority', who])
@@ -486,6 +489,7 @@ class GameRulesEngine:
             interactable = self.suggest_interactable_objects(who_id)
         assert who_id is None or isinstance(who_id, int) and who_id < len(self._match.game.players)
         player = self._match.game.players[who_id] if who_id is not None else None
+        self.game.last_known_stack_hash = hash(str(self.game.stack))
         self.consumer.send_log(f'{player.player_name} gets priority')
         payload = self.game.get_payload()
         payload['interactable'] = interactable
@@ -616,8 +620,36 @@ class GameRulesEngine:
         self.events.append(['handle_untap_step_done'])
 
     def check_sba(self, *args):
-        # FIXME: implement state-based action checks here
-        self.events.append(['check_sba_done'])
+        to_check = [
+            'sba_check_zero_or_less_life',
+            'sba_check_draw_from_empty_library',
+            'sba_check_ten_or_more_poison_counters',
+            'sba_check_non_battlefield_tokens',
+            'sba_check_creature_zero_or_less_toughness',
+            'sba_check_lethal_damage',
+            'sba_check_deathtouch_damage',
+            'sba_check_legend_rule',
+            #'sba_check_world_rule', # no world cards in modern
+            'sba_check_aura_attachment',
+            'sba_check_equipment_or_fortification_attachment',
+            'sba_check_plus_one_minus_one_counters',
+            #'sba_check_counter_upper_bound', # rasputin, dreamweaver is not in modern
+            'sba_check_saga',
+            'sba_check_dungeon',
+            #'sba_check_space_sculptor', # space beleren is not in modern
+            'sba_check_battle_zero_or_less_defense',
+            'sba_check_battle_designated_protector',
+            'sba_check_seige_no_self_protector',
+            'sba_check_permanent_no_multiple_roles_attached',
+            ]
+        for e in self.events:
+            was_checked = e[0].replace('done', 'sba')
+            if was_checked in to_check:
+                to_check.remove(was_checked)
+        if to_check:
+            self.events.append([to_check[0],])
+        else:
+            self.events.append(['check_sba_done',])
 
     def untap(self, *args):
         permanent, *_ = args

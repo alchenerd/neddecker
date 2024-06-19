@@ -118,6 +118,7 @@ class Game:
         self.starting_player_decider = None
         self.starting_player = None
         self.stack = []
+        self.last_known_stack_hash = None
         self.pending_triggers = []
         self.turn_count = 1
         self.whose_turn = ''
@@ -129,6 +130,7 @@ class Game:
         self.stack_has_grown = False
         self.turn_phase_tracker = None
         self.priority_waitlist = []
+        self.static_effects = []
 
     def add_player(self, data):
         player = Player()
@@ -568,6 +570,7 @@ class Game:
         self.whose_priority = self.players[0].player_name
         self.priority_waitlist = []
         self.has_ended = False
+        self.static_effects = []
 
     def get_board_state(self):
         board_state = {}
@@ -586,6 +589,10 @@ class Game:
         if filtered:
             return filtered[0]
         return None
+
+    def move_pending_triggers(self):
+        """Moves pending triggers onto the stack."""
+        self.stack.extend(self.pending_triggers)
 
 class Match:
     def __init__(self, **kwargs):
