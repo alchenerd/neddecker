@@ -1026,7 +1026,6 @@ SYSTEM_RULE_PRIORITY_HANDLE_PASS_PRIORITY = [
 
 
 def check_zero_or_less_life(context) -> List[Any]:
-    print('check_zero_or_less_life')
     events = [*context.events]
     players = context.game.players
     for player in players:
@@ -1048,6 +1047,40 @@ SYSTEM_RULE_SBA_CHECK_ZERO_OR_LESS_LIFE = [
     (
         'Then check for zero or less life',
         check_zero_or_less_life,
+    ),
+]
+
+def check_draw_from_empty_library(context) -> List[Any]:
+    events = [*context.events]
+    players = context.game.players
+    matched_event = None
+    for e in events:
+        if len(e) < 3:
+            continue
+        if e[0] == 'draw' and e[1] in players:
+            player = e[1]
+            amount = e[2]
+            if amount > len(player.library):
+                matched_event = e
+                events.append(['lose_the_game', player])
+    if matched_event and matched_event in events:
+        events.remove(matched_event)
+    matched_event = [e for e in events if e[0] == 'sba_check_draw_from_empty_library'][0]
+    matched_event[0] = matched_event[0].replace('sba', 'done')
+    return events
+
+SYSTEM_RULE_SBA_CHECK_DRAW_FROM_EMPTY_LIBRARY = [
+    (
+        'Given the game is in a phase or step that gives players priority',
+        lambda context: bool(context.game.stack) or context.game.player_has_priority,
+    ),
+    (
+        'When the game is waiting for a player to pass priority',
+        lambda context: 'sba_check_draw_from_empty_library' == context.matched_event[0],
+    ),
+    (
+        'Then check if any player drew from an empty library',
+        check_draw_from_empty_library,
     ),
 ]
 
@@ -1110,6 +1143,7 @@ GENERAL_PRIORITY_RULES = [
 
 SBA_RULES = [
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_ZERO_OR_LESS_LIFE)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_DRAW_FROM_EMPTY_LIBRARY)),
 ]
 
 # EVERYTHING
