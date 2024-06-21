@@ -369,6 +369,26 @@ class Game:
             assert found_card
 
         match action.get('type'):
+            case 'create_token':
+                token = {**action.get('card', {})}
+                splitted = action.get('destination').split('.')
+                destination = splitted[-1]
+                recipient = '.'.join(splitted[:-1])
+                if 'stack' in action.get('to'):
+                    found_card['annotations']['controller'] = self.whose_priority
+                    self.stack.append(token)
+                else:
+                    if 'ned' in recipient:
+                        recipient = [ p for p in self.players if 'ned' in p.player_name ][0]
+                    elif 'user' in recipient:
+                        recipient = [ p for p in self.players if 'user' in p.player_name ][0]
+                    else:
+                        [digit] = [ c for c in recipient if c.isdigit() ]
+                        assert digit is not []
+                        digit = int(digit[0])
+                        recipient = self.players[digit]
+                    getattr(recipient, destination).append(token)
+                return
             case 'create_trigger':
                 stack = self.stack
                 relevants = [card for card in stack if card['in_game_id'].endswith(found_card['in_game_id'])]

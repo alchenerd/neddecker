@@ -1102,6 +1102,45 @@ SYSTEM_RULE_SBA_CHECK_TEN_OR_MORE_POISON_COUNTERS = [
     ),
 ]
 
+def check_non_battlefield_tokens(context) -> List[Any]:
+    game = context.game
+    stack = game.stack
+    players = game.players
+    zones_to_check = [
+        'library',
+        'hand',
+        'graveyard',
+        'exile',
+        'command',
+        'ante',
+    ]
+    # all tokens in non-battlefield zones ceases to exist
+    stack = filter(lambda x: not x['in_game_id'].startswith('token#'), stack)
+    for player in players:
+        for zone in zones_to_check:
+            current_zone = getattr(player, zone)
+            current_zone = filter(lambda x: not x['in_game_id'].startswith('token#'), current_zone)
+    # mark as done
+    events = [*context.events]
+    matched_event = [e for e in events if e[0] == 'sba_check_non_battlefield_tokens'][0]
+    matched_event[0] = matched_event[0].replace('sba', 'done')
+    return events
+
+
+SYSTEM_RULE_SBA_CHECK_NON_BATTLEFIELD_TOKENS = [
+    (
+        'Given the game is in a phase or step that gives players priority',
+        lambda context: bool(context.game.stack) or context.game.player_has_priority,
+    ),
+    (
+        'When the game needs to check for non-battlefield tokens',
+        lambda context: 'sba_check_non_battlefield_tokens' == context.matched_event[0],
+    ),
+    (
+        'Then check non-battlefield tokens',
+        check_non_battlefield_tokens,
+    ),
+]
 # Create rules for the engine
 CHOOSE_STARTING_PLAYER_RULES = (
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_CHOOSE_STARTING_PLAYER_DECIDER_RANDOM)),
@@ -1163,6 +1202,7 @@ SBA_RULES = [
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_ZERO_OR_LESS_LIFE)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_DRAW_FROM_EMPTY_LIBRARY)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_TEN_OR_MORE_POISON_COUNTERS)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_NON_BATTLEFIELD_TOKENS)),
 ]
 
 # EVERYTHING
