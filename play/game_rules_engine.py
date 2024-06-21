@@ -389,8 +389,11 @@ class GameRulesEngine:
 
     def draw(self, *args):
         player, amount, *_ = args
-        for _ in range(amount):
-            player.draw()
+        try:
+            for _ in range(amount):
+                player.draw()
+        except IndexError:
+            player.has_drawn_from_empty_library = True
         payload = {
             'type': 'log',
             'message': f'{player} draws {amount} card(s)',

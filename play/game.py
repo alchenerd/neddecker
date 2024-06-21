@@ -24,8 +24,8 @@ class Player:
         self.ante = []
         self.mana_pool = {'W': 0, 'U': 0, 'B': 0, 'R': 0, 'G': 0, 'C': 0}
         self.hp = 20
-        self.counters = []
-        self.annotations = []
+        self.counters = {}
+        self.annotations = {}
         self.delayed_triggers = []
 
     def set_player_name(self, name):
@@ -45,11 +45,7 @@ class Player:
                 card['tapped'] = False
 
     def draw(self):
-        try:
-            self.hand.append(self.library.pop(0))
-        except IndexError:
-            return -1
-        return 0
+        self.hand.append(self.library.pop(0))
 
     def cleanup(self):
         for card in self.battlefield:
@@ -256,7 +252,7 @@ class Game:
                 if front and back:
                     card['faces'] = dict()
                     card['faces'] |= {'front': front, 'back': back}
-                card['counters'] = list()
+                card['counters'] = dict()
                 card['annotations'] = dict()
                 card['rules'] = None
                 card['ai_annotations'] = self.get_ai_annotations(card)
@@ -273,7 +269,7 @@ class Game:
                 if front and back:
                     card['faces'] = dict()
                     card['faces'] |= {'front': front, 'back': back}
-                card['counters'] = list()
+                card['counters'] = dict()
                 card['annotations'] = dict()
                 card['rules'] = None
                 card['ai_annotations'] = self.get_ai_annotations(card)
@@ -412,14 +408,15 @@ class Game:
                 found_zone.remove(found_card)
                 return
             case 'set_counter':
-                for key in found_card['counters']:
-                    if key == action['counterType']:
-                        found_card['counters'] = action['counterAmount']
-                        return
                 found_card['counters'][action['counterType']] = action['counterAmount']
+                return
             case 'set_annotation':
-                if found_card:
-                    found_card['annotations'][action['annotationKey']] = action['annotationValue']
+                found_card['annotations'][action['annotationKey']] = action['annotationValue']
+            case 'set_player_counter':
+                player['counters'][action['counterType']] = action['counterAmount']
+                return
+            case 'set_player_annotation':
+                player['annotations'][action['annotationKey']] = action['annotationValue']
                 return
             case 'prevent_untap_all':
                 for card in player.battlefield:

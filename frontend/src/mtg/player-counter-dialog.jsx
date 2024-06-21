@@ -12,7 +12,7 @@ import { receivedNewGameAction } from './../store/slice';
 const filter = createFilterOptions();
 
 const PlayerCounterDialog = ({open, setOpen, owner, ownerId}) => {
-  const counterTypes = owner?.counters.map(counter => counter.type);
+  const counterTypes = Object.keys(owner?.counters || {});
   const [counterType, setCounterType] = useState("");
   const [counterAmount, setCounterAmount] = useState(0);
   useEffect(() => {
@@ -53,7 +53,7 @@ const PlayerCounterDialog = ({open, setOpen, owner, ownerId}) => {
     setOpen(false);
   };
   useEffect(() => {
-    const existingCounter = owner?.counters?.find(counter => counter.type === counterType);
+    const existingCounter = owner?.counters[counterType];
     if (existingCounter) {
       setCounterAmount(parseInt(existingCounter.amount));
     }

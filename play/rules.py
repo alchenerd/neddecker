@@ -1041,7 +1041,7 @@ SYSTEM_RULE_SBA_CHECK_ZERO_OR_LESS_LIFE = [
         lambda context: bool(context.game.stack) or context.game.player_has_priority,
     ),
     (
-        'When the game is waiting for a player to pass priority',
+        'When the game needs to check for zero or less life',
         lambda context: 'sba_check_zero_or_less_life' == context.matched_event[0],
     ),
     (
@@ -1053,18 +1053,10 @@ SYSTEM_RULE_SBA_CHECK_ZERO_OR_LESS_LIFE = [
 def check_draw_from_empty_library(context) -> List[Any]:
     events = [*context.events]
     players = context.game.players
-    matched_event = None
-    for e in events:
-        if len(e) < 3:
-            continue
-        if e[0] == 'draw' and e[1] in players:
-            player = e[1]
-            amount = e[2]
-            if amount > len(player.library):
-                matched_event = e
-                events.append(['lose_the_game', player])
-    if matched_event and matched_event in events:
-        events.remove(matched_event)
+    for player in players:
+        has_drawn_from_empty_library = getattr(player, 'has_drawn_from_empty_library', False)
+        if has_drawn_from_empty_library:
+            events.append(['lose_the_game', player])
     matched_event = [e for e in events if e[0] == 'sba_check_draw_from_empty_library'][0]
     matched_event[0] = matched_event[0].replace('sba', 'done')
     return events
@@ -1075,12 +1067,38 @@ SYSTEM_RULE_SBA_CHECK_DRAW_FROM_EMPTY_LIBRARY = [
         lambda context: bool(context.game.stack) or context.game.player_has_priority,
     ),
     (
-        'When the game is waiting for a player to pass priority',
+        'When the game needs to check draw from empty library',
         lambda context: 'sba_check_draw_from_empty_library' == context.matched_event[0],
     ),
     (
         'Then check if any player drew from an empty library',
         check_draw_from_empty_library,
+    ),
+]
+
+def check_ten_or_more_poison_counters(context) -> List[Any]:
+    events = [*context.events]
+    players = context.game.players
+    for player in players:
+        poison = player.counters.get('poison', 0)
+        if poison >= 10:
+            events.append(['lose_the_game', player])
+    matched_event = [e for e in events if e[0] == 'sba_check_ten_or_more_poison_counters'][0]
+    matched_event[0] = matched_event[0].replace('sba', 'done')
+    return events
+
+SYSTEM_RULE_SBA_CHECK_TEN_OR_MORE_POISON_COUNTERS = [
+    (
+        'Given the game is in a phase or step that gives players priority',
+        lambda context: bool(context.game.stack) or context.game.player_has_priority,
+    ),
+    (
+        'When the game needs to check for ten or more poison counters',
+        lambda context: 'sba_check_ten_or_more_poison_counters' == context.matched_event[0],
+    ),
+    (
+        'Then check if any player has ten or more poison counters',
+        check_ten_or_more_poison_counters,
     ),
 ]
 
@@ -1144,6 +1162,7 @@ GENERAL_PRIORITY_RULES = [
 SBA_RULES = [
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_ZERO_OR_LESS_LIFE)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_DRAW_FROM_EMPTY_LIBRARY)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_TEN_OR_MORE_POISON_COUNTERS)),
 ]
 
 # EVERYTHING
