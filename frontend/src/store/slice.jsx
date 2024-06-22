@@ -220,6 +220,22 @@ const calculateAffectedGameData = (gameData, actions) => {
           _.set(affectedGameData, found.path, newBattlefield);
         }
         break;
+      case "create_copy":
+        {
+          const newZone = [
+            ..._.get(affectedGameData, action.destination),
+            action.card,
+          ];
+          _.set(affectedGameData, action.destination, newZone);
+        }
+        break;
+      case "remove_copy":
+        {
+          const battlefield = _.get(affectedGameData, found.path);
+          const newBattlefield = battlefield.filter(card => card.in_game_id !== found.card.in_game_id);
+          _.set(affectedGameData, found.path, newBattlefield);
+        }
+        break;
       case "create_delayed_trigger":
         {
           const players = _.get(affectedGameData, "board_state.players");

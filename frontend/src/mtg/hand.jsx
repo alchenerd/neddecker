@@ -16,6 +16,7 @@ const Hand = ({
   setOpenCreateTriggerDialog,
   setOpenCreateDelayedTriggerDialog,
   setOpenCreateTokenDialog,
+  setTargetIsCopy,
   setOpenInspectGherkinDialog,
 }) => {
   const gameData = selectAffectedGameData(store.getState());
@@ -70,6 +71,7 @@ const Hand = ({
         }
         const createTokenCopy = () => {
           setActionTargetCard(card);
+          setTargetIsCopy(true);
           setOpenCreateTokenDialog(true);
         }
         const inspectGherkin = () => {

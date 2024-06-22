@@ -129,6 +129,7 @@ export default function PlayPage() {
   const [ openCreateTokenDialog, setOpenCreateTokenDialog ] = useState(false);
   const [ openInspectGherkinDialog, setOpenInspectGherkinDialog ] = useState(false);
   const [ isResolving, setIsResolving ] = useState(false);
+  const [ targetIsCopy, setTargetIsCopy ] = useState(false);
 
   useEffect(() => {
     console.log("Connection state changed");
@@ -482,6 +483,7 @@ export default function PlayPage() {
               setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
               setOpenCreateTokenDialog={setOpenCreateTokenDialog}
               setOpenInspectGherkinDialog={setOpenInspectGherkinDialog}
+              setTargetIsCopy={setTargetIsCopy}
             />
           </Grid>
           <Grid item xs={4} width='100%'>
@@ -594,7 +596,7 @@ export default function PlayPage() {
         />
         <CreateTokenDialog
           open={openCreateTokenDialog} setOpen={setOpenCreateTokenDialog}
-          actionTargetCard={actionTargetCard}
+          actionTargetCard={actionTargetCard} isCopy={targetIsCopy}
         />
         <InspectGherkinDialog
           open={openInspectGherkinDialog} setOpen={setOpenInspectGherkinDialog}

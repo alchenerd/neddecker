@@ -53,6 +53,9 @@ export function Card({
     if (card?.in_game_id.startsWith("token")) {
       return ItemTypes.MTG_TOKEN;
     }
+    if (card?.in_game_id.startsWith("copy")) {
+      return ItemTypes.MTG_COPY;
+    }
     if (card?.triggerContent) {
       return ItemTypes.MTG_TRIGGER;
     }
@@ -127,10 +130,18 @@ export function Card({
   };
   const tokenFunctions = [ ...(contextMenuFunctions || []), { name: "remove token", _function: removeToken, }, ];
 
+  const removeCopy = () => {
+    store.dispatch(receivedNewGameAction({type: "remove_copy", targetId: card.in_game_id}));
+  };
+  const copyFunctions = [ ...(contextMenuFunctions || []), { name: "remove copy", _function: removeCopy, }, ];
+
   const getContextmenuFunctionsByType = (cardType) => {
     switch (cardType) {
       case ItemTypes.MTG_TOKEN:
         return tokenFunctions;
+        break;
+      case ItemTypes.MTG_COPY:
+        return copyFunctions;
         break;
       case ItemTypes.MTG_TRIGGER:
         return triggerFunctions;

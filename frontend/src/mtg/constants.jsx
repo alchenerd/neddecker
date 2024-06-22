@@ -6,6 +6,7 @@ export const ItemTypes = {
   MTG_SORCERY_CARD: 'mtg_sorcery',
   MTG_INSTANT_CARD: 'mtg_instant',
   MTG_TOKEN: 'mtg_token',
+  MTG_COPY: 'mtg_copy',
   MTG_TRIGGER: 'mtg_trigger',
   DIALOG: 'draggable_dialog',
 }
