@@ -1158,7 +1158,7 @@ def check_misplaced_copies(context) -> List[Any]:
             current_zone = filter(lambda x: not x['in_game_id'].startswith('copy#'), current_zone)
         battlefield = filter( \
                 lambda: not x['in_game_id'].startswith('copy#') and \
-                y in x['type_line'] for y in ('instant', 'sorcery'), player.battlefield)
+                any(y in x['type_line'] for y in ('instant', 'sorcery')), player.battlefield)
     # mark as done
     events = [*context.events]
     matched_event = [e for e in events if e[0] == 'sba_check_misplaced_copies'][0]
