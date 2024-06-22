@@ -628,6 +628,7 @@ class GameRulesEngine:
             'sba_check_draw_from_empty_library',
             'sba_check_ten_or_more_poison_counters',
             'sba_check_non_battlefield_tokens',
+            'sba_check_misplaced_copies',
             'sba_check_creature_zero_or_less_toughness',
             'sba_check_lethal_damage',
             'sba_check_deathtouch_damage',

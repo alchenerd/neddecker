@@ -1142,21 +1142,6 @@ SYSTEM_RULE_SBA_CHECK_NON_BATTLEFIELD_TOKENS = [
     ),
 ]
 
-SYSTEM_RULE_SBA_CHECK_CREATURE_ZERO_OR_LESS_TOUGHNESS = [
-    (
-        'Given the game is in a phase or step that gives players priority',
-        lambda context: bool(context.game.stack) or context.game.player_has_priority,
-    ),
-    (
-        'When the game needs to check for creatures with zero or less toughness',
-        lambda context: 'sba_check_non_battlefield_tokens' == context.matched_event[0],
-    ),
-    (
-        'Then check non-battlefield tokens',
-        check_non_battlefield_tokens,
-    ),
-]
-
 # Create rules for the engine
 CHOOSE_STARTING_PLAYER_RULES = (
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_CHOOSE_STARTING_PLAYER_DECIDER_RANDOM)),
@@ -1219,6 +1204,7 @@ SBA_RULES = [
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_DRAW_FROM_EMPTY_LIBRARY)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_TEN_OR_MORE_POISON_COUNTERS)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_NON_BATTLEFIELD_TOKENS)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_MISPLACED_COPIES)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_CREATURE_ZERO_OR_LESS_TOUGHNESS)),
 ]
 
