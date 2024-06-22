@@ -1142,6 +1142,74 @@ SYSTEM_RULE_SBA_CHECK_NON_BATTLEFIELD_TOKENS = [
     ),
 ]
 
+def check_misplaced_copies(context) -> List[Any]:
+    players = context.game.players
+    zones_to_check = [
+        'library',
+        'hand',
+        'graveyard',
+        'exile',
+        'command',
+        'ante',
+    ]
+    for player in players:
+        for zone in zones_to_check:
+            current_zone = getattr(player, zone)
+            current_zone = filter(lambda x: not x['in_game_id'].startswith('copy#'), current_zone)
+        battlefield = filter( \
+                lambda: not x['in_game_id'].startswith('copy#') and \
+                y in x['type_line'] for y in ('instant', 'sorcery'), player.battlefield)
+    # mark as done
+    events = [*context.events]
+    matched_event = [e for e in events if e[0] == 'sba_check_misplaced_copies'][0]
+    matched_event[0] = matched_event[0].replace('sba', 'done')
+    return events
+
+SYSTEM_RULE_SBA_CHECK_MISPLACED_COPIES = [
+    (
+        'Given the game is in a phase or step that gives players priority',
+        lambda context: bool(context.game.stack) or context.game.player_has_priority,
+    ),
+    (
+        'When the game needs to check for misplaced copies',
+        lambda context: 'sba_check_misplaced_copies' == context.matched_event[0],
+    ),
+    (
+        'Then check non-battlefield tokens',
+        check_misplaced_copies,
+    ),
+]
+
+def check_creature_zero_or_less_toughness(context) -> List[Any]:
+    events = [*context.events]
+    players = context.game.players
+    for player in players:
+        battlefield = player.battlefield
+        for card in battlefield:
+            if 'creature' in card['type_line'].lower():
+                # FIXME: implement applying static effects on board state and deal with "*" toughness
+                if 'toughness' in card and int(card['toughness']) <= 0:
+                    events.append(['move', f'{player.player_name}.battlefield', f'{player.player_name}.graveyard'])
+    # mark as done
+    matched_event = [e for e in events if e[0] == 'sba_check_misplaced_copies'][0]
+    matched_event[0] = matched_event[0].replace('sba', 'done')
+    return events
+
+SYSTEM_RULE_SBA_CHECK_CREATURE_ZERO_OR_LESS_TOUGHNESS = [
+    (
+        'Given the game is in a phase or step that gives players priority',
+        lambda context: bool(context.game.stack) or context.game.player_has_priority,
+    ),
+    (
+        'When the game needs to check for creatures with zero or less toughness',
+        lambda context: 'sba_check_creature_zero_or_less_toughness' == context.matched_event[0],
+    ),
+    (
+        'Then check zero or less toughness',
+        check_creature_zero_or_less_toughness,
+    ),
+]
+
 # Create rules for the engine
 CHOOSE_STARTING_PLAYER_RULES = (
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_CHOOSE_STARTING_PLAYER_DECIDER_RANDOM)),
