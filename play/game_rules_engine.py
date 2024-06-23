@@ -632,6 +632,7 @@ class GameRulesEngine:
             'sba_check_creature_zero_or_less_toughness',
             'sba_check_lethal_damage',
             'sba_check_deathtouch_damage',
+            'sba_check_planeswalker_loyalty',
             'sba_check_legend_rule',
             #'sba_check_world_rule', # no world cards in modern
             'sba_check_aura_attachment',

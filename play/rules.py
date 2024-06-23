@@ -1191,7 +1191,7 @@ def check_creature_zero_or_less_toughness(context) -> List[Any]:
                 if 'toughness' in card and int(card['toughness']) <= 0:
                     events.append(['move', f'{player.player_name}.battlefield', f'{player.player_name}.graveyard'])
     # mark as done
-    matched_event = [e for e in events if e[0] == 'sba_check_misplaced_copies'][0]
+    matched_event = [e for e in events if e[0] == 'sba_check_creature_zero_or_less_toughness'][0]
     matched_event[0] = matched_event[0].replace('sba', 'done')
     return events
 
@@ -1207,6 +1207,102 @@ SYSTEM_RULE_SBA_CHECK_CREATURE_ZERO_OR_LESS_TOUGHNESS = [
     (
         'Then check zero or less toughness',
         check_creature_zero_or_less_toughness,
+    ),
+]
+
+def check_lethal_damage(context) -> List[Any]:
+    events = [*context.events]
+    players = context.game.players
+    for player in players:
+        battlefield = player.battlefield
+        for card in battlefield:
+            if 'creature' in card['type_line'].lower():
+                toughness = card.get('toughness', 0)
+                marked_damage = 0
+                annotations = card.get('annotations', {})
+                for key in annotations:
+                    if key.endswith('damage'):
+                        marked_damage += annotation[key]
+                # FIXME: implement applying static effects on board state and deal with "*" toughness
+                if marked_damage >= toughness:
+                    events.append(['move', f'{player.player_name}.battlefield', f'{player.player_name}.graveyard'])
+    # mark as done
+    matched_event = [e for e in events if e[0] == 'sba_check_lethal_damage'][0]
+    matched_event[0] = matched_event[0].replace('sba', 'done')
+    return events
+
+SYSTEM_RULE_SBA_CHECK_LETHAL_DAMAGE = [
+    (
+        'Given the game is in a phase or step that gives players priority',
+        lambda context: bool(context.game.stack) or context.game.player_has_priority,
+    ),
+    (
+        'When the game needs to check for creatures dealt lethal damage',
+        lambda context: 'sba_check_lethal_damage' == context.matched_event[0],
+    ),
+    (
+        'Then check lethal damage',
+        check_lethal_damage,
+    ),
+]
+
+def check_deathtouch_damage(context) -> List[Any]:
+    events = [*context.events]
+    players = context.game.players
+    for player in players:
+        battlefield = player.battlefield
+        for card in battlefield:
+            if 'creature' in card['type_line'].lower():
+                deathtouch_damage = card.get('annotations', {}).get('deathtouch_damage', 0)
+                if deathtouch_damage:
+                    events.append(['move', f'{player.player_name}.battlefield', f'{player.player_name}.graveyard'])
+    # mark as done
+    matched_event = [e for e in events if e[0] == 'sba_check_deathtouch_damage'][0]
+    matched_event[0] = matched_event[0].replace('sba', 'done')
+    return events
+
+SYSTEM_RULE_SBA_CHECK_DEATHTOUCH_DAMAGE = [
+    (
+        'Given the game is in a phase or step that gives players priority',
+        lambda context: bool(context.game.stack) or context.game.player_has_priority,
+    ),
+    (
+        'When the game needs to check for creatures dealt deathtouch damage',
+        lambda context: 'sba_check_deathtouch_damage' == context.matched_event[0],
+    ),
+    (
+        'Then check deathtouch damage',
+        check_deathtouch_damage,
+    ),
+]
+
+def check_planeswalker_loyalty(context) -> List[Any]:
+    events = [*context.events]
+    players = context.game.players
+    for player in players:
+        battlefield = player.battlefield
+        for card in battlefield:
+            if 'planeswalker' in card['type_line'].lower():
+                loyalty = card.get('counters', {}).get('loyalty', 0)
+                if not loyalty:
+                    events.append(['move', f'{player.player_name}.battlefield', f'{player.player_name}.graveyard'])
+    # mark as done
+    matched_event = [e for e in events if e[0] == 'sba_check_planeswalker_loyalty'][0]
+    matched_event[0] = matched_event[0].replace('sba', 'done')
+    return events
+
+SYSTEM_RULE_SBA_CHECK_PLANESWALKER_LOYALTY = [
+    (
+        'Given the game is in a phase or step that gives players priority',
+        lambda context: bool(context.game.stack) or context.game.player_has_priority,
+    ),
+    (
+        'When the game needs to check for planeswalker loyalty',
+        lambda context: 'sba_check_planeswalker_loyalty' == context.matched_event[0],
+    ),
+    (
+        'Then check planeswalker loyalty',
+        check_planeswalker_loyalty,
     ),
 ]
 
@@ -1274,6 +1370,9 @@ SBA_RULES = [
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_NON_BATTLEFIELD_TOKENS)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_MISPLACED_COPIES)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_CREATURE_ZERO_OR_LESS_TOUGHNESS)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_LETHAL_DAMAGE)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_DEATHTOUCH_DAMAGE)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_PLANESWALKER_LOYALTY)),
 ]
 
 # EVERYTHING
