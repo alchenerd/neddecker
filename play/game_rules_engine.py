@@ -622,6 +622,12 @@ class GameRulesEngine:
             self.events.append(['untap', permanent])
         self.events.append(['handle_untap_step_done'])
 
+    def ask_check_legend_rule(self, *args):
+        player, question, card_name, *_ = args
+        self.consumer.send_log(f"Asking {player} to keep 1 of {card_name} because of the Legend Rule")
+        eligible_cards = [card for card in player.battlefield if card['name'] == card_name and 'legendary' in card['type_line'].lower()]
+        self.question(player, question, eligible_cards)
+
     def check_sba(self, *args):
         to_check = [
             'sba_check_zero_or_less_life',
