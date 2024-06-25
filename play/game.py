@@ -369,7 +369,7 @@ class Game:
             assert found_card
 
         match action.get('type'):
-            case 'create_token':
+            case 'create_token' | 'create_copy':
                 token = {**action.get('card', {})}
                 splitted = action.get('destination').split('.')
                 destination = splitted[-1]
