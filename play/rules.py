@@ -1391,8 +1391,42 @@ SYSTEM_RULE_SBA_CHECK_LEGEND_RULE_HANDLE_ANSWER = [
         handle_legendary_rule_question_is_answered,
     ),
     (
-        'Then check legend rule',
+        'Then handle the answer',
         handle_legendary_rule_answer,
+    ),
+]
+
+def check_aura_attachment(context) -> List[Any]:
+    events = [*context.events]
+    players = context.game.players
+    for player in players:
+        battlefield = player.battlefield
+        for card in battlefield:
+            if 'aura' in card['type_line'].lower():
+                # check if it's attached to nothing or an illegal object
+                annotations = card.get('annotations', [])
+                attached_to = annotations.get('attaching', '')
+                if not attached_to:
+                    events.append(['move', card, f'{player.player_name}.battlefield', f'{player.player_name}.graveyard'])
+                elif ['cant_attach', card, attached_to] in events:
+                    events.append(['move', card, f'{player.player_name}.battlefield', f'{player.player_name}.graveyard'])
+    # mark as done
+    matched_event = [e for e in events if e[0] == 'sba_check_aura_attachment'][0]
+    matched_event[0] = matched_event[0].replace('sba', 'done')
+    return events
+
+SYSTEM_RULE_SBA_CHECK_AURA_ATTACHMENT = [
+    (
+        'Given the game is in a phase or step that gives players priority',
+        game_allows_player_to_have_priorty,
+    ),
+    (
+        'When the game needs to check for aura attachment',
+        lambda context: 'sba_check_aura_attachment' == context.matched_event[0],
+    ),
+    (
+        'Then check aura attachment',
+        check_aura_attachment,
     ),
 ]
 
@@ -1465,6 +1499,7 @@ SBA_RULES = [
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_PLANESWALKER_LOYALTY)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_LEGEND_RULE)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_LEGEND_RULE_HANDLE_ANSWER)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_AURA_ATTACHMENT)),
 ]
 
 # EVERYTHING
