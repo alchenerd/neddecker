@@ -1430,6 +1430,107 @@ SYSTEM_RULE_SBA_CHECK_AURA_ATTACHMENT = [
     ),
 ]
 
+def check_equipment_or_fortification_attachment(context) -> List[Any]:
+    events = [*context.events]
+    players = context.game.players
+    for player in players:
+        battlefield = player.battlefield
+        for card in battlefield:
+            if any(x in card['type_line'].lower() for x in ('equipment', 'fortification')):
+                # check if it's attached to nothing or an illegal object
+                annotations = card.get('annotations', [])
+                attached_to = annotations.get('attaching', '')
+                if not attached_to:
+                    continue
+                if ['cant_attach', card, attached_to] in events:
+                    del annotations['attaching']
+    # mark as done
+    matched_event = [e for e in events if e[0] == 'sba_check_equipment_or_fortification_attachment'][0]
+    matched_event[0] = matched_event[0].replace('sba', 'done')
+    return events
+
+SYSTEM_RULE_SBA_CHECK_EQUIPMENT_OR_FORTIFICATION_ATTACHMENT = [
+    (
+        'Given the game is in a phase or step that gives players priority',
+        game_allows_player_to_have_priorty,
+    ),
+    (
+        'When the game needs to check for equipment or fortification attachment',
+        lambda context: 'sba_check_equipment_or_fortification_attachment' == context.matched_event[0],
+    ),
+    (
+        'Then check equipment or fortification attachment',
+        check_equipment_or_fortification_attachment,
+    ),
+]
+
+def check_battle_or_creature_attachment(context) -> List[Any]:
+    events = [*context.events]
+    players = context.game.players
+    for player in players:
+        battlefield = player.battlefield
+        for card in battlefield:
+            if all(x not in card['type_line'].lower() for x in ('aura', 'equipment', 'fortification')):
+                # check if it's attached to nothing or an illegal object
+                annotations = card.get('annotations', [])
+                attached_to = annotations.get('attaching', '')
+                if not attached_to:
+                    continue
+                if ['cant_attach', card, attached_to] in events:
+                    del annotations['attaching']
+    # mark as done
+    matched_event = [e for e in events if e[0] == 'sba_check_battle_or_creature_attachment'][0]
+    matched_event[0] = matched_event[0].replace('sba', 'done')
+    return events
+
+SYSTEM_RULE_SBA_CHECK_BATTLE_OR_CREATURE_ATTACHMENT = [
+    (
+        'Given the game is in a phase or step that gives players priority',
+        game_allows_player_to_have_priorty,
+    ),
+    (
+        'When the game needs to check for battle or creature attachment',
+        lambda context: 'sba_check_battle_or_creature_attachment' == context.matched_event[0],
+    ),
+    (
+        'Then check battle or creature attachment',
+        check_battle_or_creature_attachment,
+    ),
+]
+
+def check_plus_one_minus_one_counters(context) -> List[Any]:
+    events = [*context.events]
+    players = context.game.players
+    for player in players:
+        battlefield = player.battlefield
+        for card in battlefield:
+            counters = card.get('counters', {})
+            plus = counters.get('+1/+1', 0)
+            minus = counters.get('-1/-1', 0)
+            minimum = min(plus, minus)
+            if not minimum:
+                continue
+            for key in ('+1/+1', '-1/-1'):
+                counters[key] -= minimum
+    # mark as done
+    matched_event = [e for e in events if e[0] == 'sba_check_plus_one_minus_one_counters'][0]
+    matched_event[0] = matched_event[0].replace('sba', 'done')
+    return events
+
+SYSTEM_RULE_SBA_CHECK_PLUS_ONE_MINUS_ONE_COUNTERS = [
+    (
+        'Given the game is in a phase or step that gives players priority',
+        game_allows_player_to_have_priorty,
+    ),
+    (
+        'When the game needs to check for plus one and minus one counters',
+        lambda context: 'sba_check_plus_one_minus_one_counters' == context.matched_event[0],
+    ),
+    (
+        'Then check plus one and minus one counters',
+        check_plus_one_minus_one_counters,
+    ),
+]
 # Create rules for the engine
 CHOOSE_STARTING_PLAYER_RULES = (
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_CHOOSE_STARTING_PLAYER_DECIDER_RANDOM)),
@@ -1500,6 +1601,9 @@ SBA_RULES = [
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_LEGEND_RULE)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_LEGEND_RULE_HANDLE_ANSWER)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_AURA_ATTACHMENT)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_EQUIPMENT_OR_FORTIFICATION_ATTACHMENT)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_BATTLE_OR_CREATURE_ATTACHMENT)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_PLUS_ONE_MINUS_ONE_COUNTERS)),
 ]
 
 # EVERYTHING

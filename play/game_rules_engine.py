@@ -630,29 +630,30 @@ class GameRulesEngine:
 
     def check_sba(self, *args):
         to_check = [
-            'sba_check_zero_or_less_life',
-            'sba_check_draw_from_empty_library',
-            'sba_check_ten_or_more_poison_counters',
-            'sba_check_non_battlefield_tokens',
-            'sba_check_misplaced_copies',
-            'sba_check_creature_zero_or_less_toughness',
-            'sba_check_lethal_damage',
-            'sba_check_deathtouch_damage',
-            'sba_check_planeswalker_loyalty',
-            'sba_check_legend_rule',
-            #'sba_check_world_rule', # no world cards in modern
-            'sba_check_aura_attachment',
-            'sba_check_equipment_or_fortification_attachment',
-            'sba_check_plus_one_minus_one_counters',
-            #'sba_check_counter_upper_bound', # rasputin, dreamweaver is not in modern
-            'sba_check_saga',
-            'sba_check_dungeon',
-            #'sba_check_space_sculptor', # space beleren is not in modern
-            'sba_check_battle_zero_or_less_defense',
-            'sba_check_battle_designated_protector',
-            'sba_check_seige_no_self_protector',
-            'sba_check_permanent_no_multiple_roles_attached',
-            ]
+            'sba_check_zero_or_less_life', # CR 704.5a
+            'sba_check_draw_from_empty_library', # CR 704.5b
+            'sba_check_ten_or_more_poison_counters', # CR 704.5c
+            'sba_check_non_battlefield_tokens', # CR 704.5d
+            'sba_check_misplaced_copies', # CR 704.5e
+            'sba_check_creature_zero_or_less_toughness', # CR 704.5f
+            'sba_check_lethal_damage', # CR 704.5g
+            'sba_check_deathtouch_damage', # CR 704.5h
+            'sba_check_planeswalker_loyalty', # CR 704.5i
+            'sba_check_legend_rule', # CR 704.5j
+            #'sba_check_world_rule', # no world cards in modern # CR 704.5k
+            'sba_check_aura_attachment', # CR 704.5m
+            'sba_check_equipment_or_fortification_attachment', # CR 704.5n
+            'sba_check_battle_or_creature_attachment', # CR 704.5p
+            'sba_check_plus_one_minus_one_counters', # CR 704.5q
+            #'sba_check_counter_upper_bound', # rasputin, dreamweaver is not in modern # CR 704.5?
+            'sba_check_saga', # CR 704.5?
+            'sba_check_dungeon', # CR 704.5?
+            #'sba_check_space_sculptor', # space beleren is not in modern # CR 704.5?
+            'sba_check_battle_zero_or_less_defense', # CR 704.5?
+            'sba_check_battle_designated_protector', # CR 704.5?
+            'sba_check_seige_no_self_protector', # CR 704.5?
+            'sba_check_permanent_no_multiple_roles_attached', # CR 704.5?
+        ]
         for e in self.events:
             was_checked = e[0].replace('done', 'sba')
             if was_checked in to_check:
