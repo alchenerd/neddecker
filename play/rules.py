@@ -1531,6 +1531,122 @@ SYSTEM_RULE_SBA_CHECK_PLUS_ONE_MINUS_ONE_COUNTERS = [
         check_plus_one_minus_one_counters,
     ),
 ]
+
+def check_saga(context) -> List[Any]:
+    def get_max_chapter(oracle_text: str) -> int:
+        if not oracle_text:
+            return 0
+        if oracle_text.lower() == oracle_text:
+            raise ValueError('Please check if you have passed in roman numeral in capitalized letters')
+        roman_numerals = ('I', 'II', 'III', 'IV', 'V', 'VI', 'VII') # currently max chapter is 6
+        for i, num in enumerate(roman_numerals):
+            if num not in oracle_text:
+                return i
+        raise NotImplementedError('Too many chapter levels')
+
+    events = [*context.events]
+    players = context.game.players
+    stack = context.game.stack
+    sources = [card['annotations']['source'] for card in stack if card.get('annotaitons', {}).get('source', None)]
+    for player in players:
+        battlefield = player.battlefield
+        for card in battlefield:
+            if 'saga'in card['type_line'].lower() and card not in sources:
+                is_face_down = card.get('annotations', {}).get('is_face_down', False)
+                face = 'back' if is_face_down else 'front'
+                oracle_text = card.get('oracle_text', '') or card.get('faces', {}).get(face, {}).get('oracle_text', '')
+                max_chapter = get_max_chapter()
+                lore_count = card.get('counters', {}).get('lore', 0)
+                if lore_count >= max_chapter:
+                    events.append(['move', card, f'{player.player_name}.battlefield', f'{player.player_name}.graveyard'])
+    # mark as done
+    matched_event = [e for e in events if e[0] == 'sba_check_saga'][0]
+    matched_event[0] = matched_event[0].replace('sba', 'done')
+    return events
+
+SYSTEM_RULE_SBA_CHECK_SAGA = [
+    (
+        'Given the game is in a phase or step that gives players priority',
+        game_allows_player_to_have_priorty,
+    ),
+    (
+        'When the game needs to check for ending sagas',
+        lambda context: 'sba_check_saga' == context.matched_event[0],
+    ),
+    (
+        'Then check saga',
+        check_saga,
+    ),
+]
+
+def check_dungeon(context) -> List[Any]:
+    LAST_ROOMS = ('Steel Watch Foundry', "Ansur's Sanctum", 'Temple of Bhaal', "Mad Wizard's Lair", 'Cradle of the Death God', 'Throne of the Dead Tree', 'Temple of Dumathoin',)
+    events = [*context.events]
+    players = context.game.players
+    stack = context.game.stack
+    sources = [card['annotations']['source'] for card in stack if card.get('annotaitons', {}).get('source', None)]
+    for player in players:
+        command = player.command
+        to_remove = None
+        for item in command:
+            if 'dungeon' in item.get('type_line').lower():
+                where = item.get('annotations', {}).get('venture_marker', '').replace('’', "'")
+                if where in LAST_ROOMS and where not in sources:
+                    to_remove = item
+                    break
+        if to_remove:
+            command.remove(to_remove)
+    # mark as done
+    matched_event = [e for e in events if e[0] == 'sba_check_dungeon'][0]
+    matched_event[0] = matched_event[0].replace('sba', 'done')
+    return events
+
+SYSTEM_RULE_SBA_CHECK_DUNGEON = [
+    (
+        'Given the game is in a phase or step that gives players priority',
+        game_allows_player_to_have_priorty,
+    ),
+    (
+        'When the game needs to check for completed dungeon',
+        lambda context: 'sba_check_dungeon' == context.matched_event[0],
+    ),
+    (
+        'Then check dungeon',
+        check_dungeon,
+    ),
+]
+
+def check_battle_zero_or_less_defense(context) -> List[Any]:
+    events = [*context.events]
+    players = context.game.players
+    stack = context.game.stack
+    sources = [card['annotations']['source'] for card in stack if card.get('annotaitons', {}).get('source', None)]
+    for player in players:
+        battlefield = player.battlefield
+        for card in battlefield:
+            if 'battle' in card['type_line'].lower() and card not in sources:
+                defense = card.get('counters', {}).get('defense', 0)
+                if not defense:
+                    events.append(['move', card, f'{player.player_name}.battlefield', f'{player.player_name}.graveyard'])
+    # mark as done
+    matched_event = [e for e in events if e[0] == 'sba_check_battle_zero_or_less_defense'][0]
+    matched_event[0] = matched_event[0].replace('sba', 'done')
+    return events
+
+SYSTEM_RULE_SBA_CHECK_BATTLE_ZERO_OR_LESS_DEFENSE = [
+    (
+        'Given the game is in a phase or step that gives players priority',
+        game_allows_player_to_have_priorty,
+    ),
+    (
+        'When the game needs to check for battles with zero or less defense',
+        lambda context: 'sba_check_battle_zero_or_less_defense' == context.matched_event[0],
+    ),
+    (
+        'Then check battles with zero or less defense',
+        check_battle_zero_or_less_defense,
+    ),
+]
 # Create rules for the engine
 CHOOSE_STARTING_PLAYER_RULES = (
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_CHOOSE_STARTING_PLAYER_DECIDER_RANDOM)),
@@ -1604,6 +1720,9 @@ SBA_RULES = [
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_EQUIPMENT_OR_FORTIFICATION_ATTACHMENT)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_BATTLE_OR_CREATURE_ATTACHMENT)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_PLUS_ONE_MINUS_ONE_COUNTERS)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_SAGA)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_DUNGEON)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_BATTLE_ZERO_OR_LESS_DEFENSE)),
 ]
 
 # EVERYTHING
