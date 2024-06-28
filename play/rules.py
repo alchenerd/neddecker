@@ -1647,6 +1647,72 @@ SYSTEM_RULE_SBA_CHECK_BATTLE_ZERO_OR_LESS_DEFENSE = [
         check_battle_zero_or_less_defense,
     ),
 ]
+
+def check_battle_designation(context) -> List[Any]:
+    def has_protector(card) -> bool:
+        try:
+            return bool(card['annotations']['protector'])
+        except:
+            return False
+        return False
+
+    def get_attacked_permanents(players) -> List[Any]:
+        battlefield = [card for player in players for card in player.battlefield]
+        attacked = []
+        for card in battlefield:
+            try:
+                attacking = card['annotation']['attacking']
+                attacked.append(attacking)
+            except:
+                continue
+
+    def get_eligible_protectors(players, card) -> List[Any]:
+        ret = []
+        try:
+            type_line = card.get('type_line').lower
+            owner_name = 'user' if 'u' in card.get('in_game_id') else 'ned'
+            owner = [p for p in players if p.player_name == owner_name][0]
+            opponents = [p for p in players if p is not owner]
+            if 'siege' not in type_line:
+                raise NotImplementedError('Battle only has Siege')
+            return opponents
+        except:
+            return ret
+
+    events = [*context.events]
+    players = context.game.players
+    attacked = get_attacked_permanents(players)
+    for player in players:
+        battlefield = player.battlefield
+        for card in battlefield:
+            if 'battle' in card['type_line'].lower():
+                if has_protector(card) and card not in attacked:
+                    eligible_protectors = get_eligible_protectors(players, card)
+                    if not eligible_protectors:
+                        events.append(['move', card, f'{player.player_name}.battlefield', f'{player.player_name}.graveyard'])
+                    else:
+                        opponent = eligible_protectors[-1]
+                        card['annotation']['protector'] = opponent.player_name
+    # mark as done
+    matched_event = [e for e in events if e[0] == 'sba_check_battle_designation'][0]
+    matched_event[0] = matched_event[0].replace('sba', 'done')
+    return events
+
+SYSTEM_RULE_SBA_CHECK_BATTLE_DESIGNATION = [
+    (
+        'Given the game is in a phase or step that gives players priority',
+        game_allows_player_to_have_priorty,
+    ),
+    (
+        'When the game needs to check for battle designation',
+        lambda context: 'sba_check_battle_designation' == context.matched_event[0],
+    ),
+    (
+        'Then check battle designation',
+        check_battle_designation,
+    ),
+]
+
 # Create rules for the engine
 CHOOSE_STARTING_PLAYER_RULES = (
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_CHOOSE_STARTING_PLAYER_DECIDER_RANDOM)),
@@ -1723,6 +1789,7 @@ SBA_RULES = [
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_SAGA)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_DUNGEON)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_BATTLE_ZERO_OR_LESS_DEFENSE)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_BATTLE_DESIGNATION)),
 ]
 
 # EVERYTHING

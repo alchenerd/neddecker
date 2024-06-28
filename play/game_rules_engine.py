@@ -650,9 +650,9 @@ class GameRulesEngine:
             'sba_check_dungeon', # CR 704.5t
             #'sba_check_space_sculptor', # space beleren is not in modern # CR 704.5u
             'sba_check_battle_zero_or_less_defense', # CR 704.5v
-            'sba_check_battle_designated_protector', # CR 704.5?
-            'sba_check_seige_no_self_protector', # CR 704.5?
-            'sba_check_permanent_no_multiple_roles_attached', # CR 704.5?
+            'sba_check_battle_designation', # CR 704.5w
+            'sba_check_seige_no_self_protector', # CR 704.5x
+            'sba_check_permanent_no_multiple_roles_attached', # CR 704.5y
         ]
         for e in self.events:
             was_checked = e[0].replace('done', 'sba')
