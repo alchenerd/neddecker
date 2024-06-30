@@ -39,7 +39,7 @@ class GameRulesEngine:
                 if not self.events:
                     break
                 """
-                print('[* end of cycle report *]')
+                print('\n[* end of cycle report *]')
                 print('\n'.join(map(str, self.events)))
                 _ = input('[* end of cycle press any key to continue *]')
                 """
@@ -94,7 +94,7 @@ class GameRulesEngine:
                 given_statements.append(statement)
             if all(rule.implementations[s](self) for s in given_statements):
                 self.rules.append(rule)
-                print('\n'.join(rule.gherkin), '\nis loaded.')
+                #print('\n'.join(rule.gherkin), '\nis loaded.')
         assert self.rules
 
     def _evaluate(self):
@@ -116,8 +116,8 @@ class GameRulesEngine:
                 return
 
     def apply_changes_to_events(self):
-        print('apply_changes_to_events')
-        print(self.changes)
+        #print('apply_changes_to_events')
+        #print(self.changes)
         if not self.changes:
             return
         # expecting self.changes to be a list of (item, callable)
@@ -135,15 +135,15 @@ class GameRulesEngine:
                 to_apply = relevant_changes[:]
             else:
                 to_apply = [ relevant_changes ]
-            print('to_apply:', to_apply)
+            #print('to_apply:', to_apply)
             for event, effect in to_apply:
-                print('applying', effect, 'to', event)
+                #print('applying', effect, 'to', event)
                 self.matched_event = event
                 self.events = effect(self)
         self.changes = []
 
     def generate_changes_by_rules(self):
-        print(f'generate_changes_by_rules: {len(self.rules)}')
+        #print(f'generate_changes_by_rules: {len(self.rules)}')
         for rule in self.rules:
             for item in self.events:
                 self.matched_event = item
@@ -164,7 +164,7 @@ class GameRulesEngine:
                             if not f(self):
                                 break
                         case 'Then':
-                            print('appending ', f)
+                            #print('appending ', f)
                             self.changes.append((item, f))
         self.changes.reverse() # reverse the appending action so the events will be applied in gherkin order
         return bool(self.changes)
@@ -176,7 +176,7 @@ class GameRulesEngine:
         remainder = []
         while self.events:
             args = self.events.pop()
-            print(args)
+            #print(args)
             f = getattr(self, args[0], None)
             if f and callable(f):
                 print("[game action '{}' has fired]".format(args[0]))
@@ -671,6 +671,14 @@ class GameRulesEngine:
         # FIXME: implement top of stack resolving
         game_object, *_ = args
         print(game_object)
+
+    def draw_step_tba(self, *args):
+        game = self.game
+        players = game.players
+        active_player_name = game.whose_turn
+        active_player = [p for p in players if p.player_name == active_player_name][0]
+        self.events.append(['draw', active_player, 1])
+        self.events.append(['draw_step_tba_pending',])
 
     def update_game_state(self):
         payload = self.game.get_payload(is_update=True)

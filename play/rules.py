@@ -915,7 +915,6 @@ SYSTEM_RULE_UNTAP_STEP_PROCEED = [
     ),
 ]
 
-# FIXME: make generic priority giver rules
 SYSTEM_RULE_UPKEEP_STEP_GIVE_PRIORITY = [
     (
         'Given the game is in the upkeep step',
@@ -971,9 +970,9 @@ def give_priority_to_appropriate_player(context) -> List[Any]:
     n = len(players)
     for _ in range(n):
         if players[i] not in passed_players:
-            return [*context.events, ['give_priority', i, None]]
+            return [*[e for e in context.events if 'done_check' not in e[0] and e[0] != 'check_sba_done'], ['give_priority', i, None]]
         i = (i + 1) % n
-    return [['resolve', stack[-1]]] if stack else [['next_step']]
+    return [['resolve', stack[-1]],] if stack else [['next_step',],]
 
 # then if sba check is done, give priority
 SYSTEM_RULE_PRIORITY_GIVE_PRIORITY = [
@@ -1773,6 +1772,61 @@ SYSTEM_RULE_SBA_CHECK_PERMANENT_NO_MULTIPLE_ROLES = [
     ),
 ]
 
+SYSTEM_RULE_DRAW_STEP_TBA_DRAW_A_CARD = [
+    (
+        'Given the game is in the draw step',
+        lambda context: context.game.phase == 'draw step'
+    ),
+    (
+        'When the game is at the beginning of the draw step',
+        lambda context: len(context.events) == 1 and 'draw step' == context.matched_event[0],
+    ),
+    (
+        'Then active player draws a card',
+        lambda context: [*context.events, ['draw_step_tba',]],
+    ),
+]
+
+def mark_draw_step_tba_as_done(context) -> List[Any]:
+    events = [*context.events]
+    matched_event = [e for e in events if e[0] == 'draw_step_tba_pending'][0]
+    matched_event[0] = matched_event[0].replace('_pending', '_done')
+    return events
+
+SYSTEM_RULE_DRAW_STEP_TBA_DRAW_A_CARD_HANDLE_PENDING = [
+    (
+        'Given the game is in the draw step',
+        lambda context: context.game.phase == 'draw step'
+    ),
+    (
+        'When the game is waiting for the draw step TBA',
+        lambda context: 'draw_step_tba_pending' == context.matched_event[0],
+    ),
+    (
+        'And there is no draw in current events',
+        lambda context: all(e[0] != 'draw' for e in context.events),
+    ),
+    (
+        'Then mark the TBA as done',
+        mark_draw_step_tba_as_done,
+    ),
+]
+
+SYSTEM_RULE_DRAW_STEP_GIVE_PRIORITY = [
+    (
+        'Given the game is in the draw step',
+        lambda context: context.game.phase == 'draw step'
+    ),
+    (
+        'When the game has done the draw step TBA',
+        lambda context: len(context.events) == 2 and 'draw_step_tba_done' == context.matched_event[0],
+    ),
+    (
+        'Then the player has priority',
+        lambda context: [*context.events, ['player_has_priority']],
+    ),
+]
+
 # Create rules for the engine
 CHOOSE_STARTING_PLAYER_RULES = (
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_CHOOSE_STARTING_PLAYER_DECIDER_RANDOM)),
@@ -1854,6 +1908,12 @@ SBA_RULES = [
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_PERMANENT_NO_MULTIPLE_ROLES)),
 ]
 
+DRAW_STEP_RULES = [
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_DRAW_STEP_TBA_DRAW_A_CARD)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_DRAW_STEP_TBA_DRAW_A_CARD_HANDLE_PENDING)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_DRAW_STEP_GIVE_PRIORITY)),
+]
+
 # EVERYTHING
 SYSTEM_RULES = (
     *CHOOSE_STARTING_PLAYER_RULES,
@@ -1865,4 +1925,5 @@ SYSTEM_RULES = (
     *GENERAL_PRIORITY_RULES,
     *SBA_RULES,
     *UPKEEP_STEP_RULES,
+    *DRAW_STEP_RULES,
 )
