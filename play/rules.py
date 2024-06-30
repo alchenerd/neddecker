@@ -1472,12 +1472,12 @@ def check_battle_or_creature_attachment(context) -> List[Any]:
         for card in battlefield:
             if all(x not in card['type_line'].lower() for x in ('aura', 'equipment', 'fortification')):
                 # check if it's attached to nothing or an illegal object
-                annotations = card.get('annotations', [])
-                attached_to = annotations.get('attaching', '')
+                annotations = card.get('annotations', {})
+                attached_to = annotations.get('attached_to', '')
                 if not attached_to:
                     continue
                 if ['cant_attach', card, attached_to] in events:
-                    del annotations['attaching']
+                    del annotations['attached_to']
     # mark as done
     matched_event = [e for e in events if e[0] == 'sba_check_battle_or_creature_attachment'][0]
     matched_event[0] = matched_event[0].replace('sba', 'done')
@@ -1713,6 +1713,66 @@ SYSTEM_RULE_SBA_CHECK_BATTLE_DESIGNATION = [
     ),
 ]
 
+def check_siege_no_self_protector(context) -> List[Any]:
+    events = [*context.events]
+    players = context.game.players
+    sieges = {card: player for player in players for card in player.battlefield if 'siege' in card['type_line'].lower()}
+    for siege, controller in sieges.items():
+        protector = siege.get('annotations', {}).get('protector')
+        if protector == controller:
+            other = [player for player in players if player is not controller][0]
+            siege['annotations']['protector'] = other
+    # mark as done
+    matched_event = [e for e in events if e[0] == 'sba_check_siege_no_self_protector'][0]
+    matched_event[0] = matched_event[0].replace('sba', 'done')
+    return events
+
+SYSTEM_RULE_SBA_CHECK_SIEGE_NO_SELF_PROTECTOR = [
+    (
+        'Given the game is in a phase or step that gives players priority',
+        game_allows_player_to_have_priorty,
+    ),
+    (
+        'When the game needs to check for sieges with controller same as protector',
+        lambda context: 'sba_check_siege_no_self_protector' == context.matched_event[0],
+    ),
+    (
+        'Then check sieges with self protector',
+        check_siege_no_self_protector,
+    ),
+]
+
+def check_permanent_no_multiple_roles(context) -> List[Any]:
+    events = [*context.events]
+    players = context.game.players
+    role_map = {}
+    for player in players:
+        for card in player.battlefield:
+            if 'role' in card.get('type_line').lower():
+                enchanted = card.get('annotations', {}).get('enchanting')
+                if enchanted and enchanted in role_map:
+                    events.append(['move', role_map[enchanted], f'{player.player_name}.battlefield', f'{player.player_name}.graveyard'])
+                role_map[enchanted] = card
+    # mark as done
+    matched_event = [e for e in events if e[0] == 'sba_check_permanent_no_multiple_roles'][0]
+    matched_event[0] = matched_event[0].replace('sba', 'done')
+    return events
+
+SYSTEM_RULE_SBA_CHECK_PERMANENT_NO_MULTIPLE_ROLES = [
+    (
+        'Given the game is in a phase or step that gives players priority',
+        game_allows_player_to_have_priorty,
+    ),
+    (
+        'When the game needs to check for permanent with multiple roles',
+        lambda context: 'sba_check_permanent_no_multiple_roles' == context.matched_event[0],
+    ),
+    (
+        'Then check permanent with multiple roles',
+        check_permanent_no_multiple_roles,
+    ),
+]
+
 # Create rules for the engine
 CHOOSE_STARTING_PLAYER_RULES = (
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_CHOOSE_STARTING_PLAYER_DECIDER_RANDOM)),
@@ -1790,6 +1850,8 @@ SBA_RULES = [
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_DUNGEON)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_BATTLE_ZERO_OR_LESS_DEFENSE)),
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_BATTLE_DESIGNATION)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_SIEGE_NO_SELF_PROTECTOR)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_SBA_CHECK_PERMANENT_NO_MULTIPLE_ROLES)),
 ]
 
 # EVERYTHING
