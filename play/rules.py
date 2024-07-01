@@ -1007,6 +1007,14 @@ def current_player_passed_priority(context) -> bool:
     pending_player = context.game.players[pending_event[1]]
     return any(e[1] == pending_player for e in passed_events)
 
+def next_step_if_all_pass_and_stack_empty(context) -> List[Any]:
+    events = [*context.events]
+    pass_count = sum(1 for e in events if e[0] == 'pass_priority')
+    player_count = len(context.game.players)
+    if pass_count == player_count and not context.game.stack:
+        events = [['next_step',],]
+    return events
+
 # then player passes priority
 SYSTEM_RULE_PRIORITY_HANDLE_PASS_PRIORITY = [
     (
@@ -1025,6 +1033,10 @@ SYSTEM_RULE_PRIORITY_HANDLE_PASS_PRIORITY = [
         'Then consume the pending priority event',
         consume_line,
     ),
+    (
+        'And pass the step if all player has passed priority',
+        next_step_if_all_pass_and_stack_empty,
+    ),
 ]
 
 
@@ -1034,8 +1046,10 @@ def check_zero_or_less_life(context) -> List[Any]:
     for player in players:
         if player.hp <= 0:
             events.append(['lose_the_game', player])
-    matched_event = [e for e in events if e[0] == 'sba_check_zero_or_less_life'][0]
-    matched_event[0] = matched_event[0].replace('sba', 'done')
+    matched_event = [e for e in events if e[0] == 'sba_check_zero_or_less_life']
+    matched_event = matched_event[0] if matched_event else None
+    if matched_event:
+        matched_event[0] = matched_event[0].replace('sba', 'done')
     return events
 
 SYSTEM_RULE_SBA_CHECK_ZERO_OR_LESS_LIFE = [
@@ -1060,8 +1074,10 @@ def check_draw_from_empty_library(context) -> List[Any]:
         has_drawn_from_empty_library = getattr(player, 'has_drawn_from_empty_library', False)
         if has_drawn_from_empty_library:
             events.append(['lose_the_game', player])
-    matched_event = [e for e in events if e[0] == 'sba_check_draw_from_empty_library'][0]
-    matched_event[0] = matched_event[0].replace('sba', 'done')
+    matched_event = [e for e in events if e[0] == 'sba_check_draw_from_empty_library']
+    matched_event = matched_event[0] if matched_event else None
+    if matched_event:
+        matched_event[0] = matched_event[0].replace('sba', 'done')
     return events
 
 SYSTEM_RULE_SBA_CHECK_DRAW_FROM_EMPTY_LIBRARY = [
@@ -1086,8 +1102,10 @@ def check_ten_or_more_poison_counters(context) -> List[Any]:
         poison = player.counters.get('poison', 0)
         if poison >= 10:
             events.append(['lose_the_game', player])
-    matched_event = [e for e in events if e[0] == 'sba_check_ten_or_more_poison_counters'][0]
-    matched_event[0] = matched_event[0].replace('sba', 'done')
+    matched_event = [e for e in events if e[0] == 'sba_check_ten_or_more_poison_counters']
+    matched_event = matched_event[0] if matched_event else None
+    if matched_event:
+        matched_event[0] = matched_event[0].replace('sba', 'done')
     return events
 
 SYSTEM_RULE_SBA_CHECK_TEN_OR_MORE_POISON_COUNTERS = [
@@ -1125,8 +1143,10 @@ def check_non_battlefield_tokens(context) -> List[Any]:
             current_zone = filter(lambda x: not x['in_game_id'].startswith('token#'), current_zone)
     # mark as done
     events = [*context.events]
-    matched_event = [e for e in events if e[0] == 'sba_check_non_battlefield_tokens'][0]
-    matched_event[0] = matched_event[0].replace('sba', 'done')
+    matched_event = [e for e in events if e[0] == 'sba_check_non_battlefield_tokens']
+    matched_event = matched_event[0] if matched_event else None
+    if matched_event:
+        matched_event[0] = matched_event[0].replace('sba', 'done')
     return events
 
 
@@ -1164,8 +1184,10 @@ def check_misplaced_copies(context) -> List[Any]:
                 any(y in x['type_line'] for y in ('instant', 'sorcery')), player.battlefield)
     # mark as done
     events = [*context.events]
-    matched_event = [e for e in events if e[0] == 'sba_check_misplaced_copies'][0]
-    matched_event[0] = matched_event[0].replace('sba', 'done')
+    matched_event = [e for e in events if e[0] == 'sba_check_misplaced_copies']
+    matched_event = matched_event[0] if matched_event else None
+    if matched_event:
+        matched_event[0] = matched_event[0].replace('sba', 'done')
     return events
 
 SYSTEM_RULE_SBA_CHECK_MISPLACED_COPIES = [
@@ -1194,8 +1216,10 @@ def check_creature_zero_or_less_toughness(context) -> List[Any]:
                 if 'toughness' in card and int(card['toughness']) <= 0:
                     events.append(['move', card, f'{player.player_name}.battlefield', f'{player.player_name}.graveyard'])
     # mark as done
-    matched_event = [e for e in events if e[0] == 'sba_check_creature_zero_or_less_toughness'][0]
-    matched_event[0] = matched_event[0].replace('sba', 'done')
+    matched_event = [e for e in events if e[0] == 'sba_check_creature_zero_or_less_toughness']
+    matched_event = matched_event[0] if matched_event else None
+    if matched_event:
+        matched_event[0] = matched_event[0].replace('sba', 'done')
     return events
 
 SYSTEM_RULE_SBA_CHECK_CREATURE_ZERO_OR_LESS_TOUGHNESS = [
@@ -1230,8 +1254,10 @@ def check_lethal_damage(context) -> List[Any]:
                 if marked_damage >= toughness:
                     events.append(['move', card, f'{player.player_name}.battlefield', f'{player.player_name}.graveyard'])
     # mark as done
-    matched_event = [e for e in events if e[0] == 'sba_check_lethal_damage'][0]
-    matched_event[0] = matched_event[0].replace('sba', 'done')
+    matched_event = [e for e in events if e[0] == 'sba_check_lethal_damage']
+    matched_event = matched_event[0] if matched_event else None
+    if matched_event:
+        matched_event[0] = matched_event[0].replace('sba', 'done')
     return events
 
 SYSTEM_RULE_SBA_CHECK_LETHAL_DAMAGE = [
@@ -1260,8 +1286,10 @@ def check_deathtouch_damage(context) -> List[Any]:
                 if deathtouch_damage:
                     events.append(['move', card, f'{player.player_name}.battlefield', f'{player.player_name}.graveyard'])
     # mark as done
-    matched_event = [e for e in events if e[0] == 'sba_check_deathtouch_damage'][0]
-    matched_event[0] = matched_event[0].replace('sba', 'done')
+    matched_event = [e for e in events if e[0] == 'sba_check_deathtouch_damage']
+    matched_event = matched_event[0] if matched_event else None
+    if matched_event:
+        matched_event[0] = matched_event[0].replace('sba', 'done')
     return events
 
 SYSTEM_RULE_SBA_CHECK_DEATHTOUCH_DAMAGE = [
@@ -1290,8 +1318,10 @@ def check_planeswalker_loyalty(context) -> List[Any]:
                 if not loyalty:
                     events.append(['move', card, f'{player.player_name}.battlefield', f'{player.player_name}.graveyard'])
     # mark as done
-    matched_event = [e for e in events if e[0] == 'sba_check_planeswalker_loyalty'][0]
-    matched_event[0] = matched_event[0].replace('sba', 'done')
+    matched_event = [e for e in events if e[0] == 'sba_check_planeswalker_loyalty']
+    matched_event = matched_event[0] if matched_event else None
+    if matched_event:
+        matched_event[0] = matched_event[0].replace('sba', 'done')
     return events
 
 SYSTEM_RULE_SBA_CHECK_PLANESWALKER_LOYALTY = [
@@ -1314,7 +1344,10 @@ ASK_LEGEND_RULE_STRING = "All but one of these cards need to be sacrificed becau
 def check_legend_rule(context) -> List[Any]:
     """Append to event ['ask_legend_rule', player, card_name] or ['done_check_legend_rule',]"""
     events = [*context.events]
-    matched_event = [e for e in events if e[0] == 'sba_check_legend_rule'][0]
+    matched_event = [e for e in events if e[0] == 'sba_check_legend_rule']
+    matched_event = matched_event[0] if matched_event else None
+    if not matched_event:
+        return events
     players = context.game.players
     for player in players:
         battlefield = player.battlefield
@@ -1376,8 +1409,10 @@ def handle_legendary_rule_answer(context) -> List[Any]:
     to_sac = [card for card in player.battlefield if card['name'] == name and card is not chosen]
     for card in to_sac:
         events.append(['move', card, f'{player.player_name}.battlefield', f'{player.player_name}.graveyard'])
-    matched = [e for e in events if e[0] == 'sba_ask_check_legend_rule'][0]
-    matched[0].replace('sba_ask', 'sba') # resume state-based action check
+    matched = [e for e in events if e[0] == 'sba_ask_check_legend_rule']
+    matched = matched[0] if matched else None
+    if matched:
+        matched[0].replace('sba_ask', 'sba') # resume state-based action check
     return events
 
 SYSTEM_RULE_SBA_CHECK_LEGEND_RULE_HANDLE_ANSWER = [
@@ -1410,8 +1445,10 @@ def check_aura_attachment(context) -> List[Any]:
                 elif ['cant_attach', card, attached_to] in events:
                     events.append(['move', card, f'{player.player_name}.battlefield', f'{player.player_name}.graveyard'])
     # mark as done
-    matched_event = [e for e in events if e[0] == 'sba_check_aura_attachment'][0]
-    matched_event[0] = matched_event[0].replace('sba', 'done')
+    matched_event = [e for e in events if e[0] == 'sba_check_aura_attachment']
+    matched_event = matched_event[0] if matched_event else None
+    if matched_event:
+        matched_event[0] = matched_event[0].replace('sba', 'done')
     return events
 
 SYSTEM_RULE_SBA_CHECK_AURA_ATTACHMENT = [
@@ -1444,8 +1481,10 @@ def check_equipment_or_fortification_attachment(context) -> List[Any]:
                 if ['cant_attach', card, attached_to] in events:
                     del annotations['attaching']
     # mark as done
-    matched_event = [e for e in events if e[0] == 'sba_check_equipment_or_fortification_attachment'][0]
-    matched_event[0] = matched_event[0].replace('sba', 'done')
+    matched_event = [e for e in events if e[0] == 'sba_check_equipment_or_fortification_attachment']
+    matched_event = matched_event[0] if matched_event else None
+    if matched_event:
+        matched_event[0] = matched_event[0].replace('sba', 'done')
     return events
 
 SYSTEM_RULE_SBA_CHECK_EQUIPMENT_OR_FORTIFICATION_ATTACHMENT = [
@@ -1478,8 +1517,10 @@ def check_battle_or_creature_attachment(context) -> List[Any]:
                 if ['cant_attach', card, attached_to] in events:
                     del annotations['attached_to']
     # mark as done
-    matched_event = [e for e in events if e[0] == 'sba_check_battle_or_creature_attachment'][0]
-    matched_event[0] = matched_event[0].replace('sba', 'done')
+    matched_event = [e for e in events if e[0] == 'sba_check_battle_or_creature_attachment']
+    matched_event = matched_event[0] if matched_event else None
+    if matched_event:
+        matched_event[0] = matched_event[0].replace('sba', 'done')
     return events
 
 SYSTEM_RULE_SBA_CHECK_BATTLE_OR_CREATURE_ATTACHMENT = [
@@ -1512,8 +1553,10 @@ def check_plus_one_minus_one_counters(context) -> List[Any]:
             for key in ('+1/+1', '-1/-1'):
                 counters[key] -= minimum
     # mark as done
-    matched_event = [e for e in events if e[0] == 'sba_check_plus_one_minus_one_counters'][0]
-    matched_event[0] = matched_event[0].replace('sba', 'done')
+    matched_event = [e for e in events if e[0] == 'sba_check_plus_one_minus_one_counters']
+    matched_event = matched_event[0] if matched_event else None
+    if matched_event:
+        matched_event[0] = matched_event[0].replace('sba', 'done')
     return events
 
 SYSTEM_RULE_SBA_CHECK_PLUS_ONE_MINUS_ONE_COUNTERS = [
@@ -1559,8 +1602,10 @@ def check_saga(context) -> List[Any]:
                 if lore_count >= max_chapter:
                     events.append(['move', card, f'{player.player_name}.battlefield', f'{player.player_name}.graveyard'])
     # mark as done
-    matched_event = [e for e in events if e[0] == 'sba_check_saga'][0]
-    matched_event[0] = matched_event[0].replace('sba', 'done')
+    matched_event = [e for e in events if e[0] == 'sba_check_saga']
+    matched_event = matched_event[0] if matched_event else None
+    if matched_event:
+        matched_event[0] = matched_event[0].replace('sba', 'done')
     return events
 
 SYSTEM_RULE_SBA_CHECK_SAGA = [
@@ -1596,8 +1641,10 @@ def check_dungeon(context) -> List[Any]:
         if to_remove:
             command.remove(to_remove)
     # mark as done
-    matched_event = [e for e in events if e[0] == 'sba_check_dungeon'][0]
-    matched_event[0] = matched_event[0].replace('sba', 'done')
+    matched_event = [e for e in events if e[0] == 'sba_check_dungeon']
+    matched_event = matched_event[0] if matched_event else None
+    if matched_event:
+        matched_event[0] = matched_event[0].replace('sba', 'done')
     return events
 
 SYSTEM_RULE_SBA_CHECK_DUNGEON = [
@@ -1628,8 +1675,10 @@ def check_battle_zero_or_less_defense(context) -> List[Any]:
                 if not defense:
                     events.append(['move', card, f'{player.player_name}.battlefield', f'{player.player_name}.graveyard'])
     # mark as done
-    matched_event = [e for e in events if e[0] == 'sba_check_battle_zero_or_less_defense'][0]
-    matched_event[0] = matched_event[0].replace('sba', 'done')
+    matched_event = [e for e in events if e[0] == 'sba_check_battle_zero_or_less_defense']
+    matched_event = matched_event[0] if matched_event else None
+    if matched_event:
+        matched_event[0] = matched_event[0].replace('sba', 'done')
     return events
 
 SYSTEM_RULE_SBA_CHECK_BATTLE_ZERO_OR_LESS_DEFENSE = [
@@ -1693,8 +1742,10 @@ def check_battle_designation(context) -> List[Any]:
                         opponent = eligible_protectors[-1]
                         card['annotation']['protector'] = opponent.player_name
     # mark as done
-    matched_event = [e for e in events if e[0] == 'sba_check_battle_designation'][0]
-    matched_event[0] = matched_event[0].replace('sba', 'done')
+    matched_event = [e for e in events if e[0] == 'sba_check_battle_designation']
+    matched_event = matched_event[0] if matched_event else None
+    if matched_event:
+        matched_event[0] = matched_event[0].replace('sba', 'done')
     return events
 
 SYSTEM_RULE_SBA_CHECK_BATTLE_DESIGNATION = [
@@ -1722,8 +1773,10 @@ def check_siege_no_self_protector(context) -> List[Any]:
             other = [player for player in players if player is not controller][0]
             siege['annotations']['protector'] = other
     # mark as done
-    matched_event = [e for e in events if e[0] == 'sba_check_siege_no_self_protector'][0]
-    matched_event[0] = matched_event[0].replace('sba', 'done')
+    matched_event = [e for e in events if e[0] == 'sba_check_siege_no_self_protector']
+    matched_event = matched_event[0] if matched_event else None
+    if matched_event:
+        matched_event[0] = matched_event[0].replace('sba', 'done')
     return events
 
 SYSTEM_RULE_SBA_CHECK_SIEGE_NO_SELF_PROTECTOR = [
@@ -1753,8 +1806,10 @@ def check_permanent_no_multiple_roles(context) -> List[Any]:
                     events.append(['move', role_map[enchanted], f'{player.player_name}.battlefield', f'{player.player_name}.graveyard'])
                 role_map[enchanted] = card
     # mark as done
-    matched_event = [e for e in events if e[0] == 'sba_check_permanent_no_multiple_roles'][0]
-    matched_event[0] = matched_event[0].replace('sba', 'done')
+    matched_event = [e for e in events if e[0] == 'sba_check_permanent_no_multiple_roles']
+    matched_event = matched_event[0] if matched_event else None
+    if matched_event:
+        matched_event[0] = matched_event[0].replace('sba', 'done')
     return events
 
 SYSTEM_RULE_SBA_CHECK_PERMANENT_NO_MULTIPLE_ROLES = [
@@ -1782,8 +1837,9 @@ SYSTEM_RULE_DRAW_STEP_TBA_DRAW_A_CARD = [
         lambda context: len(context.events) == 1 and 'draw step' == context.matched_event[0],
     ),
     (
-        'Then active player draws a card',
-        lambda context: [*context.events, ['draw_step_tba',]],
+        "Then active player draws a card if it's not the first turn",
+        lambda context: [*context.events, ['draw_step_tba',]] if context.game.turn_count != 1 else \
+                [*context.events, ['draw_step_tba_done',]],
     ),
 ]
 
@@ -1820,6 +1876,55 @@ SYSTEM_RULE_DRAW_STEP_GIVE_PRIORITY = [
     (
         'When the game has done the draw step TBA',
         lambda context: len(context.events) == 2 and 'draw_step_tba_done' == context.matched_event[0],
+    ),
+    (
+        'Then the player has priority',
+        lambda context: [*context.events, ['player_has_priority']],
+    ),
+]
+
+SYSTEM_RULE_PRECOMBAT_MAIN_PHASE_TBA_SAGA = [
+    (
+        'Given the game is in the precombat main phase',
+        lambda context: context.game.phase == 'precombat main phase'
+    ),
+    (
+        'When the game is at the beginning of the precombat main phase',
+        lambda context: len(context.events) == 1 and 'precombat main phase' == context.matched_event[0],
+    ),
+    (
+        "Then add one lore counter onto all active player's sagas",
+        lambda context: [*context.events, ['precombat_main_phase_tba_saga',]],
+    ),
+    (
+        'And the player has priority',
+        lambda context: [*context.events, ['player_has_priority']],
+    ),
+]
+
+SYSTEM_RULE_COMBAT_PHASE_PASS = [
+    (
+        'Given the game is in the combat phase',
+        lambda context: context.game.phase == 'combat phase'
+    ),
+    (
+        'When the game is at the beginning of the combat phase',
+        lambda context: len(context.events) == 1 and 'combat phase' == context.matched_event[0],
+    ),
+    (
+        'Then move to the next step',
+        lambda context: [['next_step',],],
+    ),
+]
+
+SYSTEM_RULE_BEGINNING_OF_COMBAT_STEP_GIVE_PRIORITY = [
+    (
+        'Given the game is in the beginning of combat step',
+        lambda context: context.game.phase == 'beginning of combat step'
+    ),
+    (
+        'When the game is at the beginning of the combat step',
+        lambda context: len(context.events) == 1 and 'beginning of combat step' == context.matched_event[0],
     ),
     (
         'Then the player has priority',
@@ -1914,6 +2019,18 @@ DRAW_STEP_RULES = [
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_DRAW_STEP_GIVE_PRIORITY)),
 ]
 
+PRECOMBAT_MAIN_PHASE_RULES = [
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_PRECOMBAT_MAIN_PHASE_TBA_SAGA)),
+]
+
+COMBAT_PHASE_RULES = [
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_COMBAT_PHASE_PASS)),
+]
+
+BEGINNING_OF_COMBAT_STEP_RULES = [
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_BEGINNING_OF_COMBAT_STEP_GIVE_PRIORITY)),
+]
+
 # EVERYTHING
 SYSTEM_RULES = (
     *CHOOSE_STARTING_PLAYER_RULES,
@@ -1926,4 +2043,7 @@ SYSTEM_RULES = (
     *SBA_RULES,
     *UPKEEP_STEP_RULES,
     *DRAW_STEP_RULES,
+    *PRECOMBAT_MAIN_PHASE_RULES,
+    *COMBAT_PHASE_RULES,
+    *BEGINNING_OF_COMBAT_STEP_RULES,
 )

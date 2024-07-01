@@ -27,25 +27,28 @@ class GameRulesEngine:
         self.abort = False
 
     def _repl(self, data:str) -> None:
-        try:
-            self.input = json.loads(data)
-            self.halt = False
-            self.abort = False
-            while not self.abort and not self.halt:
-                self._read()
-                self._evaluate()
-                self._execute()
-                #print(self.events)
-                if not self.events:
-                    break
+        #try:
+        self.input = json.loads(data)
+        self.halt = False
+        self.abort = False
+        while not self.abort and not self.halt:
+            self._read()
+            self._evaluate()
+            self._execute()
+            #print(self.events)
+            if not self.events:
+                break
                 """
                 print('\n[* end of cycle report *]')
                 print('\n'.join(map(str, self.events)))
                 _ = input('[* end of cycle press any key to continue *]')
                 """
             #print(self.abort, self.halt)
+            """
         except Exception as e:
             self.consumer.send_log(f'Something went wrong: {str(e)}')
+            breakpoint()
+            """
 
     def _read(self) -> None:
         """ Translate input into one or more event. """
@@ -156,9 +159,11 @@ class GameRulesEngine:
                         tracking = start
                     f = rule.implementations.get(statement, lambda x: False)
                     assert callable(f)
+                    #"""
                     print(statement)
                     print(self.matched_event)
                     print(self.events)
+                    #"""
                     match start:
                         case 'Given' | 'When':
                             if not f(self):
@@ -659,6 +664,9 @@ class GameRulesEngine:
             if was_checked in to_check:
                 to_check.remove(was_checked)
         if to_check:
+            if 'sba_check_draw_from_empty_library' == to_check[0]:
+                #breakpoint()
+                pass
             self.events.append([to_check[0],])
         else:
             self.events.append(['check_sba_done',])
@@ -679,6 +687,17 @@ class GameRulesEngine:
         active_player = [p for p in players if p.player_name == active_player_name][0]
         self.events.append(['draw', active_player, 1])
         self.events.append(['draw_step_tba_pending',])
+
+    def precombat_main_phase_tba_saga(self, *args):
+        game = self.game
+        players = game.players
+        active_player_name = game.whose_turn
+        active_player = [p for p in players if p.player_name == active_player_name][0]
+        for card in active_player.battlefield:
+            if 'saga' in card.get('type_line', '').lower():
+                lore = card.get('counters', {}).get('lore', 0)
+                self.events.append(['set_counter', card, 'lore', lore + 1])
+        self.consumer.send_log('Add one lore counter to each saga active player controls')
 
     def update_game_state(self):
         payload = self.game.get_payload(is_update=True)
