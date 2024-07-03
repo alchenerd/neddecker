@@ -1932,6 +1932,21 @@ SYSTEM_RULE_BEGINNING_OF_COMBAT_STEP_GIVE_PRIORITY = [
     ),
 ]
 
+SYSTEM_RULE_DECLARE_ATTACKERS_STEP_CHECK_SKIP = [
+    (
+        'Given the game is in declare attackers step',
+        lambda context: context.game.phase == 'declare attackers step'
+    ),
+    (
+        'When the game is at the beginning of the declare attackers step',
+        lambda context: len(context.events) == 1 and 'declare attackers step' == context.matched_event[0],
+    ),
+    (
+        "Then have player declare attackers",
+        lambda context: [*context.events, ['ask_player_to_declare_attackers_tba',]],
+    ),
+]
+
 # Create rules for the engine
 CHOOSE_STARTING_PLAYER_RULES = (
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_CHOOSE_STARTING_PLAYER_DECIDER_RANDOM)),
@@ -2031,7 +2046,10 @@ BEGINNING_OF_COMBAT_STEP_RULES = [
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_BEGINNING_OF_COMBAT_STEP_GIVE_PRIORITY)),
 ]
 
-# EVERYTHING
+DECLARE_ATTACKERS_STEP_RULES = [
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_DECLARE_ATTACKERS_STEP_CHECK_SKIP)),
+]
+
 SYSTEM_RULES = (
     *CHOOSE_STARTING_PLAYER_RULES,
     *REVEAL_COMPANION_RULES,
@@ -2046,4 +2064,5 @@ SYSTEM_RULES = (
     *PRECOMBAT_MAIN_PHASE_RULES,
     *COMBAT_PHASE_RULES,
     *BEGINNING_OF_COMBAT_STEP_RULES,
+    *DECLARE_ATTACKERS_STEP_RULES,
 )

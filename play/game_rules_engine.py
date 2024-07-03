@@ -27,28 +27,26 @@ class GameRulesEngine:
         self.abort = False
 
     def _repl(self, data:str) -> None:
-        #try:
-        self.input = json.loads(data)
-        self.halt = False
-        self.abort = False
-        while not self.abort and not self.halt:
-            self._read()
-            self._evaluate()
-            self._execute()
-            #print(self.events)
-            if not self.events:
-                break
+        try:
+            self.input = json.loads(data)
+            self.halt = False
+            self.abort = False
+            while not self.abort and not self.halt:
+                self._read()
+                self._evaluate()
+                self._execute()
+                #print(self.events)
+                if not self.events:
+                    break
                 """
                 print('\n[* end of cycle report *]')
                 print('\n'.join(map(str, self.events)))
                 _ = input('[* end of cycle press any key to continue *]')
                 """
             #print(self.abort, self.halt)
-            """
         except Exception as e:
             self.consumer.send_log(f'Something went wrong: {str(e)}')
             breakpoint()
-            """
 
     def _read(self) -> None:
         """ Translate input into one or more event. """
@@ -159,11 +157,11 @@ class GameRulesEngine:
                         tracking = start
                     f = rule.implementations.get(statement, lambda x: False)
                     assert callable(f)
-                    #"""
+                    """
                     print(statement)
                     print(self.matched_event)
                     print(self.events)
-                    #"""
+                    """
                     match start:
                         case 'Given' | 'When':
                             if not f(self):
@@ -699,6 +697,34 @@ class GameRulesEngine:
                 self.events.append(['set_counter', card, 'lore', lore + 1])
         self.consumer.send_log('Add one lore counter to each saga active player controls')
 
+    def ask_player_to_declare_attackers_tba(self, *args):
+        players = self.game.players
+        active_player_name = self.game.whose_turn
+        active_player = [p for p in players if p.player_name == active_player_name]
+        if not active_player:
+            raise ValueError("Can't find active player")
+        active_player = active_player[0]
+        can_attack = []
+        for card in active_player.battlefield:
+            if 'creature' in card['type_line']:
+                can_attack.append(card)
+        if can_attack:
+            raise NotImplementedError("You played a creature? Haven't coded that part yet")
+        else: # no creatures that can attack
+            breakpoint()
+            self.events.append(['skip_declare_blocker_and_combat_damage_steps'])
+
+    def skip_declare_blocker_and_combat_damage_steps(self, *args):
+        breakpoint()
+        game = self.game
+        game.next_step()
+        self.update_game_state()
+        while game.phase == 'declare blockers step' or game.phase == 'combat damage step':
+            self.consumer.send_log(f'skipped {game.phase}')
+            self.game.next_step()
+            self.update_game_state()
+        self.events = [[self.game.phase,],]
+
     def update_game_state(self):
         payload = self.game.get_payload(is_update=True)
         self.consumer.send(text_data=json.dumps(payload)) # update game state
@@ -707,12 +733,12 @@ class GameRulesEngine:
         phase = self.game.phase
         while not self.game.phase.endswith('phase') or self.game.phase == phase:
             self.next_step()
-        self.events = [[self.game.phase]]
+        self.events = [[self.game.phase,],]
 
     def next_step(self, *args):
         self.game.next_step()
         self.update_game_state()
-        self.events = [[self.game.phase]]
+        self.events = [[self.game.phase,],]
 
     def halt(self, *args):
         self.halt = True
