@@ -1945,6 +1945,66 @@ SYSTEM_RULE_DECLARE_ATTACKERS_STEP_CHECK_SKIP = [
         "Then have player declare attackers",
         lambda context: [*context.events, ['ask_player_to_declare_attackers_tba',]],
     ),
+    (
+        "And give player priority",
+        lambda context: [*context.events, ['player_has_priority',]],
+    ),
+]
+
+def remove_skip_step(context) -> List[Any]:
+    game = context.game
+    current_step = game.phase
+    static_effects = game.static_effects
+    matched = [e for e in static_effects if e[0] == 'skip_step' and e[1] == current_step]
+    if matched:
+        matched = matched[0]
+        static_effects.remove(matched)
+    return context.events
+
+SYSTEM_RULE_DECLARE_BLOCKERS_STEP_CHECK_SKIP = [
+    (
+        'Given the game is in declare blockers step',
+        lambda context: context.game.phase == 'declare blockers step',
+    ),
+    (
+        'And the declare blockers step is skipped',
+        lambda context: ['skip_step', 'declare blockers step'] in context.game.static_effects,
+    ),
+    (
+        'When the game is at the beginning of the declare blockers step',
+        lambda context: len(context.events) == 1 and 'declare blockers step' == context.matched_event[0],
+    ),
+    (
+        "Then proceed to the next step",
+        lambda context: [['next_step']],
+    ),
+    (
+        'And remove the skipping effect',
+        remove_skip_step,
+    ),
+]
+
+SYSTEM_RULE_COMBAT_DAMAGE_STEP_CHECK_SKIP = [
+    (
+        'Given the game is in combat damage step',
+        lambda context: context.game.phase == 'combat damage step',
+    ),
+    (
+        'And the combat damage step is skipped',
+        lambda context: ['skip_step', 'combat damage step'] in context.game.static_effects,
+    ),
+    (
+        'When the game is at the beginning of the combat damage step',
+        lambda context: len(context.events) == 1 and 'combat damage step' == context.matched_event[0],
+    ),
+    (
+        "Then proceed to the next step",
+        lambda context: [['next_step']],
+    ),
+    (
+        'And remove the skipping effect',
+        remove_skip_step,
+    ),
 ]
 
 # Create rules for the engine
@@ -2050,6 +2110,13 @@ DECLARE_ATTACKERS_STEP_RULES = [
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_DECLARE_ATTACKERS_STEP_CHECK_SKIP)),
 ]
 
+DECLARE_BLOCKERS_STEP_RULES = [
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_DECLARE_BLOCKERS_STEP_CHECK_SKIP)),
+]
+
+COMBAT_DAMAGE_STEP_RULES = [
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_COMBAT_DAMAGE_STEP_CHECK_SKIP)),
+]
 SYSTEM_RULES = (
     *CHOOSE_STARTING_PLAYER_RULES,
     *REVEAL_COMPANION_RULES,
@@ -2065,4 +2132,6 @@ SYSTEM_RULES = (
     *COMBAT_PHASE_RULES,
     *BEGINNING_OF_COMBAT_STEP_RULES,
     *DECLARE_ATTACKERS_STEP_RULES,
+    *DECLARE_BLOCKERS_STEP_RULES,
+    *COMBAT_DAMAGE_STEP_RULES,
 )

@@ -662,9 +662,6 @@ class GameRulesEngine:
             if was_checked in to_check:
                 to_check.remove(was_checked)
         if to_check:
-            if 'sba_check_draw_from_empty_library' == to_check[0]:
-                #breakpoint()
-                pass
             self.events.append([to_check[0],])
         else:
             self.events.append(['check_sba_done',])
@@ -711,19 +708,12 @@ class GameRulesEngine:
         if can_attack:
             raise NotImplementedError("You played a creature? Haven't coded that part yet")
         else: # no creatures that can attack
-            breakpoint()
             self.events.append(['skip_declare_blocker_and_combat_damage_steps'])
 
     def skip_declare_blocker_and_combat_damage_steps(self, *args):
-        breakpoint()
-        game = self.game
-        game.next_step()
-        self.update_game_state()
-        while game.phase == 'declare blockers step' or game.phase == 'combat damage step':
-            self.consumer.send_log(f'skipped {game.phase}')
-            self.game.next_step()
-            self.update_game_state()
-        self.events = [[self.game.phase,],]
+        effects = self.game.static_effects
+        effects.append(['skip_step', 'declare blockers step'])
+        effects.append(['skip_step', 'combat damage step'])
 
     def update_game_state(self):
         payload = self.game.get_payload(is_update=True)
