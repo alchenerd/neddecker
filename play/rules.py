@@ -2007,6 +2007,67 @@ SYSTEM_RULE_COMBAT_DAMAGE_STEP_CHECK_SKIP = [
     ),
 ]
 
+SYSTEM_RULE_END_OF_COMBAT_STEP_GIVE_PRIORITY = [
+    (
+        'Given the game is in the end of combat step',
+        lambda context: context.game.phase == 'end of combat step'
+    ),
+    (
+        'When the game is at the beginning of the end of combat step',
+        lambda context: len(context.events) == 1 and 'end of combat step' == context.matched_event[0],
+    ),
+    (
+        'Then the player has priority',
+        lambda context: [*context.events, ['player_has_priority']],
+    ),
+]
+
+
+SYSTEM_RULE_POSTCOMBAT_MAIN_PHASE_GIVE_PRIORITY = [
+    (
+        'Given the game is in the postcombat main phase',
+        lambda context: context.game.phase == 'postcombat main phase'
+    ),
+    (
+        'When the game is at the beginning of the postcombat main phase',
+        lambda context: len(context.events) == 1 and 'postcombat main phase' == context.matched_event[0],
+    ),
+    (
+        'Then the player has priority',
+        lambda context: [*context.events, ['player_has_priority']],
+    ),
+]
+
+SYSTEM_RULE_ENDING_PHASE_PASS = [
+    (
+        'Given the game is in the ending phase',
+        lambda context: context.game.phase == 'ending phase'
+    ),
+    (
+        'When the game is at the beginning of the ending phase',
+        lambda context: len(context.events) == 1 and 'ending phase' == context.matched_event[0],
+    ),
+    (
+        'Then move to the next step',
+        lambda context: [['next_step',],],
+    ),
+]
+
+SYSTEM_RULE_END_STEP_GIVE_PRIORITY = [
+    (
+        'Given the game is in the end_step',
+        lambda context: context.game.phase == 'end step'
+    ),
+    (
+        'When the game is at the beginning of the end step',
+        lambda context: len(context.events) == 1 and 'end step' == context.matched_event[0],
+    ),
+    (
+        'Then the player has priority',
+        lambda context: [*context.events, ['player_has_priority']],
+    ),
+]
+
 # Create rules for the engine
 CHOOSE_STARTING_PLAYER_RULES = (
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_CHOOSE_STARTING_PLAYER_DECIDER_RANDOM)),
@@ -2117,6 +2178,26 @@ DECLARE_BLOCKERS_STEP_RULES = [
 COMBAT_DAMAGE_STEP_RULES = [
     Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_COMBAT_DAMAGE_STEP_CHECK_SKIP)),
 ]
+
+END_OF_COMBAT_STEP_RULES = [
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_END_OF_COMBAT_STEP_GIVE_PRIORITY)),
+]
+
+POSTCOMBAT_MAIN_PHASE_RULES = [
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_POSTCOMBAT_MAIN_PHASE_GIVE_PRIORITY)),
+]
+
+ENDING_PHASE_RULES = [
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_ENDING_PHASE_PASS)),
+]
+
+END_STEP_RULES = [
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_END_STEP_GIVE_PRIORITY)),
+]
+
+CLEANUP_STEP_RULES = [
+]
+
 SYSTEM_RULES = (
     *CHOOSE_STARTING_PLAYER_RULES,
     *REVEAL_COMPANION_RULES,
@@ -2134,4 +2215,9 @@ SYSTEM_RULES = (
     *DECLARE_ATTACKERS_STEP_RULES,
     *DECLARE_BLOCKERS_STEP_RULES,
     *COMBAT_DAMAGE_STEP_RULES,
+    *END_OF_COMBAT_STEP_RULES,
+    *POSTCOMBAT_MAIN_PHASE_RULES,
+    *ENDING_PHASE_RULES,
+    *END_STEP_RULES,
+    *CLEANUP_STEP_RULES,
 )
