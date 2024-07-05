@@ -921,7 +921,7 @@ SYSTEM_RULE_UPKEEP_STEP_GIVE_PRIORITY = [
         lambda context: context.game.phase == 'upkeep step'
     ),
     (
-        'When the game is at the beginning of the upkeep step',
+'When the game is at the beginning of the upkeep step',
         lambda context: len(context.events) == 1 and 'upkeep step' == context.matched_event[0],
     ),
     (
@@ -933,6 +933,8 @@ SYSTEM_RULE_UPKEEP_STEP_GIVE_PRIORITY = [
 
 def game_allows_player_to_have_priorty(context) -> bool:
     game = context.game
+    if game.phase == 'cleanup step':
+        return True
     return bool(game.stack) or (game.player_has_priority and all(game.phase != p[0] for p in MtgTnP.ONE_SHOT_PSEUDO_PHASES))
 
 # before giving priority, state-based actions are checked
@@ -966,12 +968,14 @@ def give_priority_to_appropriate_player(context) -> List[Any]:
         card = stack[-1]
         who_name = card.get('annotations', {}).get('controller')
         i = [i for i, p in enumerate(players) if p.player_name == who_name][0]
-    passed_players = {e[1] for e in context.events if e[0] == 'pass_priority'}
+    passed_players = {e[1] for e in context.events if e[0] == 'pass_priority' and len(e) >= 2}
     n = len(players)
     for _ in range(n):
         if players[i] not in passed_players:
             return [*[e for e in context.events if 'done_check' not in e[0] and e[0] != 'check_sba_done'], ['give_priority', i, None]]
         i = (i + 1) % n
+    if game.phase == 'cleanup step' and not stack:
+        return [['cleanup step',],]
     return [['resolve', stack[-1]],] if stack else [['next_step',],]
 
 # then if sba check is done, give priority
@@ -983,6 +987,10 @@ SYSTEM_RULE_PRIORITY_GIVE_PRIORITY = [
     (
         'When the game has done checking state-based action',
         lambda context: 'check_sba_done' == context.matched_event[0],
+    ),
+    (
+        'And the player has priority',
+        lambda context: any('player_has_priority' == e[0] for e in context.events)
     ),
     (
         'And the game is not giving out priority',
@@ -1012,7 +1020,7 @@ def next_step_if_all_pass_and_stack_empty(context) -> List[Any]:
     pass_count = sum(1 for e in events if e[0] == 'pass_priority')
     player_count = len(context.game.players)
     if pass_count == player_count and not context.game.stack:
-        events = [['next_step',],]
+        events = [['cleanup step',],] if context.game.phase == 'cleanup step' else [['next_step',],]
     return events
 
 # then player passes priority
@@ -2055,7 +2063,7 @@ SYSTEM_RULE_ENDING_PHASE_PASS = [
 
 SYSTEM_RULE_END_STEP_GIVE_PRIORITY = [
     (
-        'Given the game is in the end_step',
+        'Given the game is in the end step',
         lambda context: context.game.phase == 'end step'
     ),
     (
@@ -2065,6 +2073,167 @@ SYSTEM_RULE_END_STEP_GIVE_PRIORITY = [
     (
         'Then the player has priority',
         lambda context: [*context.events, ['player_has_priority']],
+    ),
+]
+
+def check_active_player_has_excess_card_in_hand(context) -> List[Any]:
+    events = [*context.events]
+    game = context.game
+    active_player_name = game.whose_turn
+    static_effects = game.static_effects
+    matched = [e for e in static_effects if e[0] == 'max_hand_size' and e[1] == active_player_name]
+    max_hand_size = matches[0][2] if matched else 7
+    active_player = [p for p in game.players if p.player_name == active_player_name]
+    if not active_player:
+        raise NameError(f"Can't find player named {active_player_name}")
+    active_player = active_player[0]
+    hand = active_player.hand
+    hand_size = len(hand)
+    if hand_size > max_hand_size:
+        events.extend([['pending_discard_card', max_hand_size - hand_size, []], ['discard_to_hand_size_tba',]])
+    else:
+        events.append(['cleanup_step_tba_discard_done',])
+    return events
+
+SYSTEM_RULE_CLEANUP_STEP_CHECK_EXCESS_CARD = [
+    (
+        'Given the game is in the cleanup step',
+        lambda context: context.game.phase == 'cleanup step'
+    ),
+    (
+        'When the game is at the beginning of the cleanup step',
+        lambda context: len(context.events) == 1 and 'cleanup step' == context.matched_event[0],
+    ),
+    (
+        'Then check if the active player has excess card in hand',
+        check_active_player_has_excess_card_in_hand,
+    ),
+]
+
+def discard_if_enough_else_record(context) -> List[Any]:
+    events = [*context.events]
+    discard_marker = [e for e in events if e[0] == 'pending_discard_card']
+    assert discard_marker
+    discard_marker = discard_marker[0]
+    active_player_name = context.game.whose_turn
+    prefix, who, card = context.matched_event
+    assert prefix == 'interact'
+    assert who.player_name == active_player_name
+    assert card in who.hand
+    _, max_hand_size, to_discard = discard_marker
+    to_discard.append(card)
+    if len(to_discard) == max_hand_size:
+        for card in to_discard:
+            events.append(['move', card, active_player_name + '.hand', active_player_name + '.graveyard'])
+        events.append(['cleanup_step_tba_discard_done'])
+    return events
+
+
+SYSTEM_RULE_CLEANUP_STEP_HANDLE_DISCARD_ANSWER = [
+    (
+        'Given the game is in the cleanup step',
+        lambda context: context.game.phase == 'cleanup step'
+    ),
+    (
+        'When the player answers to discard a card',
+        lambda context: context.matched_event[0] == 'interact',
+    ),
+    (
+        'And the game was waiting for player to discard',
+        lambda context: any('pending_discard_card' in e[0] for e in context.events),
+    ),
+    (
+        'Then handle the answer',
+        discard_if_enough_else_record,
+    ),
+    (
+        'And consume the line',
+        consume_line,
+    ),
+]
+
+def remove_marked_damage(context) -> List[Any]:
+    game = context.game
+    players = game.players
+    permanents = [card for p in players for card in p.battlefield]
+    for p in permanents:
+        annotation = p.get('annotations', {})
+        for k in annotations:
+            if 'damage' in k:
+                del annotation[k]
+    return context.events
+
+def remove_eot_effects(context) -> List[Any]:
+    effects = context.game.static_effects
+    effects = [e for e in effects if 'end of turn' not in str(e).lower() and 'this turn' not in str(e).lower()]
+    return context.events
+
+SYSTEM_RULE_CLEANUP_STEP_REMOVE_DAMAGE_AND_EOT_EFFECTS = [
+    (
+        'Given the game is in the cleanup step',
+        lambda context: context.game.phase == 'cleanup step'
+    ),
+    (
+        'When the discard TBA is done',
+        lambda context: context.matched_event[0] == 'cleanup_step_tba_discard_done',
+    ),
+    (
+        'And the remove TBA is not done',
+        lambda context: not any('cleanup_step_tba_remove_done' in str(e) for e in context.events),
+    ),
+    (
+        'Then remove marked damage',
+        remove_marked_damage,
+    ),
+    (
+        'And remove all EOT effects',
+        remove_eot_effects,
+    ),
+    (
+        'And mark removal as done',
+        lambda context: [*context.events, ['cleanup_step_tba_remove_done']],
+    ),
+]
+
+SYSTEM_RULE_CLEANUP_STEP_CHECK_SBA = [
+    (
+        'Given the game is in the cleanup step',
+        lambda context: context.game.phase == 'cleanup step'
+    ),
+    (
+        'When the remove TBA is done',
+        lambda context: context.matched_event[0] == 'cleanup_step_tba_remove_done',
+    ),
+    (
+        'And SBA is not checked',
+        lambda context: not any('check_sba' in str(e) for e in context.events),
+    ),
+    (
+        'Then check SBA',
+        lambda context: [*context.events, ['check_sba']],
+    ),
+]
+
+def cleanup_step_handle_sba(context) -> List[Any]:
+    should_redo = any(e[0] == 'sba_changed' for e in context.events)
+    if should_redo:
+        context.events.append(['player_has_priority'])
+    else:
+        context.events = [['next_step',],]
+    return context.events
+
+SYSTEM_RULE_CLEANUP_STEP_ASSESS_SBA = [
+    (
+        'Given the game is in the cleanup step',
+        lambda context: context.game.phase == 'cleanup step'
+    ),
+    (
+        'When the SBA check is done',
+        lambda context: context.matched_event[0] == 'check_sba_done',
+    ),
+    (
+        'Then handle SBA results',
+        cleanup_step_handle_sba,
     ),
 ]
 
@@ -2196,6 +2365,11 @@ END_STEP_RULES = [
 ]
 
 CLEANUP_STEP_RULES = [
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_CLEANUP_STEP_CHECK_EXCESS_CARD)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_CLEANUP_STEP_HANDLE_DISCARD_ANSWER)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_CLEANUP_STEP_REMOVE_DAMAGE_AND_EOT_EFFECTS)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_CLEANUP_STEP_CHECK_SBA)),
+    Rule.from_implementations(CollectionsOrderedDict(SYSTEM_RULE_CLEANUP_STEP_ASSESS_SBA)),
 ]
 
 SYSTEM_RULES = (

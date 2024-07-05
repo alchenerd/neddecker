@@ -161,7 +161,7 @@ class GameRulesEngine:
                     print(statement)
                     print(self.matched_event)
                     print(self.events)
-                    """
+                    #"""
                     match start:
                         case 'Given' | 'When':
                             if not f(self):
@@ -663,6 +663,10 @@ class GameRulesEngine:
                 to_check.remove(was_checked)
         if to_check:
             self.events.append([to_check[0],])
+        elif any('sba_changed' in str(e) for e in self.events):
+            self.game.stack.extend(self.game.pending_triggers)
+            self.events = [e for e in self.events if 'sba' not in str(e)]
+            self.events.append(['check_sba_done'] if stack else ['check_sba'])
         else:
             self.events.append(['check_sba_done',])
 
@@ -714,6 +718,10 @@ class GameRulesEngine:
         effects = self.game.static_effects
         effects.append(['skip_step', 'declare blockers step'])
         effects.append(['skip_step', 'combat damage step'])
+
+    def discard_to_hand_size_tba(self, *args):
+        # TODO: implement this
+        raise NotImplementedError()
 
     def update_game_state(self):
         payload = self.game.get_payload(is_update=True)
