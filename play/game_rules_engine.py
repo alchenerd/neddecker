@@ -506,7 +506,33 @@ class GameRulesEngine:
 
     def suggest_interactable_objects(self, player_id):
         # FIXME: implelent calculate interactable after state-based actions are checked (need static effects)
-        return []
+        ret = []
+        game = self.game
+        players = game.players
+        player = players[player_id]
+        is_self_turn = game.whose_turn == player.player_name
+        can_cast_sorcery = is_self_turn and 'main' in game.phase and not game.stack
+        land_per_turn = 1 + len([e for e in game.static_effects if 'additional land' in str(e).lower()])
+        land_played = player.land_played
+
+        # scan hand
+        for card in player.hand:
+            type_line = card.get('type_line') or card.get('faces').get('front').get('type_line')
+            if 'instant' in type_line.lower() or 'flash' in card.get('oracle_text', '').lower():
+                ret.append(card)
+            elif can_cast_sorcery and 'land' not in type_line.lower():
+                ret.append(card)
+            elif is_self_turn and 'land' in type_line.lower() and land_per_turn > land_played:
+                ret.append(card)
+
+        # scan static effects
+        effects = game.static_effects
+        may_play = [e[2] for e in effects if len(e) == 3 and e[0].startswith('may_') and e[1] == player]
+        prohibited = set(e[2] for e in effects if len(e) == 3 and e[0].startswith('may_not') and e[1] == player)
+        interactable = [x for x in may_play if x not in prohibited]
+        interactable = list(set(interactable))
+        ret.extend(interactable)
+        return ret
 
     def take_start_of_game_action(self, *args):
         # consume the taking action marker

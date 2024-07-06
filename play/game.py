@@ -27,6 +27,7 @@ class Player:
         self.counters = {}
         self.annotations = {}
         self.delayed_triggers = []
+        self.land_played = 0
 
     def set_player_name(self, name):
         self.player_name = name
@@ -66,6 +67,7 @@ class Player:
 
     def clear(self):
         self.hp = 20
+        self.land_played = 0
         for zone in (self.hand, self.battlefield, self.graveyard, self.exile):
             for card in zone:
                 self.move_card(card, _from=zone, to='library')
@@ -298,9 +300,14 @@ class Game:
         self.next_step()
 
     def next_step(self):
+        old_turn_count = self.turn_count
         self.turn_count, self.whose_turn, (self.phase, self.player_has_priority, self.require_player_action) = next(self.turn_phase_tracker)
         self.whose_priority = self.whose_turn
         self.refill_priority_waitlist(next_player=self.whose_priority)
+        if self.turn_count != old_turn_count:
+            player = getattr(self, self.whose_turn, None)
+            if player:
+                player.land_played = 0
 
     def refill_priority_waitlist(self, next_player=None):
         if next_player is None:
@@ -404,6 +411,7 @@ class Game:
                 self.stack.append(pseudo_card)
                 return
             case 'create_delayed_trigger':
+                action |= {'affectingWho': action.get('affectingWho').player_name}
                 player.delayed_triggers.append(copy(action))
                 return
             case 'move':
