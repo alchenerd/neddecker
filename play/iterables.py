@@ -40,7 +40,7 @@ class MtgTurnsAndPhases():
         ('determine starting player phase', False, True),
         ('reveal companion phase', True, True),
         ('mulligan phase', True, True),
-        ('take start of game actions phase', True, True),
+        ('take start of game actions phase', False, True),
     ]
 
     def __init__(self, players):

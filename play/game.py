@@ -508,7 +508,7 @@ class Game:
                 stack_has_grown = True
             self.stack = stack
 
-    def get_payload(self, is_update=False):
+    def get_payload(self, is_update=False, is_non_priority_interaction=False):
         payload = {}
         if is_update:
             payload = {
@@ -541,7 +541,7 @@ class Game:
                 'board_state': self.get_board_state(),
                 'actions': getattr(self, 'actions', []),
             }
-        elif self.require_player_action:
+        elif self.require_player_action or is_non_priority_interaction:
             payload = {
                 'type': 'require_player_action',
                 'turn_count': self.turn_count,

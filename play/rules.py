@@ -698,12 +698,12 @@ SYSTEM_RULE_START_OF_GAME_GIVE_PRIORITY = [
         lambda context: any('scan_done' == line[0] for line in context.events),
     ),
     (
-        'And the priority is not yet given',
-        lambda context: all('give_priority' != line[0] for line in context.events),
+        'And the pseudo priority is not yet given',
+        lambda context: all('give_pseudo_priority' != line[0] for line in context.events),
     ),
     (
-        'Then the game gives priority to the player',
-        lambda context: [*context.events, ['give_priority', [e for e in context.events if e[0] == 'check_start_of_game_action'][0][1], context.matched_event[1]]],
+        'Then the game gives pseudo priority to the player',
+        lambda context: [*context.events, ['give_pseudo_priority', [e for e in context.events if e[0] == 'check_start_of_game_action'][0][1], context.matched_event[1]]],
     ),
     (
         'And the game consumes the scan_done event',
@@ -757,12 +757,12 @@ SYSTEM_RULE_START_OF_GAME_TAKE_ACTION = [
         lambda context: 'interact' == context.matched_event[0],
     ),
     (
-        'And the game is pending pass priority',
-        lambda context: any('pending_pass_priority' == e[0] for e in context.events)
+        'And the game is pending pass non-priority',
+        lambda context: any('pending_pass_non_priority' == e[0] for e in context.events)
     ),
     (
-        'Then consume the pending_pass_priority event',
-        lambda context: [e for e in context.events if 'pending_pass_priority' != e[0]],
+        'Then consume the pending_pass_non_priority event',
+        lambda context: [e for e in context.events if 'pending_pass_non_priority' != e[0]],
     ),
     (
         'And take start of game action with that card',
@@ -803,8 +803,8 @@ SYSTEM_RULE_START_OF_GAME_PASS_PRIORITY = [
         lambda context: context.game.phase == 'take start of game actions phase'
     ),
     (
-        'When a player passes priority',
-        lambda context: 'pass_priority' == context.matched_event[0],
+        'When a player passes non-priority',
+        lambda context: 'pass_non_priority' == context.matched_event[0],
     ),
     (
         'And the game checks for the current players for start of game action',

@@ -79,6 +79,8 @@ class GameRulesEngine:
                     self.handle_pay_cost()
                 case 'pass_priority': # user passes priority
                     self.handle_pass_priority()
+                case 'pass_non_priority_action': # user passes non-priority
+                    self.handle_pass_non_priority()
         self.input = None # consume
 
         # return early if there is no game
@@ -353,6 +355,19 @@ class GameRulesEngine:
         assert who and isinstance(who, Player)
         self.events.append(['pass_priority', who])
 
+    def handle_pass_non_priority(self):
+        print(self.input)
+        who_str = self.input['who']
+        actions = self.input['actions']
+        grouping = self.input.get('grouping', [])
+        self.game.record_actions(actions, grouping)
+        while self.game.actions:
+            action = self.game.actions.pop(0)
+            self.game.apply_action(action)
+        who = [p for p in self.game.players if p.player_name == who_str][0]
+        assert who and isinstance(who, Player)
+        self.events.append(['pass_non_priority', who])
+
     def set_as_companion(self, *args):
         in_game_id, *_ = args
         self.set_annotation(in_game_id, 'is_companion', True)
@@ -504,6 +519,21 @@ class GameRulesEngine:
         self.send_to_player(player=player, text_data=json.dumps(payload))
         self.halt = True
 
+    def give_pseudo_priority(self, *args):
+        who_id, interactable, *_ = args
+        if interactable is None:
+            interactable = self.suggest_interactable_objects(who_id)
+        assert who_id is None or isinstance(who_id, int) and who_id < len(self._match.game.players)
+        player = self._match.game.players[who_id] if who_id is not None else None
+        self.game.last_known_stack_hash = hash(str(self.game.stack))
+        self.consumer.send_log(f"require {player.player_name}' actions")
+        payload = self.game.get_payload(is_non_priority_interaction=True)
+        payload['interactable'] = interactable
+        self.events = [e for e in self.events if 'interactable' not in e[0]]
+        self.events.append(['pending_pass_non_priority', who_id])
+        self.send_to_player(player=player, text_data=json.dumps(payload))
+        self.halt = True
+
     def suggest_interactable_objects(self, player_id):
         # FIXME: implelent calculate interactable after state-based actions are checked (need static effects)
         ret = []
@@ -522,7 +552,7 @@ class GameRulesEngine:
                 ret.append(card)
             elif can_cast_sorcery and 'land' not in type_line.lower():
                 ret.append(card)
-            elif is_self_turn and 'land' in type_line.lower() and land_per_turn > land_played:
+            elif is_self_turn and 'land' in type_line.lower() and can_cast_sorcery and land_per_turn > land_played:
                 ret.append(card)
 
         # scan static effects
@@ -725,16 +755,15 @@ class GameRulesEngine:
         self.consumer.send_log('Add one lore counter to each saga active player controls')
 
     def ask_player_to_declare_attackers_tba(self, *args):
-        players = self.game.players
-        active_player_name = self.game.whose_turn
+        game = self.game
+        players = game.players
+        active_player_name = game.whose_turn
         active_player = [p for p in players if p.player_name == active_player_name]
         if not active_player:
             raise ValueError("Can't find active player")
         active_player = active_player[0]
-        can_attack = []
-        for card in active_player.battlefield:
-            if 'creature' in card['type_line']:
-                can_attack.append(card)
+        can_attack = [card for card in active_player.battlefield if 'creature' in card.get('type_line', '').lower()]
+        can_attack = [card for card in can_attack if ['cant_attack', card.get('in_game_id') not in game.static_effects]]
         if can_attack:
             raise NotImplementedError("You played a creature? Haven't coded that part yet")
         else: # no creatures that can attack
