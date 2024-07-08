@@ -117,6 +117,7 @@ const Battlefield = ({
     {
       name: "create token", _function: () => {
         setActionTargetCard(null);
+        setTargetIsCopy(false);
         setOpenCreateTokenDialog(true);
       },
     },

@@ -6,7 +6,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.pydantic_v1 import BaseModel, Field, validator, ValidationError
 from langchain.output_parsers.openai_tools import JsonOutputKeyToolsParser
 from langchain_core.output_parsers.openai_tools import PydanticToolsParser
-from langchain_core.output_parsers import PydanticOutputParser
+from langchain_core.output_parsers import PydanticOutputParser, StrOutputParser
 from langchain.output_parsers import RetryOutputParser
 from langchain_openai import ChatOpenAI
 from langchain_openai.embeddings import OpenAIEmbeddings
@@ -106,8 +106,22 @@ class GameRulesWriter:
         self.db = Chroma(persist_directory='./rag', embedding_function=OpenAIEmbeddings())
         self.kw_to_cr_map = {}
 
+    def write_simple_rules(self, card_name, splitted_text):
+        prompt = ChatPromptTemplate.from_messages([
+            ('user', 'Card name: {card_name}\n\n<oracle>\n{oracle_text}\n</oracle>\n\nGiven the above oracle text from a Magic: the Gathering card, write its implementation logic in gherkin syntax.\n\nWriting Rules:\n1. \"Given\" statements will check static data, \"When\" statements will check actions, and \"Then\" statements will describe the effect.\n2. Use \"~\" to replace the card\'s name.\n3. Use \"Owner\", \"Controller\", \"Opponent\", et cetera to refer to the players involved.\n4. All scenario titles will use this form: \"[Static/Activated/Triggered/Spell] Ability - [Scenario Description].\"')
+        ])
+        chain = prompt | self.llm | StrOutputParser()
+        ret = []
+        for text in splitted_text:
+            response = chain.invoke({'card_name': card_name, 'oracle_text': text})
+            reserved = ('scenario', 'given', 'when', 'then', 'and', 'but')
+            gherkin = [line for line in response.split('\n') if any(line.lower().startswith(x) for x in reserved)]
+            ret.append('\n'.join(gherkin))
+        return ret
+
     def write_rules(self, card: Dict[str, Any]) -> List[Rule]:
         rules_texts = self.split_rules_text(card)
+        return self.write_simple_rules(card.get('name', 'undefined'), rules_texts)
         print('[Rules Texts]:', rules_texts)
         abilities = self.interpret_abilities(rules_texts)
         print('[Abilities]:', abilities)
@@ -257,6 +271,7 @@ class GameRulesWriter:
         # WotC will never tell players to shread themselves, right?
         # ...right?
         back_name = card.get('faces', {}).get('back', 'Form of the Chaos Confetti')
+        return oracle_text.replace('{', '{{').replace('}', '}}')
         oracle_text = str(oracle_text) \
                 .replace(name, '~') \
                 .replace(front_name, '~') \

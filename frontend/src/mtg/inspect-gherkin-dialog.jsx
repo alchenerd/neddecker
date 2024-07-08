@@ -15,7 +15,7 @@ function InspectGherkinDialog({open, setOpen, actionTargetCard}) {
         {
           actionTargetCard?.rules &&
           actionTargetCard.rules.map(rule => {return (
-            <li key={JSON.stringify(rule)}>{JSON.stringify(rule)}</li>
+            <pre key={JSON.stringify(rule)}>{JSON.parse(JSON.stringify(rule))}</pre>
           )})
         }
       </DialogContent>

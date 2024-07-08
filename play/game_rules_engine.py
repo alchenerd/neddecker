@@ -297,6 +297,12 @@ class GameRulesEngine:
         print(self.input)
         who = [p for p in self.game.players if p.player_name == self.input['who']][0]
         card = self.game.find_card_by_id(self.input['targetId'])
+        self.consumer.send_log(f"{who} interacts with {card.get('name', 'null')} ({card.get('in_game_id')})")
+        rules = card.get('rules')
+        if not rules:
+            self.consumer.send_log(f"Scanning {card['name']}")
+            card['rules'] = self.naya.write_rules(card=card)
+            self.update_game_state()
         self.events.append(['interact', who, card])
 
     def set_starting_player_decider(self, *args):
@@ -494,7 +500,7 @@ class GameRulesEngine:
                     interactable_cards.append(card)
                 continue
             oracle_text = card.get('oracle_text', None) or card['faces']['front']['oracle_text']
-            yn = self.naya.ask_yes_no(context=CR_103_6_OPENING_HAND, question=f"Given a card that says: \"{oracle_text}\"\n\nAnswer with YesNoResponse: Is the card described in rule 103.6? Answer \'y\' if the card should be revealed from the opening hand or begin on the battlefield since the game starts; answer \'n\' if the card has no such rules text.")
+            yn = self.naya.ask_yes_no(context=CR_103_6_OPENING_HAND, question=f"Given a card that says: \"{oracle_text}\"\n\nAnswer with YesNoResponse: Is the card described in rule 103.6? Answer \'y\' if the card should be revealed from the opening hand or begin on the battlefield at the beginning of the game before the first turn; otherwise, answer \'n\' if the card cannot be played until the first turn.")
             if 'y' in yn:
                 card['interactable'] = True
                 interactable_cards.append(card)
@@ -511,10 +517,10 @@ class GameRulesEngine:
         assert who_id is None or isinstance(who_id, int) and who_id < len(self._match.game.players)
         player = self._match.game.players[who_id] if who_id is not None else None
         self.game.last_known_stack_hash = hash(str(self.game.stack))
-        self.consumer.send_log(f'{player.player_name} gets priority')
         payload = self.game.get_payload()
         payload['interactable'] = interactable
         self.events = [e for e in self.events if 'interactable' not in e[0]]
+        self.consumer.send_log(f'{player.player_name} gets priority, {interactable=}')
         self.events.append(['pending_pass_priority', who_id])
         self.send_to_player(player=player, text_data=json.dumps(payload))
         self.halt = True
@@ -526,10 +532,10 @@ class GameRulesEngine:
         assert who_id is None or isinstance(who_id, int) and who_id < len(self._match.game.players)
         player = self._match.game.players[who_id] if who_id is not None else None
         self.game.last_known_stack_hash = hash(str(self.game.stack))
-        self.consumer.send_log(f"require {player.player_name}' actions")
         payload = self.game.get_payload(is_non_priority_interaction=True)
         payload['interactable'] = interactable
         self.events = [e for e in self.events if 'interactable' not in e[0]]
+        self.consumer.send_log(f"require {player.player_name}'s actions, {interactable=}")
         self.events.append(['pending_pass_non_priority', who_id])
         self.send_to_player(player=player, text_data=json.dumps(payload))
         self.halt = True
