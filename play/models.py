@@ -120,6 +120,33 @@ ABILITY_TYPES = {
     "mana": "mana ability",
 }
 
+class GherkinRule(models.Model):
+    """
+    Rule of a Magic: the Gathering card, written in gherkin syntax.
+    """
+    card = models.OneToOneField(Card, on_delete=models.CASCADE)
+    gherkin = models.TextField()
+
+    def __str__(self):
+        return f'Rules for {self.card.name}:\n\n{self.gherkin}'
+
+class GherkinImpl(models.Model):
+    """
+    Implementation of a gherkin line.
+    """
+    GHERKIN_TYPE_CHOICES = [
+        ('given', 'Given'),
+        ('when', 'When'),
+        ('then', 'Then'),
+    ]
+
+    gherkin_line = models.TextField()
+    gherkin_type = models.CharField(max_length=5, choices=GHERKIN_TYPE_CHOICES)
+    lambda_code = models.TextField()
+
+    def __str__(self):
+        return f'{self.gherkin_line}: {self.lambda_code}'
+
 class GameRule(models.Model):
     """
     Rule of a single ability printed on a card

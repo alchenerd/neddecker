@@ -16,7 +16,7 @@ from django.db.models import CharField, Value, F
 from dotenv import load_dotenv
 load_dotenv()
 from .rules import Rule
-from .models import GameRule, get_card_orm_by_name
+from .models import GameRule, GherkinRule, get_card_orm_by_name
 
 # Comprehensive Rules
 CR_ABILITY_TYPE_DESCRIPTION = """113.3. There are four general categories of abilities:
@@ -107,21 +107,57 @@ class GameRulesWriter:
         self.kw_to_cr_map = {}
 
     def write_simple_rules(self, card_name, splitted_text):
+        print(splitted_text)
+        card_representation = "Card name: {card_name}\n\n<oracle>\n{oracle_text}\n</oracle>"
+        instruction = "Given the above oracle text from a Magic: the Gathering card, write its implementation logic in gherkin syntax"
+        rules = '\n'.join((
+                "Gherkin Writing Rules:\n",
+                "1. \"Given\" statements will check static game data, \"When\" statements will check actions, and \"Then\" statements will describe the effect",
+                "2. Use \"~\" to replace the card\'s name",
+                "3. Use \"Owner\", \"Controller\", \"Opponent\", et cetera to refer to the players involved",
+                "4. All gherkins will have their scenario title that uses this format: \"[<Static/Activated/Triggered/Spell/Mana> Ability] - <Related Rule Text>\"",
+                "5. Respond only using the gherkin format that is easy to parse",
+                "6. Do not use any punctuation at the end of each gherkin statement",
+        ))
+        possible_presets = '\n'.join((
+                "Possible Abilities You May Encounter:\n",
+                "1. static ability that allows/disallows the player play the card",
+                    "(...When player receives priority ... Then player may cast...)",
+                "2. static ability that modifies the characteristics of a card or permanent",
+                    "(...When the game checks State-Based Actions ... Then ~ has...)",
+                "3. triggered ability that creates a triggered ability on top of the stack when condition is met",
+                    "(...When [condition] ... Then create a triggered ability that says...)",
+                "4. delayed triggered ability that creates an effect that could be triggered in the future",
+                    "(...When [condition] ... Then create an effect that says...)",
+                "5. mana ability that adds mana to a player's mana pool and doesn't use the stack nor targets anything",
+                    "(...Then add [mana description] to player's mana pool) // does not use the stack",
+        ))
+
         prompt = ChatPromptTemplate.from_messages([
-            ('user', 'Card name: {card_name}\n\n<oracle>\n{oracle_text}\n</oracle>\n\nGiven the above oracle text from a Magic: the Gathering card, write its implementation logic in gherkin syntax.\n\nWriting Rules:\n1. \"Given\" statements will check static data, \"When\" statements will check actions, and \"Then\" statements will describe the effect.\n2. Use \"~\" to replace the card\'s name.\n3. Use \"Owner\", \"Controller\", \"Opponent\", et cetera to refer to the players involved.\n4. All scenario titles will use this form: \"[Static/Activated/Triggered/Spell] Ability - [Scenario Description].\"')
+            ('user', '\n\n'.join((card_representation, instruction, rules, possible_presets)))
         ])
         chain = prompt | self.llm | StrOutputParser()
         ret = []
         for text in splitted_text:
             response = chain.invoke({'card_name': card_name, 'oracle_text': text})
+            print(f'{response=}')
             reserved = ('scenario', 'given', 'when', 'then', 'and', 'but')
             gherkin = [line for line in response.split('\n') if any(line.lower().startswith(x) for x in reserved)]
             ret.append('\n'.join(gherkin))
         return ret
 
     def write_rules(self, card: Dict[str, Any]) -> List[Rule]:
-        rules_texts = self.split_rules_text(card)
-        return self.write_simple_rules(card.get('name', 'undefined'), rules_texts)
+        card_orm = get_card_orm_by_name(card.get('name'))
+        try:
+            gherkin_query_set = GherkinRule.objects.get(card=card_orm)
+        except GherkinRule.DoesNotExist:
+            rules_texts = self.split_rules_text(card)
+            rule_gherkin = self.write_simple_rules(card.get('name', 'undefined'), rules_texts)
+            GherkinRule.objects.create(card=card_orm, gherkin='\n\n'.join(rule_gherkin))
+            return rule_gherkin
+        return gherkin_query_set.gherkin.split('\n\n')
+
+        """
         print('[Rules Texts]:', rules_texts)
         abilities = self.interpret_abilities(rules_texts)
         print('[Abilities]:', abilities)
@@ -184,6 +220,7 @@ class GameRulesWriter:
             self.seen[ability] = rule
             rules.append(rule)
         return rules
+        """
 
     def is_mana_ability(self, ability: str) -> bool:
         return 'add {' in ability.lower() and 'target' not in ability.lower()

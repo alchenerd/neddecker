@@ -500,7 +500,7 @@ class GameRulesEngine:
                     interactable_cards.append(card)
                 continue
             oracle_text = card.get('oracle_text', None) or card['faces']['front']['oracle_text']
-            yn = self.naya.ask_yes_no(context=CR_103_6_OPENING_HAND, question=f"Given a card that says: \"{oracle_text}\"\n\nAnswer with YesNoResponse: Is the card described in rule 103.6? Answer \'y\' if the card should be revealed from the opening hand or begin on the battlefield at the beginning of the game before the first turn; otherwise, answer \'n\' if the card cannot be played until the first turn.")
+            yn = self.naya.ask_yes_no(context=CR_103_6_OPENING_HAND, question=f"Given a card that says: \n\n\"{oracle_text}\"\n\n answer with YesNoResponse: Is the card described in rule 103.6? Answer \'y\' if the card should be revealed from the opening hand or begin on the battlefield at the beginning of the game before the first turn; otherwise, answer \'n\' if the card cannot be played until the first turn.")
             if 'y' in yn:
                 card['interactable'] = True
                 interactable_cards.append(card)
