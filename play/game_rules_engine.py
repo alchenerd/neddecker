@@ -302,7 +302,7 @@ class GameRulesEngine:
         if not rules:
             self.consumer.send_log(f"Scanning {card['name']}")
             card['rules'] = self.naya.write_rules(card=card)
-            self.update_game_state()
+        self.update_game_state()
         self.events.append(['interact', who, card])
 
     def set_starting_player_decider(self, *args):

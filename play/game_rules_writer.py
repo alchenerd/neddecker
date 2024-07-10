@@ -115,9 +115,14 @@ class GameRulesWriter:
                 "1. \"Given\" statements will check static game data, \"When\" statements will check actions, and \"Then\" statements will describe the effect",
                 "2. Use \"~\" to replace the card\'s name",
                 "3. Use \"Owner\", \"Controller\", \"Opponent\", et cetera to refer to the players involved",
-                "4. All gherkins will have their scenario title that uses this format: \"[<Static/Activated/Triggered/Spell/Mana> Ability] - <Related Rule Text>\"",
+                "4. All gherkins MUST have a scenario title that uses this format: \"[<Static/Activated/Triggered/Spell/Mana> Ability] - <Related Rule Text>\"; E.G.: `Scenario: [Mana Ability] - Add {{R}}. Spend this mana only to cast creature spells.`",
                 "5. Respond only using the gherkin format that is easy to parse",
                 "6. Do not use any punctuation at the end of each gherkin statement",
+                "7. If you are writing for a triggered ability or an activated ability, DO NOT write gherkin as-is; instead, say something like \'create an <XYZ> ability on the stack that says \"<ability content>\"\'; this way we can allow player to respond to the ability",
+                "8. Triggered ability will have `Then` clause `Then create a triggered ability on the stack that says...`",
+                "8. Delayed triggered ability will have `Then` clause `Then create a delayed triggered ability on the stack that says...`, where the content is the rule text of the created triggered ability",
+                "9. Activated ability will have `Then` clause `Then create an activated ability on the stack that says...`",
+                "10. If you wrote a \"created ability on the stack\" ability, you will need to also write a gherkin rule for resolving that ability on the stack, using scenario title with type `Resolve Ability`; E.G.: `Scenario: [Resolve Ability] - Resolve \"Target player gains 3 life.\"`"
         ))
         possible_presets = '\n'.join((
                 "Possible Abilities You May Encounter:\n",
@@ -128,9 +133,9 @@ class GameRulesWriter:
                 "3. triggered ability that creates a triggered ability on top of the stack when condition is met",
                     "(...When [condition] ... Then create a triggered ability that says...)",
                 "4. delayed triggered ability that creates an effect that could be triggered in the future",
-                    "(...When [condition] ... Then create an effect that says...)",
+                    "(...When [condition] ... Then create a delayed triggered ability that says...)",
                 "5. mana ability that adds mana to a player's mana pool and doesn't use the stack nor targets anything",
-                    "(...Then add [mana description] to player's mana pool) // does not use the stack",
+                    "(...Then add [mana description, add restrictions if needed] to player's mana pool) // does not use the stack",
         ))
 
         prompt = ChatPromptTemplate.from_messages([
@@ -140,6 +145,7 @@ class GameRulesWriter:
         ret = []
         for text in splitted_text:
             response = chain.invoke({'card_name': card_name, 'oracle_text': text})
+            response = response.replace('{', '{{').replace('}', '}}')
             print(f'{response=}')
             reserved = ('scenario', 'given', 'when', 'then', 'and', 'but')
             gherkin = [line for line in response.split('\n') if any(line.lower().startswith(x) for x in reserved)]
