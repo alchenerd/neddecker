@@ -145,7 +145,6 @@ class GameRulesWriter:
         ret = []
         for text in splitted_text:
             response = chain.invoke({'card_name': card_name, 'oracle_text': text})
-            response = response.replace('{', '{{').replace('}', '}}')
             print(f'{response=}')
             reserved = ('scenario', 'given', 'when', 'then', 'and', 'but')
             gherkin = [line for line in response.split('\n') if any(line.lower().startswith(x) for x in reserved)]

@@ -130,6 +130,8 @@ export default function PlayPage() {
   const [ openInspectGherkinDialog, setOpenInspectGherkinDialog ] = useState(false);
   const [ isResolving, setIsResolving ] = useState(false);
   const [ targetIsCopy, setTargetIsCopy ] = useState(false);
+  const [ inspectCardName, setInspectCardName ] = useState('');
+  const [ inspectGherkin, setInspectGherkin ] = useState([]);
 
   useEffect(() => {
     console.log("Connection state changed");
@@ -168,6 +170,14 @@ export default function PlayPage() {
     setIsResolving(true);
     setUserIsDone(false);
     store.dispatch(receivedNewGameData({ newGameData: data }));
+  }
+
+  function handleUpdateGherkin(data) {
+    setActionTargetCard(null);
+    console.log(data.card_name, data.gherkin)
+    setInspectCardName(data.card_name);
+    setInspectGherkin(data.gherkin);
+    setOpenInspectGherkinDialog(true);
   }
 
   function handleAnswer() {
@@ -279,6 +289,9 @@ export default function PlayPage() {
         case 'resolve_stack':
           console.log("resolving", data.board_state.stack.at(-1).name);
           handleResolveStack(data);
+        case 'update_gherkin':
+          console.log("A card's gherkin rule is updated");
+          handleUpdateGherkin(data);
       }
     }
   }, [lastMessage]);
@@ -601,6 +614,9 @@ export default function PlayPage() {
         <InspectGherkinDialog
           open={openInspectGherkinDialog} setOpen={setOpenInspectGherkinDialog}
           actionTargetCard={actionTargetCard}
+          cardName={inspectCardName}
+          gherkin={inspectGherkin}
+          sendMessage={sendMessage}
         />
       </>
     )

@@ -615,6 +615,19 @@ class Game:
             return filtered[0]
         return None
 
+    def find_cards_by_name(self, name: str) -> List[Dict[str, Any]]:
+        ret = []
+        for player in self.players:
+            for zone_str in ('library', 'hand', 'battlefield', 'graveyard', 'exile', 'command', 'ante'):
+                zone = getattr(player, zone_str)
+                filtered = [card for card in zone if card.get('name') == name]
+                if filtered:
+                    ret.extend(filtered)
+        filtered = [card for card in self.stack if card.get('name') == name]
+        if filtered:
+            ret.extend(filtered)
+        return ret
+
     def move_pending_triggers(self):
         """Moves pending triggers onto the stack."""
         self.stack.extend(self.pending_triggers)

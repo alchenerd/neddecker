@@ -8,7 +8,7 @@ from functools import wraps
 from .game import Match, Game, Player
 from .rules import Rule, SYSTEM_RULES
 from .game_rules_writer import GameRulesWriter as Naya
-
+from .models import GherkinRule, get_card_orm_by_name
 
 class GameRulesEngine:
     def __init__(self, consumer):
@@ -81,6 +81,8 @@ class GameRulesEngine:
                     self.handle_pass_priority()
                 case 'pass_non_priority_action': # user passes non-priority
                     self.handle_pass_non_priority()
+                case 'update_gherkin': # user submits a new gherkin rule set for a card
+                    self.handle_update_gherkin()
         self.input = None # consume
 
         # return early if there is no game
@@ -116,7 +118,12 @@ class GameRulesEngine:
                 pdb.set_trace()
             if not self.changes: # all rules are checked
                 print('all rules are checked')
+                self.loop_counter += 1
+                if self.loop_counter > 7:
+                    breakpoint()
                 return
+            else:
+                self.loop_counter = 0
 
     def apply_changes_to_events(self):
         #print('apply_changes_to_events')
@@ -190,6 +197,10 @@ class GameRulesEngine:
                 remainder.append(args)
         while remainder:
             self.events.append(remainder.pop())
+        # halt if pending
+        is_pending = any('pending' in e[0] for e in self.events)
+        if is_pending:
+            self.halt = True
 
     def register_match(self):
         self._match = Match(
@@ -302,8 +313,17 @@ class GameRulesEngine:
         if not rules:
             self.consumer.send_log(f"Scanning {card['name']}")
             card['rules'] = self.naya.write_rules(card=card)
+            self.update_frontend_gherkin(card)
         self.update_game_state()
         self.events.append(['interact', who, card])
+
+    def update_frontend_gherkin(self, card):
+        payload = {
+            'type': 'update_gherkin',
+            'card_name': card.get('name'),
+            'gherkin': card.get('rules'),
+        }
+        self.consumer.send(text_data=json.dumps(payload)) # update game state
 
     def set_starting_player_decider(self, *args):
         player, *_ = args
@@ -373,6 +393,19 @@ class GameRulesEngine:
         who = [p for p in self.game.players if p.player_name == who_str][0]
         assert who and isinstance(who, Player)
         self.events.append(['pass_non_priority', who])
+
+    def handle_update_gherkin(self):
+        card_name = self.input.get('card_name')
+        gherkin = self.input.get('gherkin')
+        if card_name and gherkin:
+            card_orm = get_card_orm_by_name(card_name)
+            rule = GherkinRule.objects.get(card=card_orm)
+            rule.gherkin = gherkin
+            rule.save()
+        cards = self.game.find_cards_by_name(card_name)
+        for card in cards:
+            card['rules'] = gherkin.split('\n\n')
+        self.update_game_state()
 
     def set_as_companion(self, *args):
         in_game_id, *_ = args
@@ -521,7 +554,7 @@ class GameRulesEngine:
         payload['interactable'] = interactable
         self.events = [e for e in self.events if 'interactable' not in e[0]]
         self.consumer.send_log(f'{player.player_name} gets priority, {interactable=}')
-        self.events.append(['pending_pass_priority', who_id])
+        self.events.append(['pending_pass_priority', who_id, interactable])
         self.send_to_player(player=player, text_data=json.dumps(payload))
         self.halt = True
 
@@ -536,7 +569,7 @@ class GameRulesEngine:
         payload['interactable'] = interactable
         self.events = [e for e in self.events if 'interactable' not in e[0]]
         self.consumer.send_log(f"require {player.player_name}'s actions, {interactable=}")
-        self.events.append(['pending_pass_non_priority', who_id])
+        self.events.append(['pending_pass_non_priority', who_id, interactable])
         self.send_to_player(player=player, text_data=json.dumps(payload))
         self.halt = True
 
@@ -786,6 +819,11 @@ class GameRulesEngine:
 
     def update_game_state(self):
         payload = self.game.get_payload(is_update=True)
+        pending_event = [e for e in self.events if e[0].startswith('pending') and e[0].endswith('priority')]
+        if pending_event:
+            interactable = pending_event[0][-1] # get the first matched item and get the last element of the event
+            interactable = [self.game.find_card_by_id(card.get('in_game_id')) for card in interactable]
+            payload.setdefault('interactable', interactable) # which is interactable cards
         self.consumer.send(text_data=json.dumps(payload)) # update game state
 
     def next_phase(self, *args):
