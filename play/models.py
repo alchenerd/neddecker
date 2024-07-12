@@ -1,6 +1,8 @@
 from django.db import models
+from django.db.models.signals import post_save
 from django.core import serializers
-from typing import Tuple
+from django.dispatch import receiver
+from typing import Tuple, List
 import json
 
 class Deck(models.Model):
@@ -120,6 +122,7 @@ ABILITY_TYPES = {
     "mana": "mana ability",
 }
 
+
 class GherkinRule(models.Model):
     """
     Rule of a Magic: the Gathering card, written in gherkin syntax.
@@ -129,6 +132,7 @@ class GherkinRule(models.Model):
 
     def __str__(self):
         return f'Rules for {self.card.name}:\n\n{self.gherkin}'
+
 
 class GherkinImpl(models.Model):
     """
@@ -146,6 +150,56 @@ class GherkinImpl(models.Model):
 
     def __str__(self):
         return f'{self.gherkin_line}: {self.lambda_code}'
+
+
+@receiver(post_save, sender=GherkinRule)
+def gherkin_rule_post_save_listener(sender, instance, created, **kwargs):
+    """
+    Whenever a Gherkin Rule is saved, search Gherkin Implementation.
+    If not found, have GameRulesWriter write it.
+    """
+    RESERVED = ('given', 'when', 'then', 'and', 'but')
+
+    def parse_rules(text):
+        ret = []
+        tracking = []
+        for line in text.split('\n'):
+            lowered = line.lower()
+            if lowered.startswith('scenario'):
+                ret.extend(tracking)
+                tracking = [line,]
+            elif any(lowered.startswith(x) for x in RESERVED):
+                tracking.append(line)
+        if tracking:
+            ret.extend(tracking)
+        return ret
+
+    def parse_lines(rules: List[str]):
+        ret = set()
+        for line in rules:
+            if any(line.lower().startswith(x) for x in RESERVED):
+                ret.add(line)
+        return list(ret)
+
+    print('Signal received')
+
+    rules = parse_rules(instance.gherkin)
+    lines = parse_lines(rules)
+    tracking = 'given'
+    for line in lines:
+        lowered = line.lower()
+        if not any(lowered.startswith(x) for x in (tracking, 'and', 'but')):
+            tracking = lowered.split(' ')[0]
+        try:
+            impl = GherkinImpl.objects.get(gherkin_line=line)
+            print('Implementations for Gherkin Rule found')
+            print(impl.gherkin_line)
+            print(impl.gherkin_type)
+            print(impl.lambda_code)
+        except GherkinImpl.DoesNotExist:
+            GherkinImpl.objects.create(gherkin_line=line, gherkin_type=tracking, lambda_code="lambda x: exec('raise NotImplementedError())'")
+            print('Implementations for Gherkin Rule created')
+
 
 class GameRule(models.Model):
     """
