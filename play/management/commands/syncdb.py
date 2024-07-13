@@ -120,52 +120,97 @@ class Command(BaseCommand):
         with open(fpath, 'r', encoding='utf-8') as f:
             for cards in ijson.items(f, ''):
                 for card in cards:
-                    if card['textless'] == True:
+                    # check if we need to update the card
+                    card_name = card.get('name')
+                    face_names = card_name.split(' // ')
+                    if len(face_names) > 1 and face_names[0] == face_names[-1]:
                         continue
-                    print(f"Processing {card['name']}")
-                    obj_card = Card(
-                            cmc=card.get('cmc', 0.0),
-                            colors=''.join(card.get('colors', '')),
-                            defense=card.get('defense', ''),
-                            loyalty=card.get('loyalty', ''),
-                            mana_cost=card.get('mana_cost', ''),
-                            name=card.get('name', ''),
-                            oracle_text=card.get('oracle_text', ''),
-                            power=card.get('power', ''),
-                            produced_mana=card.get('produced_mana', ''),
-                            toughness=card.get('toughness', ''),
-                            type_line=card.get('type_line', ''),
-                            card_image_uri=card.get('image_uris', {}).get('normal', ''),
-                            layout=card.get('layout', ''),
-                            )
+                    need_update = False
+                    if not Card.objects.filter(name=card_name).exists():
+                        print(f'Card {card_name} does not exist!')
+                        need_update = True
+                    if not need_update:
+                        continue
+                    if card.get('textless'):
+                        continue
+
+                    print(f"Processing {card_name}")
+                    obj_card, is_created = Card.objects.update_or_create(
+                        name=card_name,
+                        defaults={
+                            'cmc': card.get('cmc', 0.0),
+                            'colors': ''.join(card.get('colors', '')),
+                            'defense': card.get('defense', ''),
+                            'loyalty': card.get('loyalty', ''),
+                            'mana_cost': card.get('mana_cost', ''),
+                            'oracle_text': card.get('oracle_text', ''),
+                            'power': card.get('power', ''),
+                            'produced_mana': card.get('produced_mana', ''),
+                            'toughness': card.get('toughness', ''),
+                            'type_line': card.get('type_line', ''),
+                            'card_image_uri': card.get('image_uris', {}).get('normal', ''),
+                            'layout': card.get('layout', ''),
+                        },
+                        create_defaults={
+                            'cmc': card.get('cmc', 0.0),
+                            'colors': ''.join(card.get('colors', '')),
+                            'defense': card.get('defense', ''),
+                            'loyalty': card.get('loyalty', ''),
+                            'mana_cost': card.get('mana_cost', ''),
+                            'name': card.get('name', ''),
+                            'oracle_text': card.get('oracle_text', ''),
+                            'power': card.get('power', ''),
+                            'produced_mana': card.get('produced_mana', ''),
+                            'toughness': card.get('toughness', ''),
+                            'type_line': card.get('type_line', ''),
+                            'card_image_uri': card.get('image_uris', {}).get('normal', ''),
+                            'layout': card.get('layout', ''),
+                        },
+                    )
                     obj_cards.append(obj_card)
 
+                    """
                     if card.get('keywords', []):
                         for ability in card.get('keywords'):
                             obj_kwabs.append(KeywordAbility(card=obj_card, ability=ability))
+                    """
 
                     if card.get('card_faces', None):
-                        print(f"Processing faces of {card['name']}")
+                        print(f"Processing faces of {card_name}")
                         faces = card['card_faces']
                         for face in faces:
-                            obj_face = Face(
-                                    card=obj_card,
-                                    cmc=face.get('cmc', 0.0),
-                                    colors=''.join(face.get('colors', '')),
-                                    defense=face.get('defense', ''),
-                                    loyalty=face.get('loyalty', ''),
-                                    mana_cost=face.get('mana_cost'),
-                                    name=face.get('name', ''),
-                                    oracle_text=face.get('oracle_text', ''),
-                                    power=face.get('power', ''),
-                                    toughness=face.get('toughness', ''),
-                                    type_line=face.get('type_line', ''),
-                                    card_image_uri=face.get('image_uris', {}).get('normal', ''),
+                            obj_face, is_created = Face.objects.update_or_create(
+                                card=obj_card,
+                                name=face.get('name', ''),
+                                defaults={
+                                    'cmc': face.get('cmc', 0.0),
+                                    'colors': ''.join(face.get('colors', '')),
+                                    'defense': face.get('defense', ''),
+                                    'loyalty': face.get('loyalty', ''),
+                                    'mana_cost': face.get('mana_cost'),
+                                    'oracle_text': face.get('oracle_text', ''),
+                                    'power': face.get('power', ''),
+                                    'toughness': face.get('toughness', ''),
+                                    'type_line': face.get('type_line', ''),
+                                    'card_image_uri': face.get('image_uris', {}).get('normal', ''),
+                                },
+                                create_defaults={
+                                    'cmc': face.get('cmc', 0.0),
+                                    'colors': ''.join(face.get('colors', '')),
+                                    'defense': face.get('defense', ''),
+                                    'loyalty': face.get('loyalty', ''),
+                                    'mana_cost': face.get('mana_cost'),
+                                    'oracle_text': face.get('oracle_text', ''),
+                                    'power': face.get('power', ''),
+                                    'toughness': face.get('toughness', ''),
+                                    'type_line': face.get('type_line', ''),
+                                    'card_image_uri': face.get('image_uris', {}).get('normal', ''),
+                                },
                             )
                             obj_faces.append(obj_face)
-        Card.objects.bulk_create(obj_cards, batch_size=100)
-        KeywordAbility.objects.bulk_create(obj_kwabs, batch_size=100)
-        Face.objects.bulk_create(obj_faces, batch_size=100)
+        #Card.objects.bulk_create(obj_cards, batch_size=100)
+        #KeywordAbility.objects.bulk_create(obj_kwabs, batch_size=100)
+        #Face.objects.bulk_create(obj_faces, batch_size=100)
         print(f'Scyfall JSON file parsed and added.')
         with open(fpath + '.done', 'a'):
             try:
@@ -322,8 +367,8 @@ class Command(BaseCommand):
                 print('Update mtggoldfish done!')
             if self.is_scryfall_outdated():
                 print('Scryfall data is outdated; discarding table Card and Face...')
-                Card.objects.all().delete()
-                Face.objects.all().delete()
+                #Card.objects.all().delete()
+                #Face.objects.all().delete()
                 print('Updating scryfall...')
                 self.update_scryfall()
             self.mtggoldfish_align_card_name()
