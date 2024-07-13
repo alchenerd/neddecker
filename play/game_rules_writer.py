@@ -421,6 +421,108 @@ class GameRulesWriter:
 
         return chain.invoke({'ability': ability})['abilitity_type']
 
+    def write_lambda(self, gherkin_rule, gherkin_line, gherkin_type) -> str:
+        basic_game_knowledge = (
+                "You may access the game state via `context.game`\n"
+                "`context.game` is a class `Game` defined as below:\n"
+                "``` python\n"
+                "class Game:\n"
+                "    def __init__(self):\n"
+                "       self.has_ended = False\n"
+                "       self.players: List[Player] = []\n"
+                "       self.stack: List[Card] = []\n"
+                "       self.pending_triggers: List[Card] = []\n"
+                "       self.turn_count = 1\n"
+                "       self.whose_turn = '' # player.player_name: str\n"
+                "       self.phase = ''\n"
+                "       self.whose_priority = '' # player.player_name: str\n"
+                "       self.static_effects = []\n"
+                "```\n"
+                "Player is also a class:\n"
+                "``` python\n"
+                "class Player:\n"
+                "    def __init__(self):\n"
+                "        self.player_name: str = '' # 'ned' or 'user'\n"
+                "        self.player_type: str = '' # 'human' or 'ai'\n"
+                "        self.sideboard: List[Card] = []\n"
+                "        self.library: List[Card] = []\n"
+                "        self.battlefield: List[Card] = []\n"
+                "        self.hand: List[Card] = []\n"
+                "        self.graveyard: List[Card] = []\n"
+                "        self.exile: List[Card] = []\n"
+                "        self.command: List[Card] = [] # command zone\n"
+                "        self.ante: List[Card] = []\n"
+                "        self.mana_pool = {'W': 0, 'U': 0, 'B': 0, 'R': 0, 'G': 0, 'C': 0}\n"
+                "        self.hp = 20\n"
+                "        self.counters = {} # counters on the player\n"
+                "        self.annotations = {} # annotations on the player\n"
+                "        self.delayed_triggers: List[Card] = []\n"
+                "        self.land_played = 0 # land played this turn\n"
+                "```\n"
+                "Each `card` is a nested dict() that has this default value:\n"
+                "``` python\n"
+                "card = {\n"
+                "    'name': 'Some Card Name',\n"
+                "    'cmc': 0.0, # float data type\n"
+                "    'colors': \"['W','U','B','R','G']\" # also C for colorless,\n"
+                "    'mana_cost': '{4}{G}{G}',\n"
+                "    'type_line': 'Creature - Dinosaur',\n"
+                "    'oracle_text': 'Trample',\n"
+                "    'power': '6', # str data type\n"
+                "    'toughness': '6', # str data type\n"
+                "    'produced_mana': \"['W','U','B','R','G']\" # also C for colorless,\n"
+                "    'loyalty': '6', # for planeswalkers\n"
+                "    'defense': '6', # for battles\n"
+                "    'in_game_id': 'n12#3', # 'n' for ned and 'u' for user, number before '#' is serial and number after '#' is copy count\n"
+                "    'counters': {'+1/+1': 0},\n"
+                "    'annotations': {'isTapped': False, 'isFlipped': False, 'isPhasedOut': False, 'isFaceDown': False},\n"
+                "    'faces': {\n"
+                "        'front': {},\n"
+                "        'back': {},\n"
+                "    },\n"
+                "}\n"
+                "```\n"
+        )
+        assert type(basic_game_knowledge) == str
+        basic_game_knowledge = basic_game_knowledge.replace('{', '{{').replace('}', '}}')
+        match gherkin_type:
+            case 'given':
+                request = "Given the full gherkin rule {gherkin_rule} and the current line {gherkin_line}, write a lambda function `lambda context: ...` that returns `bool`. This lambda would mainly check `context.game`."
+            case 'when':
+                request = "Given the full gherkin rule {gherkin_rule} and the current line {gherkin_line}, write a lambda function `lambda context: ...` that returns `bool`. This lambda would mainly check `context.matched_event`, which is `List[Union[str, card, Player]]`."
+            case 'then':
+                request = (
+                    "Given the full gherkin rule {gherkin_rule} and the current line {gherkin_line}, write a lambda function `lambda context: ...` that returns a modified frozen list `context.events`, which is `List[List[Union[str, card, Player]]]`. Here are some example list elements that you can put into the `context.events` list:\n"
+                    "``` python\n"
+                    "['create_copy', card]\n"
+                    "['create_token', {{...}}]\n"
+                    "['create_trigger, controller: Player, trigger_content: str']\n"
+                    "['create_delayed_trigger, controller: Player, trigger_content: str']\n"
+                    "['move', card, from: str, to: str]\n"
+                    "['set_counter', card, counter_type: str, counter_amount: str]\n"
+                    "['set_annotation', card, annotation_key: str, annotation_value: str]\n"
+                    "['set_player_counter', Player, counter_type: str, counter_amount: str]\n"
+                    "['set_player_annotation', Player, annotation_key: str, annotation_value: str]\n"
+                    "['prevent_untap', card]\n"
+                    "['set_mana', Player, mana_color: str, mana_restrictions: Optional[str]]\n"
+                    "['set_hp', Player, amount: int]\n"
+                    "```\n"
+                )
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ('user', basic_game_knowledge),
+                ('user', request),
+            ]
+        )
+        model = self.llm
+        parser = StrOutputParser()
+        chain = prompt | model | parser
+        response = chain.invoke({'gherkin_rule': gherkin_rule, 'gherkin_line': gherkin_line})
+        response = response.split('lambda context:')[-1]
+        response = 'lambda context:' + response
+        response = response.split('```')[0]
+        return response or "lambda x: exec('raise NotImplementedError())'"
+
     def write_gherkin(self, ability: str, detected_keywords: List[str], ability_type: Literal['spell', 'activated', 'triggered', 'static'], gherkin_type: Literal['play', 'resolve']) -> List[str]:
         if ability_type == 'static' and gherkin_type == 'resolve':
             return None
