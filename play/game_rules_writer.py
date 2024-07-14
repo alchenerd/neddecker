@@ -489,7 +489,7 @@ class GameRulesWriter:
             case 'given':
                 request = "Given the full gherkin rule {gherkin_rule} and the current line {gherkin_line}, write a lambda function `lambda context: ...` that returns `bool`. This lambda would mainly check `context.game`."
             case 'when':
-                request = "Given the full gherkin rule {gherkin_rule} and the current line {gherkin_line}, write a lambda function `lambda context: ...` that returns `bool`. This lambda would mainly check `context.matched_event`, which is `List[Union[str, card, Player]]`."
+                request = "Given the full gherkin rule {gherkin_rule} and the current line {gherkin_line}, write a lambda function `lambda context: ...` that returns `bool`. This lambda would mainly check `context.matched_event`, which is `List[Union[str, card, Player]]`. For instance, a matched event could be `['resolve', card]` or `['tap', card]` or `['deal_damage', Player, 3]`."
             case 'then':
                 request = (
                     "Given the full gherkin rule {gherkin_rule} and the current line {gherkin_line}, write a lambda function `lambda context: ...` that returns a modified frozen list `context.events`, which is `List[List[Union[str, card, Player]]]`. Here are some example list elements that you can put into the `context.events` list:\n"

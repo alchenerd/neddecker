@@ -27,26 +27,28 @@ class GameRulesEngine:
         self.abort = False
 
     def _repl(self, data:str) -> None:
-        try:
-            self.input = json.loads(data)
-            self.halt = False
-            self.abort = False
-            while not self.abort and not self.halt:
-                self._read()
-                self._evaluate()
-                self._execute()
-                #print(self.events)
-                if not self.events:
-                    break
+        #try:
+        self.input = json.loads(data)
+        self.halt = False
+        self.abort = False
+        while not self.abort and not self.halt:
+            self._read()
+            self._evaluate()
+            self._execute()
+            #print(self.events)
+            if not self.events:
+                break
                 """
                 print('\n[* end of cycle report *]')
                 print('\n'.join(map(str, self.events)))
                 _ = input('[* end of cycle press any key to continue *]')
                 """
             #print(self.abort, self.halt)
+        """
         except Exception as e:
             self.consumer.send_log(f'Something went wrong: {str(e)}')
             breakpoint()
+        """
 
     def _read(self) -> None:
         """ Translate input into one or more event. """
@@ -399,7 +401,7 @@ class GameRulesEngine:
         gherkin = self.input.get('gherkin')
         if card_name and gherkin:
             card_orm = get_card_orm_by_name(card_name)
-            rule = GherkinRule.objects.get(card=card_orm)
+            rule, created = GherkinRule.objects.get_or_create(card=card_orm, defaults={'card': card_orm, 'gherkin': gherkin})
             rule.gherkin = gherkin
             rule.save()
         cards = self.game.find_cards_by_name(card_name)
