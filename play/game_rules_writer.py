@@ -2,6 +2,7 @@ import requests
 import json
 import re
 from typing import List, Dict, Any, Optional, Literal
+from collections import OrderedDict
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.pydantic_v1 import BaseModel, Field, validator, ValidationError
 from langchain.output_parsers.openai_tools import JsonOutputKeyToolsParser
@@ -16,7 +17,7 @@ from django.db.models import CharField, Value, F
 from dotenv import load_dotenv
 load_dotenv()
 from .rules import Rule
-from .models import GameRule, GherkinRule, get_card_orm_by_name
+from .models import GameRule, GherkinRule, GherkinImpl, get_card_orm_by_name
 
 # Comprehensive Rules
 CR_ABILITY_TYPE_DESCRIPTION = """113.3. There are four general categories of abilities:
@@ -113,16 +114,15 @@ class GameRulesWriter:
         rules = '\n'.join((
                 "Gherkin Writing Rules:\n",
                 "1. \"Given\" statements will check static game data, \"When\" statements will check actions, and \"Then\" statements will describe the effect",
-                "2. Use \"~\" to replace the card\'s name",
-                "3. Use \"Owner\", \"Controller\", \"Opponent\", et cetera to refer to the players involved",
-                "4. All gherkins MUST have a scenario title that uses this format: \"[<Static/Activated/Triggered/Spell/Mana> Ability] - <Related Rule Text>\"; E.G.: `Scenario: [Mana Ability] - Add {{R}}. Spend this mana only to cast creature spells.`",
-                "5. Respond only using the gherkin format that is easy to parse",
-                "6. Do not use any punctuation at the end of each gherkin statement",
-                "7. If you are writing for a triggered ability or an activated ability, DO NOT write gherkin as-is; instead, say something like \'create an <XYZ> ability on the stack that says \"<ability content>\"\'; this way we can allow player to respond to the ability",
-                "8. Triggered ability will have `Then` clause `Then create a triggered ability on the stack that says...`",
-                "8. Delayed triggered ability will have `Then` clause `Then create a delayed triggered ability on the stack that says...`, where the content is the rule text of the created triggered ability",
-                "9. Activated ability will have `Then` clause `Then create an activated ability on the stack that says...`",
-                "10. If you wrote a \"created ability on the stack\" ability, you will need to also write a gherkin rule for resolving that ability on the stack, using scenario title with type `Resolve Ability`; E.G.: `Scenario: [Resolve Ability] - Resolve \"Target player gains 3 life.\"`"
+                "2. All gherkins MUST have a scenario title that uses this format: \"[<Static/Activated/Triggered/Spell/Mana> Ability] - <Related Rule Text>\"; E.G.: `Scenario: [Mana Ability] - Add {{R}}. Spend this mana only to cast creature spells.`",
+                "3. Respond only using the gherkin format that is easy to parse",
+                "4. Do not use any punctuation at the end of each gherkin statement",
+                "5. If you are writing for a triggered ability or an activated ability, DO NOT write gherkin as-is; instead, say something like \'create an <XYZ> ability on the stack that says \"<ability content>\"\'; this way we can allow player to respond to the ability",
+                "6. Triggered ability will have `Then` clause `Then create a triggered ability on the stack that says...`",
+                "7. Delayed triggered ability will have `Then` clause `Then create a delayed triggered ability on the stack that says...`, where the content is the rule text of the created triggered ability",
+                "8. Activated ability will have `Then` clause `Then create an activated ability on the stack that says...`",
+                "9. If you wrote a \"created ability on the stack\" ability, you will need to also write a gherkin rule for resolving that ability on the stack, using scenario title with type `Resolve Ability`; E.G.: `Scenario: [Resolve Ability] - Resolve \"Target player gains 3 life.\"`"
+                "10. Baseline Scenario: The baseline gherkin scenario for a card is as follows\n``` gherkin\nGiven <card_name> is in a zone where a player can interact with\nWhen <player_type> interacts with <card_name>\nThen <what_happens_next, usually replace the event ['interact', card] with one of ['cast', card], ['activate', card], ['play_land', card]>; replace everything inside <> with whatever appropriate\""
         ))
         possible_presets = '\n'.join((
                 "Possible Abilities You May Encounter:\n",
@@ -494,6 +494,7 @@ class GameRulesWriter:
                 request = (
                     "Given the full gherkin rule {gherkin_rule} and the current line {gherkin_line}, write a lambda function `lambda context: ...` that returns a modified frozen list `context.events`, which is `List[List[Union[str, card, Player]]]`. Here are some example list elements that you can put into the `context.events` list:\n"
                     "``` python\n"
+                    "['ask', Player, question: str, answer_key: str] # after the player answers, the answer will be accessible in the future at `card['annotations'][answer_key]`."
                     "['create_copy', card]\n"
                     "['create_token', {{...}}]\n"
                     "['create_trigger, controller: Player, trigger_content: str']\n"
@@ -589,3 +590,17 @@ class GameRulesWriter:
         chain = prompt | model | parser
         response = chain.invoke({})
         return response['trigger_when'], response['trigger_what']
+
+    def create_gherkin_rules_from_gherkin(self, rules: List[str]) -> List[Rule]:
+        print('create_gherkin_rules_from_gherkin')
+        created_rules = []
+        for rule in rules:
+            rule_lines = []
+            for line in rule.split('\n'):
+                if any(line.lower().startswith(x) for x in ('given', 'when', 'then', 'and', 'but')):
+                    implementation = GherkinImpl.objects.get(gherkin_line=line)
+                    rule_lines.append((line, implementation.lambda_code))
+            created_rule = Rule.from_implementations(OrderedDict(rule_lines))
+            created_rules.append(created_rule)
+        print(created_rules)
+        return created_rules

@@ -314,9 +314,11 @@ class GameRulesEngine:
         rules = card.get('rules')
         if not rules:
             self.consumer.send_log(f"Scanning {card['name']}")
-            card['rules'] = self.naya.write_rules(card=card)
+            rules = self.naya.write_rules(card=card)
+            card['rules'] = rules
             self.update_frontend_gherkin(card)
         self.update_game_state()
+        self.naya.create_gherkin_rules_from_gherkin(rules)
         self.events.append(['interact', who, card])
 
     def update_frontend_gherkin(self, card):
