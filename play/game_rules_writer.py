@@ -98,7 +98,8 @@ class MultiWriteRegexResponse(BaseModel):
     regex_list: List[WriteRegexResponse] = Field(description="one or more expressions that can match the ability (and its variants, if any) from the card text")
 
 class GameRulesWriter:
-    llm = ChatOpenAI(model_name='gpt-3.5-turbo', temperature=0, max_tokens=4096)
+    #llm = ChatOpenAI(model_name='gpt-3.5-turbo', temperature=0, max_tokens=4096)
+    llm = ChatOpenAI(model_name='gpt-4o', temperature=0, max_tokens=4096)
     seen = {}
 
     def __init__(self):
@@ -121,8 +122,8 @@ class GameRulesWriter:
                 "6. Triggered ability will have `Then` clause `Then create a triggered ability on the stack that says...`",
                 "7. Delayed triggered ability will have `Then` clause `Then create a delayed triggered ability on the stack that says...`, where the content is the rule text of the created triggered ability",
                 "8. Activated ability will have `Then` clause `Then create an activated ability on the stack that says...`",
-                "9. If you wrote a \"created ability on the stack\" ability, you will need to also write a gherkin rule for resolving that ability on the stack, using scenario title with type `Resolve Ability`; E.G.: `Scenario: [Resolve Ability] - Resolve \"Target player gains 3 life.\"`"
-                "10. Baseline Scenario: The baseline gherkin scenario for a card is as follows\n``` gherkin\nGiven <card_name> is in a zone where a player can interact with\nWhen <player_type> interacts with <card_name>\nThen <what_happens_next, usually replace the event ['interact', card] with one of ['cast', card], ['activate', card], ['play_land', card]>; replace everything inside <> with whatever appropriate\""
+                "9. If you wrote a \"created ability on the stack\" ability, you will need to also write a gherkin rule for resolving that ability on the stack, using scenario title with type `Resolve Ability`; E.G.: if you wrote `Scenario: [Activated ability] - \"Target player gains 3 life\"` that creates an activated ability, then you will need to also write `Scenario: [Resolve Activated Ability] - Resolve \"Target player gains 3 life.\"` to handle what happens when the top of the stack resolves"
+                "10. Baseline Scenario: The baseline gherkin scenario for a card is as follows\n``` gherkin\nGiven <card_name> is in a zone where a player can interact with\nWhen <player_type> interacts with <card_name>\nThen <what_happens_next, usually replace the event ['interact', card] with one of ['cast', card], ['play_land', card]>; replace everything inside <> with whatever appropriate\""
         ))
         possible_presets = '\n'.join((
                 "Possible Abilities You May Encounter:\n",
@@ -599,7 +600,7 @@ class GameRulesWriter:
             for line in rule.split('\n'):
                 if any(line.lower().startswith(x) for x in ('given', 'when', 'then', 'and', 'but')):
                     implementation = GherkinImpl.objects.get(gherkin_line=line)
-                    rule_lines.append((line, implementation.lambda_code))
+                    rule_lines.append((line, eval(compile(implementation.lambda_code, '', 'eval'))))
             created_rule = Rule.from_implementations(OrderedDict(rule_lines))
             created_rules.append(created_rule)
         print(created_rules)

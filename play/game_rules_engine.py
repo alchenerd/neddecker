@@ -25,6 +25,7 @@ class GameRulesEngine:
         self.naya = Naya()
         self.halt = True
         self.abort = False
+        self.seen = {}
 
     def _repl(self, data:str) -> None:
         #try:
@@ -91,9 +92,30 @@ class GameRulesEngine:
         if not hasattr(self, 'game') or not self.game:
             return
 
-        # load rules based on game state
+        def card_is_visible(name) -> bool:
+            """Returns if a card with the same name is in a visible zone from the perspective of the game engine."""
+            for card in self.game.stack:
+                if card.get('name') == name:
+                    return True
+            for player in self.game.players:
+                for zone_name in ('hand', 'battlefield', 'graveyard', 'exile', 'command'):
+                    zone = getattr(player, zone_name)
+                    for card in zone:
+                        if card.get('name') == name:
+                            return True
+                    if player.library:
+                        if player.library[0].get(name) == name:
+                            return True
+            return False
+
+        # load rules based on the game state
         self.rules = []
-        for rule in SYSTEM_RULES:
+        self.seen = {name: rules for name, rules in self.seen.items() if card_is_visible(name)}
+        rules_to_check = []
+        rules_to_check.extend(SYSTEM_RULES)
+        for rules in self.seen.values():
+            rules_to_check.extend(rules)
+        for rule in rules_to_check:
             given_statements = []
             for statement in rule.gherkin:
                 if any(statement.startswith(x) for x in ('When', 'Then')):
@@ -101,7 +123,7 @@ class GameRulesEngine:
                 given_statements.append(statement)
             if all(rule.implementations[s](self) for s in given_statements):
                 self.rules.append(rule)
-                #print('\n'.join(rule.gherkin), '\nis loaded.')
+                print('\n'.join(rule.gherkin), '\nis loaded.')
         assert self.rules
 
     def _evaluate(self):
@@ -318,7 +340,8 @@ class GameRulesEngine:
             card['rules'] = rules
             self.update_frontend_gherkin(card)
         self.update_game_state()
-        self.naya.create_gherkin_rules_from_gherkin(rules)
+        rules = self.naya.create_gherkin_rules_from_gherkin(rules)
+        self.seen[card.get('name')] = rules
         self.events.append(['interact', who, card])
 
     def update_frontend_gherkin(self, card):
@@ -518,6 +541,7 @@ class GameRulesEngine:
             self.consumer.send_log(f"scanning {card['name']}...")
             card['rules'] = self.naya.write_rules(card=card)
             self.update_game_state()
+        self.seen[card.get('name')] = card.get('rules')
         self.events.append(['scan_done'])
         #self.events.append(['_manual_halt']) # FIXME: this is here for debug reasons
 
@@ -767,6 +791,7 @@ class GameRulesEngine:
             self.events = [e for e in self.events if 'sba' not in str(e)]
             self.events.append(['check_sba_done'] if stack else ['check_sba'])
         else:
+            self.events = [e for e in self.events if 'sba' not in str(e)]
             self.events.append(['check_sba_done',])
 
     def untap(self, *args):
@@ -784,7 +809,7 @@ class GameRulesEngine:
         active_player_name = game.whose_turn
         active_player = [p for p in players if p.player_name == active_player_name][0]
         self.events.append(['draw', active_player, 1])
-        self.events.append(['draw_step_tba_pending',])
+        self.events.append(['draw_step_tba_ongoing',])
 
     def precombat_main_phase_tba_saga(self, *args):
         game = self.game

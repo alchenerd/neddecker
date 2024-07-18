@@ -28,7 +28,7 @@ load_dotenv()
 class Ned():
     def __init__(self):
         self.llm = ChatOpenAI(model_name='gpt-3.5-turbo', temperature=0.2, max_tokens=2048)
-        #self.llm = ChatOpenAI(model_name='gpt-4-1106-preview', temperature=0.2, max_tokens=2048)
+        #self.llm = ChatOpenAI(model_name='gpt-4o', temperature=0.2, max_tokens=2048)
         self.memory = ConversationBufferMemory(memory_key="chat_history", input_key='input', return_messages=True)
         self.agent_executor = None
         self.whiteboard = []

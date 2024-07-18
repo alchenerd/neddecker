@@ -952,6 +952,10 @@ SYSTEM_RULE_PRIORITY_CHECK_SBA = [
         lambda context: not any('sba' in e[0] for e in context.events),
     ),
     (
+        'And the game is not giving out priority',
+        lambda context: not any('give_priority' in e[0] for e in context.events),
+    ),
+    (
         'Then call check_sba',
         lambda context: [*context.events, ['check_sba']],
     ),
@@ -1853,8 +1857,8 @@ SYSTEM_RULE_DRAW_STEP_TBA_DRAW_A_CARD = [
 
 def mark_draw_step_tba_as_done(context) -> List[Any]:
     events = [*context.events]
-    matched_event = [e for e in events if e[0] == 'draw_step_tba_pending'][0]
-    matched_event[0] = matched_event[0].replace('_pending', '_done')
+    matched_event = [e for e in events if e[0] == 'draw_step_tba_ongoing'][0]
+    matched_event[0] = matched_event[0].replace('_ongoing', '_done')
     return events
 
 SYSTEM_RULE_DRAW_STEP_TBA_DRAW_A_CARD_HANDLE_PENDING = [
@@ -1864,7 +1868,7 @@ SYSTEM_RULE_DRAW_STEP_TBA_DRAW_A_CARD_HANDLE_PENDING = [
     ),
     (
         'When the game is waiting for the draw step TBA',
-        lambda context: 'draw_step_tba_pending' == context.matched_event[0],
+        lambda context: 'draw_step_tba_ongoing' == context.matched_event[0],
     ),
     (
         'And there is no draw in current events',
