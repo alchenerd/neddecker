@@ -98,8 +98,8 @@ class MultiWriteRegexResponse(BaseModel):
     regex_list: List[WriteRegexResponse] = Field(description="one or more expressions that can match the ability (and its variants, if any) from the card text")
 
 class GameRulesWriter:
-    #llm = ChatOpenAI(model_name='gpt-3.5-turbo', temperature=0, max_tokens=4096)
-    llm = ChatOpenAI(model_name='gpt-4o', temperature=0, max_tokens=4096)
+    llm = ChatOpenAI(model_name='gpt-4o-mini', temperature=0, max_tokens=4096)
+    #llm = ChatOpenAI(model_name='gpt-4o', temperature=0, max_tokens=4096)
     seen = {}
 
     def __init__(self):
@@ -111,7 +111,7 @@ class GameRulesWriter:
     def write_simple_rules(self, card_name, splitted_text):
         print(splitted_text)
         card_representation = "Card name: {card_name}\n\n<oracle>\n{oracle_text}\n</oracle>"
-        instruction = "Given the above oracle text from a Magic: the Gathering card, write its implementation logic in gherkin syntax"
+        instruction = "Given the above oracle text from a Magic: the Gathering card, write its implementation logic in gherkin syntax. The first gherkin rule must be the rule for normal play method, either play as a spell (cast), or play as a land (special action: play land)."
         rules = '\n'.join((
                 "Gherkin Writing Rules:\n",
                 "1. \"Given\" statements will check static game data, \"When\" statements will check actions, and \"Then\" statements will describe the effect",
@@ -127,8 +127,8 @@ class GameRulesWriter:
         ))
         possible_presets = '\n'.join((
                 "Possible Abilities You May Encounter:\n",
-                "1. static ability that allows/disallows the player play the card",
-                    "(...When player receives priority ... Then player may cast...)",
+                "1. the default static ability that describes how the card should be normally played",
+                    "(Given [card location check and card timing check - instant speed or sorcery speed?] ... When the player interacts with the card (which event is `['interact', card]`) ... Then the player may...)",
                 "2. static ability that modifies the characteristics of a card or permanent",
                     "(...When the game checks State-Based Actions ... Then ~ has...)",
                 "3. triggered ability that creates a triggered ability on top of the stack when condition is met",
@@ -422,7 +422,7 @@ class GameRulesWriter:
 
         return chain.invoke({'ability': ability})['abilitity_type']
 
-    def write_lambda(self, gherkin_rule, gherkin_line, gherkin_type) -> str:
+    def write_lambda(self, gherkin_rule, gherkin_line, gherkin_type, exception=None) -> str:
         basic_game_knowledge = (
                 "You may access the game state via `context.game`\n"
                 "`context.game` is a class `Game` defined as below:\n"
@@ -516,6 +516,8 @@ class GameRulesWriter:
                 ('user', request),
             ]
         )
+        if exception:
+            prompt.append(('system', str(exception)))
         model = self.llm
         parser = StrOutputParser()
         chain = prompt | model | parser
@@ -595,12 +597,25 @@ class GameRulesWriter:
     def create_gherkin_rules_from_gherkin(self, rules: List[str]) -> List[Rule]:
         print('create_gherkin_rules_from_gherkin')
         created_rules = []
+        RESERVED = ('given', 'when', 'then', 'and', 'but')
         for rule in rules:
             rule_lines = []
-            for line in rule.split('\n'):
-                if any(line.lower().startswith(x) for x in ('given', 'when', 'then', 'and', 'but')):
-                    implementation = GherkinImpl.objects.get(gherkin_line=line)
-                    rule_lines.append((line, eval(compile(implementation.lambda_code, '', 'eval'))))
+            gherkin_rule_lines = (line for line in rule.split('\n') if any(line.lower().startswith(x) for x in RESERVED))
+            for line in gherkin_rule_lines:
+                implementation = GherkinImpl.objects.get(gherkin_line=line)
+                try:
+                    lambda_code = eval(implementation.lambda_code)
+                except Exception as e:
+                    new_lambda_code = self.write_lambda( \
+                        '\n'.join(gherkin_rule_lines), \
+                        implementation.gherkin_line, \
+                        implementation.gherkin_type, \
+                        exception=e, \
+                    )
+                    implementation.lambda_code = new_lambda_code
+                    implementation.save()
+                    lambda_code = eval(new_lambda_code)
+                rule_lines.append((line, lambda_code))
             created_rule = Rule.from_implementations(OrderedDict(rule_lines))
             created_rules.append(created_rule)
         print(created_rules)

@@ -79,6 +79,8 @@ class MulliganPromptPreset():
             "then Ned Decker should reluctantly keep instead.)\n"
         "\n"
         "7. Final Verdict: keep or mulligan (answer starts with \"Because...\")?\n",
+        "\n",
+        "Answer in a way that the user can infer what was the question that you are answering. Also, take the hand if you have to bottom too many cards!"
     ]
 
     def count_lands(hand):

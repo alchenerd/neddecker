@@ -27,7 +27,7 @@ load_dotenv()
 
 class Ned():
     def __init__(self):
-        self.llm = ChatOpenAI(model_name='gpt-3.5-turbo', temperature=0.2, max_tokens=2048)
+        self.llm = ChatOpenAI(model_name='gpt-4o-mini', temperature=0.2, max_tokens=2048)
         #self.llm = ChatOpenAI(model_name='gpt-4o', temperature=0.2, max_tokens=2048)
         self.memory = ConversationBufferMemory(memory_key="chat_history", input_key='input', return_messages=True)
         self.agent_executor = None
@@ -107,25 +107,26 @@ class Ned():
         if not data['interactable']:
             return 'Pass', {'type': 'pass_priority', 'who': 'ned', 'actions': [], 'grouping': []}
         # the player can see: all battlefields, all graveyards, all exiles, player's hand
-        prompt = ChatPromptTemplate.from_messages(["user", "(Your are Ned Decker. You are playing an online Magic: the Gathering game. You glance at {zone}, and see:\n\n```json\n{data}```\n\nPlease summarize the zone and describe what you see, highlighting what you should pay attention on as a player."])
+        prompt = ChatPromptTemplate.from_messages(["system", "(Your are Ned Decker. You are playing an online Magic: the Gathering game. You glance at {zone}, and see:\n\n```json\n{data}```\n\nPlease briefly summarize the zone and describe what you see, highlighting what you should pay attention on as a player."])
         chain = prompt | self.llm | StrOutputParser()
         opponent = [p for p in data['board_state']['players'] if p['player_name'] != 'ned'][0]
         ned = [p for p in data['board_state']['players'] if p != opponent][0]
         opponent_battlefield_human_readable_string = chain.invoke({'zone': "opponent's battlefield", 'data': opponent['battlefield']})
-        self_battlefield_human_readable_string = chain.invoke({'zone': "your battlefield", 'data': ned['battlefield']})
+        self_battlefield_human_readable_string = chain.invoke({'zone': "ned's battlefield", 'data': ned['battlefield']})
         opponent_graveyard_human_readable_string = chain.invoke({'zone': "opponent's graveyard", 'data': opponent['graveyard']})
-        self_graveyard_human_readable_string = chain.invoke({'zone': "your graveyard", 'data': ned['graveyard']})
+        self_graveyard_human_readable_string = chain.invoke({'zone': "ned's graveyard", 'data': ned['graveyard']})
         opponent_exile_human_readable_string = chain.invoke({'zone': "opponent's exile zone", 'data': opponent['exile']})
-        self_exile_human_readable_string = chain.invoke({'zone': "your exile zone", 'data': ned['exile']})
-        self_hand_human_readable_string = chain.invoke({'zone': "your hand", 'data': ned['hand']})
+        self_exile_human_readable_string = chain.invoke({'zone': "ned's exile zone", 'data': ned['exile']})
+        self_hand_human_readable_string = chain.invoke({'zone': "ned's hand", 'data': ned['hand']})
         interactable = data['interactable']
-        board_state_description = f"Opponent's battlefield:\n{opponent_battlefield_human_readable_string}\n\nYour battlefield:\n {self_battlefield_human_readable_string}\n\nOppponent's graveyard:\n{opponent_graveyard_human_readable_string}\n\nYour graveyard:\n{self_graveyard_human_readable_string}\n\nOpponent's exile zone:\n{opponent_exile_human_readable_string}\n\nYour exile zone:\n{self_exile_human_readable_string}\n\nYour hand:\n{self_hand_human_readable_string}"
-        prompt = ChatPromptTemplate.from_messages(["user", "(Your are Ned Decker. You are playing an online Magic: the Gathering game.\n\n{board_state}\n\nInteractable cards:\n\n{interactable}\n\nPlease answer with one sentence: the name and the in_game_id of the card that you want to interact with, or \"None\" if you want to pass the interaction window without doing anything."])
+        board_state_description = f"Opponent's battlefield:\n{opponent_battlefield_human_readable_string}\n\nNed's battlefield:\n {self_battlefield_human_readable_string}\n\nOppponent's graveyard:\n{opponent_graveyard_human_readable_string}\n\nNed's graveyard:\n{self_graveyard_human_readable_string}\n\nOpponent's exile zone:\n{opponent_exile_human_readable_string}\n\nNed's exile zone:\n{self_exile_human_readable_string}\n\nNed's hand:\n{self_hand_human_readable_string}"
+        prompt = ChatPromptTemplate.from_messages(["system", "(Your are Ned Decker. You are playing an online Magic: the Gathering game.\n\n{board_state}\n\nInteractable cards:\n\n{interactable}\n\nPlease answer with one sentence: the name and the in_game_id of the card that you want to interact with right now at the phase \"{phase}\", or answer \"None\" if you want to pass the priority without doing anything."])
         chain = prompt | self.llm | StrOutputParser()
+        phase = data['phase']
         print(prompt)
         print(board_state_description)
         print(interactable)
-        response = chain.invoke({'board_state': board_state_description, 'interactable': interactable})
+        response = chain.invoke({'board_state': board_state_description, 'interactable': interactable, 'phase': phase})
         print(response)
         game_id_expr = r'\b[a-zA-Z](\d+)\#(\d+)\b'
         result = re.search(game_id_expr, response)
