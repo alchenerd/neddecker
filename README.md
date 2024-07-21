@@ -21,5 +21,8 @@ This prototype will be left alone indefinitely due to time pressure.
 - rely less on LLM when there exists a deterministic solution
 - making a simple game from scratch seems easier than coding an MTG engine
 
+# Warning
+Django `SECRET_KEY` is public. Set your own SECRET_KEY if you want to serve this.
+
 # Fan Content Policy
 Ned Decker is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC.
