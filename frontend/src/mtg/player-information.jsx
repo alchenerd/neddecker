@@ -7,7 +7,6 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import Popover from '@mui/material/Popover';
 import { selectAffectedGameData, receivedNewGameAction } from './../store/slice';
 import store from './../store/store';
-import ZoneButton from './zone-button';
 import PlayerContextMenu from './player-context-menu';
 import InspectDialog from './inspect-dialog';
 import ManaPool from './mana-pool';
@@ -64,6 +63,7 @@ export function PlayerInformation({
   setOpenCreateTriggerDialog,
   setOpenCreateDelayedTriggerDialog,
   setOpenCreateTokenDialog,
+  setTargetIsCopy,
 }) {
   const [ contextMenu, setContextMenu ] = useState(null);
   const [ openInspectSideboardDialog, setOpenInspectSideboardDialog ] = useState(false);
@@ -172,6 +172,7 @@ export function PlayerInformation({
         setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
         setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
         setOpenCreateTokenDialog={setOpenCreateTokenDialog}
+        setTargetIsCopy={setTargetIsCopy}
       />
       <SetHitpointDialog
         open={openSetHitpointDialog}

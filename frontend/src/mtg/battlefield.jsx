@@ -36,6 +36,8 @@ const Battlefield = ({
   combatTargetCard,
   setCombatTargetCard,
   setOpenCreateTokenDialog,
+  setOpenInspectGherkinDialog,
+  setTargetIsCopy,
 }) => {
   const gameData = selectAffectedGameData(store.getState());
   const owner = gameData?.board_state?.players.find((player) => player.player_name === ownerName);
@@ -115,6 +117,7 @@ const Battlefield = ({
     {
       name: "create token", _function: () => {
         setActionTargetCard(null);
+        setTargetIsCopy(false);
         setOpenCreateTokenDialog(true);
       },
     },
@@ -153,6 +156,7 @@ const Battlefield = ({
                 {...{whoIsAskingBlockTarget, setWhoIsAskingBlockTarget}}
                 {...{combatTargetCard, setCombatTargetCard}}
                 setOpenCreateTokenDialog={setOpenCreateTokenDialog}
+                setOpenInspectGherkinDialog={setOpenInspectGherkinDialog}
               />
             )
           })}
@@ -193,6 +197,7 @@ const Battlefield = ({
                   setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
                   setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
                   setOpenCreateTokenDialog={setOpenCreateTokenDialog}
+                  setOpenInspectGherkinDialog={setOpenInspectGherkinDialog}
                 />
               )
             })}
@@ -226,6 +231,7 @@ const Battlefield = ({
                   {...{whoIsAskingAttackTarget, setWhoIsAskingAttackTarget}}
                   {...{combatTargetCard, setCombatTargetCard}}
                   setOpenCreateTokenDialog={setOpenCreateTokenDialog}
+                  setOpenInspectGherkinDialog={setOpenInspectGherkinDialog}
                 />
               )
             })}
@@ -243,6 +249,7 @@ const Battlefield = ({
           setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
           setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
           setOpenCreateTokenDialog={setOpenCreateTokenDialog}
+          setTargetIsCopy={setTargetIsCopy}
         />
         <Box id="graveyardExileBox"
           sx={{
@@ -273,6 +280,7 @@ const Battlefield = ({
             setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
             setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
             setOpenCreateTokenDialog={setOpenCreateTokenDialog}
+            setTargetIsCopy={setTargetIsCopy}
             sx={{
               position: "absolute",
               top: "12px",
@@ -291,6 +299,7 @@ const Battlefield = ({
             setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
             setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
             setOpenCreateTokenDialog={setOpenCreateTokenDialog}
+            setTargetIsCopy={setTargetIsCopy}
             sx={{
               position: "absolute",
               bottom: "12px",

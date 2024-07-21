@@ -1,9 +1,15 @@
 .env
 *.old
-TODO
+TODO*
 *-venv
 __pycache__
 *.json
 *.done
 node_modules
 play/migrations/*
+*.sqlite3
+*.bin
+*.pickle
+scryfall/*
+wotc/*
+rag/*

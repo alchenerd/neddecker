@@ -12,6 +12,7 @@ import { findCardById } from '../mtg/find-card';
 const initialState = {
   gameData: {},
   actions: [],
+  grouping: [],
 };
 
 const shuffle = (array) => {
@@ -51,19 +52,45 @@ export const gameSlice = createSlice({
           return { ...state, actions: [ ...state.actions.slice(0, -1), action.payload ] };
         }
       }
-      return { ...state, actions: [ ...state.actions, { ...action.payload } ] };
+      const actionLength = state.actions.length;
+      const newGroupingRecord = state.grouping.filter(([tag, start, end]) => end < actionLength);
+      return { ...state, actions: [ ...state.actions, { ...action.payload } ], grouping: newGroupingRecord };
     },
     rollbackGameAction: (state) => {
-    const pastActions = state.actions.filter((item, index) => index < state.actions.length - 1);
+      const last = state.actions.length - 1;
+      const groupingRef = state.grouping.find(([tag, start, end]) => last === end);
+      let pastActions = null;
+      let pastGrouping = null;
+      if (groupingRef) {
+        pastActions = state.actions.filter((item, index) => index < groupingRef[1]);
+        pastGrouping = state.grouping.filter((item, index) => index < state.grouping.length - 1);
+      } else {
+        pastActions = state.actions.filter((item, index) => index < state.actions.length - 1);
+        pastGrouping = state.grouping;
+      }
       const previousState = {
         ...state,
         actions: pastActions,
+        grouping: pastGrouping,
       }
       return previousState;
     },
     clearGameAction: (state) => {
       return { ...state, actions: [] };
-    }
+    },
+    appendNewGrouping: (state, action) => {
+      return { ...state, grouping: [ ...state.grouping, [ ...action.payload ] ] };
+    },
+    setGroupTag: (state, action) => {
+      const foundGroupIndex = state.grouping.findIndex(([tag, start, end]) => action.payload.index >= start && action.payload.index <= end);
+      if (foundGroupIndex >= 0) {
+        const newGrouping = cloneDeep(state.grouping);
+        newGrouping[foundGroupIndex][0] = action.payload.tag;
+        return { ...state, grouping: newGrouping };
+      } else {
+        return { ...state };
+      }
+    },
   },
 });
 
@@ -73,10 +100,12 @@ export const {
   receivedNewGameAction,
   rollbackGameAction,
   clearGameAction,
+  appendNewGrouping,
+  setGroupTag,
 } = gameSlice.actions;
 
-const selectGameData = (store) => store.gameState.gameData;
-const selectActions = (store) => store.gameState.actions;
+export const selectGameData = (store) => store.gameState.gameData;
+export const selectActions = (store) => store.gameState.actions;
 
 const calculateAffectedGameData = (gameData, actions) => {
   const affectedGameData = cloneDeep(gameData);
@@ -101,10 +130,9 @@ const calculateAffectedGameData = (gameData, actions) => {
         break;
       case "set_counter":
         {
-          let newCounter = { type: action.counterType, amount: action.counterAmount };
-          let updatedCounters = [ ...found.card.counters.filter((counter) => counter.type !== newCounter.type) ];
-          if (action.counterAmount) {
-            updatedCounters = [...updatedCounters, newCounter];
+          let updatedCounters = { ...found.card.counters, [action.counterType]: action.counterAmount };
+          if (!action.counterAmount) {
+            delete updatedCounters[action.counterType]
           }
           const newZone = [ ..._.get(affectedGameData, found.path, []).filter((card) => card.in_game_id !== found.card.in_game_id), { ...found.card, counters: updatedCounters } ];
           _.set(affectedGameData, found.path, newZone);
@@ -158,11 +186,10 @@ const calculateAffectedGameData = (gameData, actions) => {
         break;
       case "set_player_counter":
         {
-          const newCounter = { type: action.counterType, amount: action.counterAmount };
           const oldPlayerCounters = _.get(affectedGameData, "board_state.players[" + action.targetId + "].counters");
-          let updatedCounters = [ ...oldPlayerCounters.filter((counter) => counter.type !== newCounter.type) ];
-          if (action.counterAmount) {
-            updatedCounters = [...updatedCounters, newCounter];
+          let updatedCounters = { ...oldPlayerCounters, [action.counterType]: action.counterAmount };
+          if (!action.counterAmount) {
+            delete updatedCounters[action.counterType]
           }
           _.set(affectedGameData, "board_state.players[" + action.targetId + "].counters", updatedCounters);
         }
@@ -191,6 +218,42 @@ const calculateAffectedGameData = (gameData, actions) => {
           const battlefield = _.get(affectedGameData, found.path);
           const newBattlefield = battlefield.filter(card => card.in_game_id !== found.card.in_game_id);
           _.set(affectedGameData, found.path, newBattlefield);
+        }
+        break;
+      case "create_copy":
+        {
+          const newZone = [
+            ..._.get(affectedGameData, action.destination),
+            action.card,
+          ];
+          _.set(affectedGameData, action.destination, newZone);
+        }
+        break;
+      case "remove_copy":
+        {
+          const battlefield = _.get(affectedGameData, found.path);
+          const newBattlefield = battlefield.filter(card => card.in_game_id !== found.card.in_game_id);
+          _.set(affectedGameData, found.path, newBattlefield);
+        }
+        break;
+      case "create_delayed_trigger":
+        {
+          const players = _.get(affectedGameData, "board_state.players");
+          const playerId = players.findIndex(player => player.player_name === action.affectingWho);
+          const newDelayedTriggers = [
+            ..._.get(affectedGameData, "board_state.players[" + playerId + "].delayed_triggers"),
+            action,
+          ]
+          _.set(affectedGameData, "board_state.players[" + playerId + "].delayed_triggers", newDelayedTriggers);
+        }
+        break;
+      case "remove_delayed_trigger":
+        {
+          const players = _.get(affectedGameData, "board_state.players");
+          const playerId = players.findIndex(player => player.player_name === action.affectingWho);
+          const delayedTriggers = _.get(affectedGameData, "board_state.players[" + playerId + "].delayed_triggers");
+          const newDelayedTriggers = delayedTriggers.filter(trigger => trigger.targetId !== action.targetId);
+          _.set(affectedGameData, "board_state.players[" + playerId + "].delayed_triggers", newDelayedTriggers);
         }
         break;
     }

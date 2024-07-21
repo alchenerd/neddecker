@@ -19,6 +19,8 @@ export function Board({
   setOpenCreateTriggerDialog,
   setOpenCreateDelayedTriggerDialog,
   setOpenCreateTokenDialog,
+  setOpenInspectGherkinDialog,
+  setTargetIsCopy,
 }) {
   const [ whoIsAskingAttackTarget, setWhoIsAskingAttackTarget ] = useState(null);
   const [ whoIsAskingBlockTarget, setWhoIsAskingBlockTarget ] = useState(null);
@@ -38,6 +40,7 @@ export function Board({
             setOpenAnnotationDialog={setOpenAnnotationDialog}
             setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
             setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
+            setTargetIsCopy={setTargetIsCopy}
           />
         </Grid>
         <Grid item xs={9} sx={{backgroundColor: "Magenta", height: "16vh"}}>
@@ -50,6 +53,8 @@ export function Board({
             setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
             setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
             setOpenCreateTokenDialog={setOpenCreateTokenDialog}
+            setOpenInspectGherkinDialog={setOpenInspectGherkinDialog}
+            setTargetIsCopy={setTargetIsCopy}
           />
         </Grid>
         <Grid item xs={12} sx={{backgroundColor: "Magenta", height: "32vh"}}>
@@ -71,6 +76,8 @@ export function Board({
             {...{whoIsAskingBlockTarget, setWhoIsAskingBlockTarget}}
             {...{combatTargetCard, setCombatTargetCard}}
             setOpenCreateTokenDialog={setOpenCreateTokenDialog}
+            setOpenInspectGherkinDialog={setOpenInspectGherkinDialog}
+            setTargetIsCopy={setTargetIsCopy}
           />
         </Grid>
         <Grid item xs={12} sx={{backgroundColor: "Magenta", height: "4vh",
@@ -96,6 +103,8 @@ export function Board({
             {...{whoIsAskingBlockTarget, setWhoIsAskingBlockTarget}}
             {...{combatTargetCard, setCombatTargetCard}}
             setOpenCreateTokenDialog={setOpenCreateTokenDialog}
+            setOpenInspectGherkinDialog={setOpenInspectGherkinDialog}
+            setTargetIsCopy={setTargetIsCopy}
           />
         </Grid>
         <Grid item xs={3} sx={{backgroundColor: "Magenta", height: "16vh"}} alignSelf="end">
@@ -109,6 +118,7 @@ export function Board({
             setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
             setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
             setOpenCreateTokenDialog={setOpenCreateTokenDialog}
+            setTargetIsCopy={setTargetIsCopy}
           />
         </Grid>
         <Grid item xs={9} sx={{backgroundColor: "Magenta", height: "16vh"}} alignSelf="end">
@@ -121,6 +131,8 @@ export function Board({
             setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
             setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
             setOpenCreateTokenDialog={setOpenCreateTokenDialog}
+            setOpenInspectGherkinDialog={setOpenInspectGherkinDialog}
+            setTargetIsCopy={setTargetIsCopy}
           />
         </Grid>
       </Grid>

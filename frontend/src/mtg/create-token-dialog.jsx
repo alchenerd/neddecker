@@ -18,7 +18,7 @@ import store from './../store/store';
 import { useSelector } from "react-redux";
 
 
-function CreateTokenDialog({ open, setOpen, actionTargetCard }) {
+function CreateTokenDialog({ open, setOpen, actionTargetCard, isCopy }) {
   const [ name, setName ] = useState("Cool Guy");
   const [ colors, setColors ] = useState([]);
   const [ type_line, setTypeLine ] = useState("Legendary Creature - Human");
@@ -35,7 +35,7 @@ function CreateTokenDialog({ open, setOpen, actionTargetCard }) {
       return;
     }
     const newAction = {
-      type: "create_token",
+      type: isCopy ? "create_copy" : "create_token",
       targetId: card.in_game_id,
       card,
       destination,
@@ -72,7 +72,7 @@ function CreateTokenDialog({ open, setOpen, actionTargetCard }) {
     }
     card = {
       ...card,
-      in_game_id: "token#" + uuidv4(),
+      in_game_id: (isCopy ? "copy#" : "token#") + uuidv4(),
     };
     registerCreateTokenAction(card, destination);
   };

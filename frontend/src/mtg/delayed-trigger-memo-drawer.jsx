@@ -10,8 +10,9 @@ import ListItemText from '@mui/material/ListItemText';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import store from './../store/store';
-import { receivedNewGameAction } from './../store/slice';
+import { receivedNewGameAction, selectAffectedGameData, selectActions } from './../store/slice';
 import { useSelector } from 'react-redux';
+import _ from 'lodash';
 
 function PaperComponent(props) {
   return (
@@ -22,9 +23,15 @@ function PaperComponent(props) {
 }
 
 function DelayedTriggerMemoDrawer({open, setOpen}) {
-  const createdDelayedTriggers = useSelector((state) => state.gameState.actions).filter((action) => action.type === "create_delayed_trigger");
-  const removedDelayedTriggers = useSelector((state) => state.gameState.actions).filter((action) => action.type === "remove_delayed_trigger");
-  const shownDelayedTriggers = createdDelayedTriggers.filter(cTrigger => !removedDelayedTriggers.some(rTrigger => rTrigger.targetId === cTrigger.targetId))
+  const affectedGameData = useSelector(selectAffectedGameData);
+  const actions = useSelector(selectActions);
+  const nedIndex = affectedGameData?.board_state?.players.findIndex((player) => player.player_name === 'ned');
+  const existingDelayedTriggersForNed = affectedGameData?.board_state?.players[nedIndex]?.delayed_triggers || [];
+  const userIndex = affectedGameData?.board_state?.players.findIndex((player) => player.player_name === 'user');
+  const existingDelayedTriggersForUser = affectedGameData?.board_state?.players[userIndex]?.delayed_triggers || [];
+  const removedDelayedTriggers = actions.filter((action) => action.type === "remove_delayed_trigger");
+  const delayedTriggersToShow = existingDelayedTriggersForNed.concat(existingDelayedTriggersForUser);
+  const shownDelayedTriggers = delayedTriggersToShow.filter(cTrigger => !removedDelayedTriggers.some(rTrigger => rTrigger.targetId === cTrigger.targetId))
 
   useEffect(() => {
     if (!shownDelayedTriggers.length) {
@@ -36,16 +43,18 @@ function DelayedTriggerMemoDrawer({open, setOpen}) {
     setOpen(false);
   }
   const handleOpen = () => {
+    console.log(existingDelayedTriggersForUser.length);
     setOpen(true);
   }
-  const registerRemoveDelayedTriggerAction = (id) => {
-    if (!id) {
-      console.log("no id")
+  const registerRemoveDelayedTriggerAction = (id, who) => {
+    if (!id || !who) {
+      console.log("no needed parameters");
       return;
     }
     const newAction = {
       type: "remove_delayed_trigger",
       targetId: id,
+      affectingWho: who,
     };
     store.dispatch(receivedNewGameAction(newAction));
     console.log("action sent")
@@ -62,17 +71,17 @@ function DelayedTriggerMemoDrawer({open, setOpen}) {
       >
         <EventNoteIcon />
       </IconButton>
-      <Drawer open={open} onClose={handleClose} anchor="right">
+      <Drawer open={open} onClose={handleClose} anchor="right" PaperProps={{sx: {width: "40%"}, }}>
         <List>
           {
             shownDelayedTriggers.map((trigger) => {
               const handleClickDeleteButton = () => {
                 console.log("clicked!")
-                registerRemoveDelayedTriggerAction(trigger.targetId);
+                registerRemoveDelayedTriggerAction(trigger.targetId, trigger.affectingWho);
               }
               return (
                 <ListItem key={JSON.stringify(trigger)}>
-                  <ListItemText primary={((trigger.targetId.startsWith("u"))? "User's " : "Ned's ") + trigger.targetCardName + " (" + trigger.targetId + ")"} secondary={trigger.triggerWhen + ", " + trigger.triggerContent} />
+                  <ListItemText primary={((trigger.targetId.startsWith("u"))? "User's " : "Ned's ") + trigger.targetCardName + " (" + trigger.targetId + ") affecting " + trigger.affectingWho} secondary={trigger.triggerWhen + ", " + trigger.triggerContent} />
                   <ListItemButton onClick={handleClickDeleteButton}>
                     <ListItemIcon>
                       <DeleteIcon />

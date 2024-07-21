@@ -1,11 +1,15 @@
 import json
+from random import randint
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import WebsocketConsumer
 from .game import Match, Game, Player
+from .game_rules_engine import GameRulesEngine
 import datetime
+from deprecated import deprecated
 
 class PlayConsumer(WebsocketConsumer):
     def connect(self):
+        self.gre = GameRulesEngine(self)
         async_to_sync(self.channel_layer.group_add)(
                 'user',
                 self.channel_name
@@ -17,10 +21,12 @@ class PlayConsumer(WebsocketConsumer):
                 'user',
                 self.channel_name
         )
+        del self.gre
 
     def receive(self, text_data):
-        data = json.loads(text_data)
-        self.multiplexer_handle(data)
+        self.gre._repl(text_data)
+        #data = json.loads(text_data)
+        #self.multiplexer_handle(data)
 
     def multiplexer_handle(self, data):
         msg_type = data['type']
@@ -29,6 +35,10 @@ class PlayConsumer(WebsocketConsumer):
                 self.register_match(data)
             case 'register_player':
                 self.register_player(data)
+            case 'who_goes_first':
+                self.register_who_first(data)
+            case 'ask_reveal_companion':
+                self.register_companion(data)
             case 'mulligan':
                 self.mulligan(data)
             case 'keep_hand':
@@ -40,6 +50,7 @@ class PlayConsumer(WebsocketConsumer):
             case 'resolve_stack':
                 self.handle_resolve_stack(data)
 
+    @deprecated
     def register_match(self, data):
         if hasattr(self, 'mtg_match'):
             payload = {
@@ -51,6 +62,7 @@ class PlayConsumer(WebsocketConsumer):
         self.mtg_match = Match(
                 mtg_format=data['format'],
                 games=data['games'],
+                consumer=self,
         )
         payload = {
                 'type': 'match_initialized',
@@ -58,6 +70,7 @@ class PlayConsumer(WebsocketConsumer):
         }
         self.send(text_data=json.dumps(payload))
 
+    @deprecated
     def register_player(self, data):
         self.mtg_match.game.add_player(data)
         _match = self.mtg_match
@@ -72,16 +85,76 @@ class PlayConsumer(WebsocketConsumer):
         self.send(text_data=json.dumps(payload))
         if len(game.players) == game.max_players:
             game.clear()
-            game.shuffle_players()
             payload = {
                     'type': 'game_start',
                     'game': _match.games_played + 1,
                     'of': _match.max_games,
-                    'who_goes_first': str(game.players[0]),
             }
-            self.send(text_data=json.dumps(payload))
+            self.send(text_data=json.dumps(payload)) # announce start of game
+            self.decide_who_goes_first()
+
+    @deprecated
+    def decide_who_goes_first(self):
+        players = self.mtg_match.game.players
+        who_decides = randint(0, len(players) - 1)
+        payload = {
+            'type': 'who_goes_first',
+            'message': 'You decide if you will go first or not.',
+        }
+        player = players[who_decides]
+        self.send_to_player(player=player, text_data=json.dumps(payload))
+
+    @deprecated
+    def register_who_first(self, data):
+        who_first = data['who']
+        assert who_first
+        players = self.mtg_match.game.players
+        [index] = [ i for i, player in enumerate(players) if player.player_name == who_first ]
+        assert type(index) == int
+        self.mtg_match.game.register_first_player(index)
+        pending = self.handle_companion()
+        if not pending:
+            self.start_mulligan()
+        else:
+            self.mtg_match.game.pending_companion = pending
+
+    @deprecated
+    def handle_companion(self):
+        pending = 0
+        players = self.mtg_match.game.players
+        for player in players:
+            print(player.player_name)
+            for card in player.sideboard:
+                print(card['name'])
+                if 'Companion' in repr(card):
+                    self.ask_reveal_companion(player)
+                    pending += 1
+                    break
+        return pending
+
+    @deprecated
+    def ask_reveal_companion(self, player):
+        payload = {
+            'type': 'ask_reveal_companion',
+            'message': 'You may reveal at most one companion.',
+            'sideboard': player.sideboard,
+        }
+        self.send_to_player(player=player, text_data=json.dumps(payload))
+
+    @deprecated
+    def register_companion(self, data):
+        _id = data['targetId']
+        if not _id:
+            return
+        self.mtg_match.game.set_companion(_id)
+        if hasattr(self.mtg_match.game, 'pending_companion'):
+            self.mtg_match.game.pending_companion -= 1
+            if not self.mtg_match.game.pending_companion:
+                delattr(self.mtg_match.game, 'pending_companion')
+        if not hasattr(self.mtg_match.game, 'pending_companion'):
             self.start_mulligan()
 
+    @deprecated
     def next_mulligan_player(self, i):
         players = self.mtg_match.game.players
         i = (i + 1) % len(players)
@@ -93,6 +166,7 @@ class PlayConsumer(WebsocketConsumer):
                 return None
         return players[i]
 
+    @deprecated
     def start_mulligan(self):
         players = self.mtg_match.game.players
         for player in players:
@@ -103,6 +177,7 @@ class PlayConsumer(WebsocketConsumer):
                 player.hand.append(player.library.pop(0))
         self.mulligan_helper(players[0], 0)
 
+    @deprecated
     def mulligan(self, data):
         players = self.mtg_match.game.players
         next_player = players[0]
@@ -116,6 +191,7 @@ class PlayConsumer(WebsocketConsumer):
         [i] = [(i, p) for i, p in enumerate(players) if p.player_name == next_player.player_name]
         self.mulligan_helper(next_player, i)
 
+    @deprecated
     def mulligan_helper(self, player, i):
         while player.hand:
             player.library.append(player.hand.pop())
@@ -133,14 +209,16 @@ class PlayConsumer(WebsocketConsumer):
         player.to_bottom += 1
         self.send_to_player(player=player, text_data=json.dumps(payload))
 
+    @deprecated
     def player_keep_hand(self, data):
         # print(data)
         players = self.mtg_match.game.players
         [i] = [i for i, p in enumerate(players) if p.player_name == data['who']]
         player = players[i]
-        for card in reversed(data['bottom']):
-            player.hand.remove(card)
-            player.library.append(card)
+        for card_id in reversed(data['bottom']):
+            card_to_bottom, *_ = filter(lambda c: c['in_game_id'] == card_id, player.hand)
+            player.hand.remove(card_to_bottom)
+            player.library.append(card_to_bottom)
         player.mulligan_done = True
         self.send(json.dumps({
                 'type': 'log',
@@ -148,6 +226,7 @@ class PlayConsumer(WebsocketConsumer):
         }))
         self.check_all_mulligan_done(i)
 
+    @deprecated
     def check_all_mulligan_done(self, i):
         players = self.mtg_match.game.players
         if all([ hasattr(player, 'mulligan_done') for player in players ]):
@@ -164,6 +243,7 @@ class PlayConsumer(WebsocketConsumer):
             next_player = self.next_mulligan_player(i)
             self.mulligan_helper(next_player, i)
 
+    @deprecated
     def start_first_turn(self):
         self.mtg_match.game.start()
         player = self.mtg_match.game.whose_priority
@@ -190,14 +270,21 @@ class PlayConsumer(WebsocketConsumer):
 
         # apply the board state to the game we're keeping track of
         board_state = data.get('gameData', {}).get('board_state', {})
-        #print(board_state)
-        self.mtg_match.game.apply_board_state(board_state)
-
-        # TODO: save actions to database to replayability
         actions = data.get('actions', [])
-        for action in actions:
-            #print(action);
-            self.mtg_match.game.apply(action)
+        grouping = data.get('grouping', [])
+        #print(board_state)
+        #print(actions)
+        #print(grouping)
+        self.mtg_match.game.record_actions(actions, grouping)
+        if board_state:
+            self.mtg_match.game.apply_board_state(board_state)
+        else:
+            # TODO: save actions to database for replayability
+            for action in actions:
+                #print(action);
+                if action['type'] == 'pass':
+                    break
+                self.mtg_match.game.apply_action(action)
 
         if len(self.mtg_match.game.priority_waitlist) > 0:
             # if the stack has grown, then refill the priority queue starting with the caster
@@ -206,14 +293,14 @@ class PlayConsumer(WebsocketConsumer):
                 self.mtg_match.game.refill_priority_waitlist(next_player=whose_priority)
                 # assume that the caster has passed priority
                 self.mtg_match.game.priority_waitlist.pop(0)
-            # other players may respond
+            # then, other players may respond
             self.mtg_match.game.whose_priority = self.mtg_match.game.priority_waitlist[0]
             whose_priority = self.mtg_match.game.whose_priority
             player = [p for p in self.mtg_match.game.players if p.player_name == whose_priority][0]
             payload = self.mtg_match.game.get_payload()
             self.send_to_player(player, json.dumps(payload))
         else:
-            # may resolve top of stack or move to next step
+            # may resolve top of stack or move to the next step
             if len(self.mtg_match.game.stack) == 0:
                 self.advance()
             else:
@@ -224,10 +311,14 @@ class PlayConsumer(WebsocketConsumer):
         #print(data)
         board_state = data.get('gameData', {}).get('board_state', {})
         #print(board_state)
-        self.mtg_match.game.apply_board_state(board_state)
-        actions = data.get('actions', [])
-        for action in actions:
-            self.mtg_match.game.apply(action)
+        if board_state:
+            self.mtg_match.game.apply_board_state(board_state)
+        else:
+            actions = data.get('actions', [])
+            for action in actions:
+                if action['type'] == 'pass':
+                    break
+                self.mtg_match.game.apply_action(action)
         self.advance()
 
     def handle_resolve_stack(self, data={}):
@@ -237,7 +328,9 @@ class PlayConsumer(WebsocketConsumer):
         self.mtg_match.game.apply_board_state(board_state)
         actions = data.get('actions', [])
         for action in actions:
-            self.mtg_match.game.apply(action)
+            if action['type'] == 'pass':
+                break
+            self.mtg_match.game.apply_action(action)
         self.mtg_match.game.is_resolving = False
         # refill priority waitlist; active player receives priority
         self.mtg_match.game.refill_priority_waitlist(next_player=self.mtg_match.game.whose_turn)
@@ -279,6 +372,7 @@ class PlayConsumer(WebsocketConsumer):
                 'message': f'{str(to_log)}',
         }))
 
+    @deprecated
     def send_to_player(self, player, text_data):
         assert isinstance(player, Player)
         match player.player_type:

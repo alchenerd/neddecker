@@ -7,6 +7,7 @@ import store from './../store/store';
 const NonlandPermanent = ({
   controller,
   whoIsAskingAttackTarget, setWhoIsAskingAttackTarget,
+  setOpenInspectGherkinDialog,
   ...props
 }) => {
   const gameData = selectAffectedGameData(store.getState());
@@ -15,7 +16,7 @@ const NonlandPermanent = ({
   const canBeAttacked = gameData.phase.includes("declare attackers step") &&
                         gameData.whose_turn !== controller &&
                         controller !== "user" &&
-                        (typeLine.toLowerCase().includes("planeswalker") || typeLine.toLowerCase.includes("battle"));
+                        (typeLine.toLowerCase().includes("planeswalker") || typeLine.toLowerCase().includes("battle"));
 
   const handleClick = (event) => {
     if (event.type !== "click") {
@@ -42,7 +43,7 @@ const NonlandPermanent = ({
 
   return (
     <>
-      <Permanent {...props} onClick={handleClick}/>
+      <Permanent {...props} onClick={handleClick} setOpenInspectGherkinDialog={setOpenInspectGherkinDialog}/>
     </>
   )
 }

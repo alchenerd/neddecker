@@ -88,7 +88,7 @@ export function MulliganDialog({
 
   function handleKeep() {
     setOpen(false);
-    setToBottom(mulliganBottom);
+    setToBottom(mulliganBottom.map((card) => card.in_game_id));
     setRequestKeepHand(true);
     setMulliganBottom([]);
   }

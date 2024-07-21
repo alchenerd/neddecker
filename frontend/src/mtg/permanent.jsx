@@ -1,7 +1,7 @@
 import { Card } from './card';
 import Box from '@mui/material/Box';
 
-function Permanent({id, card, backgroundColor, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, setOpenCreateTriggerDialog, setOpenCreateDelayedTriggerDialog, setOpenCreateTokenDialog, ...props}) {
+function Permanent({id, card, backgroundColor, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, setOpenCreateTriggerDialog, setOpenCreateDelayedTriggerDialog, setOpenCreateTokenDialog, setOpenInspectGherkinDialog, setTargetIsCopy, ...props}) {
   const handleMove = () => {
     setActionTargetCard(card);
     setOpenMoveDialog(true);
@@ -25,7 +25,12 @@ function Permanent({id, card, backgroundColor, setActionTargetCard, setOpenMoveD
   }
   const createTokenCopy = () => {
     setActionTargetCard(card);
+    setTargetIsCopy(true);
     setOpenCreateTokenDialog(true);
+  }
+  const inspectGherkin = () => {
+    setActionTargetCard(card);
+    setOpenInspectGherkinDialog(true);
   }
   const permanentFunctions = [
     {name: "move", _function: handleMove},
@@ -34,7 +39,8 @@ function Permanent({id, card, backgroundColor, setActionTargetCard, setOpenMoveD
     {name: "create trigger", _function: createTrigger},
     {name: "create delayed trigger", _function: createDelayedTrigger},
     {name: "create token copy", _function: createTokenCopy},
-  ];
+    card?.rules? {name: "inspect gherkin", _function: inspectGherkin} : null,
+  ].filter(x => x);
   return (
       <Card
         card={card}

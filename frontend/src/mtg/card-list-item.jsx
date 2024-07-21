@@ -3,7 +3,7 @@ import Box from '@mui/material/Box';
 import CardContextMenu from './card-context-menu';
 import './card-list-item.css';
 
-function CardListItem ({id, card, zoneName, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, setOpenCreateTriggerDialog, setOpenCreateDelayedTriggerDialog, setOpenCreateTokenDialog}) {
+function CardListItem ({id, card, zoneName, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, setOpenCreateTriggerDialog, setOpenCreateDelayedTriggerDialog, setOpenCreateTokenDialog, setTargetIsCopy}) {
   const [contextMenu, setContextMenu] = useState(null);
   const [showString, setShowString] = useState(null);
   const handleContextMenu = (e) => {
@@ -40,6 +40,7 @@ function CardListItem ({id, card, zoneName, setActionTargetCard, setOpenMoveDial
   }
   const createTokenCopy = () => {
     setActionTargetCard(card);
+    setTargetIsCopy(true);
     setOpenCreateTokenDialog(true);
   }
 

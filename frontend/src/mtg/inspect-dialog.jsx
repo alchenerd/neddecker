@@ -5,7 +5,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Button from '@mui/material/Button';
 import CardListItem from './card-list-item';
 
-function InspectDialog({open, setOpen, zoneName, title, content, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, setOpenCreateTriggerDialog, setOpenCreateDelayedTriggerDialog, setOpenCreateTokenDialog}) {
+function InspectDialog({open, setOpen, zoneName, title, content, setActionTargetCard, setOpenMoveDialog, setOpenCounterDialog, setOpenAnnotationDialog, setOpenCreateTriggerDialog, setOpenCreateDelayedTriggerDialog, setOpenCreateTokenDialog, setTargetIsCopy}) {
   const handleClose = () => {setOpen(false);};
   return (
     <Dialog open={open} onClose={handleClose} fullWidth={true} maxWidth="sm" onContextMenu={e => {e.stopPropagation();}}>
@@ -25,6 +25,7 @@ function InspectDialog({open, setOpen, zoneName, title, content, setActionTarget
               setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
               setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
               setOpenCreateTokenDialog={setOpenCreateTokenDialog}
+              setTargetIsCopy={setTargetIsCopy}
             />
           ))
         }

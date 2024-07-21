@@ -1,5 +1,14 @@
 import { useState, useEffect } from 'react';
 import Grid from '@mui/material/Grid';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
+import Button from '@mui/material/Button';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import TextField from '@mui/material/TextField';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 import _ from 'lodash';
 import { cloneDeep } from 'lodash';
@@ -20,6 +29,7 @@ import CreateTriggerDialog from './mtg/create-trigger-dialog';
 import CreateDelayedTriggerDialog from './mtg/create-delayed-trigger-dialog';
 import DelayedTriggerMemoDrawer from './mtg/delayed-trigger-memo-drawer';
 import CreateTokenDialog from './mtg/create-token-dialog';
+import InspectGherkinDialog from './mtg/inspect-gherkin-dialog';
 
 import './play.css';
 
@@ -76,7 +86,13 @@ export default function PlayPage() {
     store.dispatch(initialize());
   }, []);
   const wsUrl = 'ws://localhost:8000/ws/play/';
-  const { sendMessage, lastMessage, readyState } = useWebSocket(wsUrl);
+  const { sendMessage, lastMessage, readyState } = useWebSocket(wsUrl, {share: true});
+  const [ questionData, setQuestionData ] = useState(null);
+  const [ openQuestionDialog, setOpenQuestionDialog ] = useState(false);
+  const [ answer, setAnswer ] = useState('');
+  const [ openAskRevealCompanionDialog, setOpenAskRevealCompanionDialog ] = useState(false);
+  const [ sideboardData, setSideboardData ] = useState([]);
+  const [ companion, setCompanion ] = useState('');
   // For mulligan
   const [ openMulliganDialog, setOpenMulliganDialog ] = useState(false);
   const [ mulliganData, setMulliganData ] = useState({});
@@ -93,8 +109,8 @@ export default function PlayPage() {
   // For communication
   const [ hasPriority, setHasPriority] = useState(false);
   const [ hasPseudopriority, setHasPseudopriority] = useState(false);
-  const [ userIsDone, setUserIsDone] = useState(false);
-  const [ userEndTurn, setUserEndTurn] = useState(false);
+  const [ userIsDone, setUserIsDone] = useState(true);
+  const [ userEndTurn, setUserEndTurn] = useState(true);
   const [ dndMsg, setDndMsg ] = useState({});
   const [ dblClkMsg, setDblClkMsg ] = useState({});
   //const [ actionQueue, setActionQueue ] = useState([]);
@@ -106,11 +122,16 @@ export default function PlayPage() {
   const gameData = useSelector((state) => state.gameState.gameData);
   const affectedGameData = useSelector(selectAffectedGameData);
   const actions = useSelector((state => state.gameState.actions));
+  const grouping = useSelector((state => state.gameState.grouping));
   const [ openCreateTriggerDialog, setOpenCreateTriggerDialog ] = useState(false);
   const [ openCreateDelayedTriggerDialog, setOpenCreateDelayedTriggerDialog ] = useState(false);
   const [ openDelayedTriggerMemoDrawer, setOpenDelayedTriggerMemoDrawer ] = useState(false);
   const [ openCreateTokenDialog, setOpenCreateTokenDialog ] = useState(false);
+  const [ openInspectGherkinDialog, setOpenInspectGherkinDialog ] = useState(false);
   const [ isResolving, setIsResolving ] = useState(false);
+  const [ targetIsCopy, setTargetIsCopy ] = useState(false);
+  const [ inspectCardName, setInspectCardName ] = useState('');
+  const [ inspectGherkin, setInspectGherkin ] = useState([]);
 
   useEffect(() => {
     console.log("Connection state changed");
@@ -132,12 +153,14 @@ export default function PlayPage() {
   function handleReceivePriority(data) {
     store.dispatch(clearGameAction());
     setHasPriority(true);
+    setUserIsDone(false);
     store.dispatch(receivedNewGameData({ newGameData: data }));
   }
 
   function handleRequirePlayerAction(data) {
     store.dispatch(clearGameAction());
     setHasPseudopriority(true);
+    setUserIsDone(false);
     store.dispatch(receivedNewGameData({ newGameData: data }));
   }
 
@@ -145,7 +168,58 @@ export default function PlayPage() {
     store.dispatch(clearGameAction());
     setHasPriority(true);
     setIsResolving(true);
+    setUserIsDone(false);
     store.dispatch(receivedNewGameData({ newGameData: data }));
+  }
+
+  function handleUpdateGherkin(data) {
+    setActionTargetCard(null);
+    console.log(data.card_name, data.gherkin)
+    setInspectCardName(data.card_name);
+    setInspectGherkin(data.gherkin);
+    setOpenInspectGherkinDialog(true);
+  }
+
+  function handleAnswer() {
+    if (!answer) {
+      return;
+    }
+    setOpenQuestionDialog(false)
+    const payload = {
+      ...questionData,
+      type: "answer",
+      answer: answer,
+    }
+    sendMessage(JSON.stringify(payload));
+    setAnswer('');
+  }
+
+  function handleAnswerChange(event) {
+    setAnswer(event.target.value);
+  }
+
+  function handleChangeCompanion(e) {
+    setCompanion(e.target.value);
+  }
+
+  function handleRevealCompanion() {
+    setOpenAskRevealCompanionDialog(false)
+    const payload = {
+      type: "ask_reveal_companion",
+      who: "user",
+      targetId: companion,
+    }
+    sendMessage(JSON.stringify(payload));
+  }
+
+  function handleNoRevealCompanion() {
+    setOpenAskRevealCompanionDialog(false)
+    const payload = {
+      type: "ask_reveal_companion",
+      who: "user",
+      targetId: null,
+    }
+    sendMessage(JSON.stringify(payload));
   }
 
   useEffect(() => {
@@ -178,6 +252,9 @@ export default function PlayPage() {
         case 'log':
           console.log("Message from server:", data.message);
           break;
+        case 'update':
+          store.dispatch(receivedNewGameData({ newGameData: data }));
+          break;
         case 'match_initialized':
           sendMessage(registerPlayerPayload('ned', playData.neds_main, playData.neds_side));
           sendMessage(registerPlayerPayload('user', playData.users_main, playData.users_side));
@@ -186,8 +263,15 @@ export default function PlayPage() {
           console.log(data.message);
           break;
         case 'game_start':
-          console.log("Game", data.game, "of", data.of, "has started.", data.who_goes_first, "goes first.");
+          console.log("Game", data.game, "of", data.of, "has started.");
           break;
+        case 'question':
+          setQuestionData(data);
+          setOpenQuestionDialog(true);
+        case 'ask_reveal_companion':
+          setSideboardData(data.sideboard);
+          setOpenAskRevealCompanionDialog(true);
+          break
         case 'mulligan':
           handleMulliganMessage(data);
           break;
@@ -205,9 +289,22 @@ export default function PlayPage() {
         case 'resolve_stack':
           console.log("resolving", data.board_state.stack.at(-1).name);
           handleResolveStack(data);
+        case 'update_gherkin':
+          console.log("A card's gherkin rule is updated");
+          handleUpdateGherkin(data);
       }
     }
   }, [lastMessage]);
+
+  useEffect(() => {
+    console.log("sideboard data changed")
+    console.log(sideboardData)
+    if (sideboardData && sideboardData.length) {
+      const companions = sideboardData.filter(card => card.oracle_text?.startsWith('Companion'))
+      console.log(companions)
+      setCompanion(companions[0]['in_game_id']);
+    }
+  }, [sideboardData]);
 
   const registerMoveAction = (id, to) => {
     console.log("registermoveaction is called");
@@ -305,6 +402,7 @@ export default function PlayPage() {
       who: "user",
       gameData: affectedGameData,
       actions: actions,
+      grouping: grouping,
     }
     sendMessage(JSON.stringify(payload));
   };
@@ -324,17 +422,14 @@ export default function PlayPage() {
   useEffect(() => {
     if (hasPriority && isResolving && userIsDone) {
       setHasPriority(false);
-      setUserIsDone(false);
       setIsResolving(false);
       sendResolveStack();
     }
     else if (hasPriority && userIsDone) {
       setHasPriority(false);
-      setUserIsDone(false);
       sendPassPriority();
     } else if (hasPseudopriority && userIsDone) {
       setHasPseudopriority(false);
-      setUserIsDone(false);
       sendPassNonPriority();
     }
   }, [hasPriority, hasPseudopriority, userIsDone, isResolving]);
@@ -342,9 +437,11 @@ export default function PlayPage() {
   useEffect(() => {
     if (hasPriority && userEndTurn && gameData.whose_turn === "user") {
       setHasPriority(false);
+      setUserIsDone(true);
       sendPassPriority();
     } else if (hasPseudopriority && userEndTurn && gameData.whose_turn === "user") {
       setHasPseudopriority(false);
+      setUserIsDone(true);
       sendPassNonPriority();
     }
   }, [hasPriority, hasPseudopriority, userEndTurn]);
@@ -398,6 +495,8 @@ export default function PlayPage() {
               setOpenCreateTriggerDialog={setOpenCreateTriggerDialog}
               setOpenCreateDelayedTriggerDialog={setOpenCreateDelayedTriggerDialog}
               setOpenCreateTokenDialog={setOpenCreateTokenDialog}
+              setOpenInspectGherkinDialog={setOpenInspectGherkinDialog}
+              setTargetIsCopy={setTargetIsCopy}
             />
           </Grid>
           <Grid item xs={4} width='100%'>
@@ -414,6 +513,7 @@ export default function PlayPage() {
                 <GameInformation
                   focusedCard={focusedCard}
                   setFocusedCard={setFocusedCard}
+                  userIsDone={userIsDone}
                   setUserIsDone={setUserIsDone}
                   userEndTurn={userEndTurn}
                   setUserEndTurn={setUserEndTurn}
@@ -437,6 +537,35 @@ export default function PlayPage() {
             </Grid>
           </Grid>
         </Grid>
+        <Dialog id="question-dialog"
+          open={openQuestionDialog}
+        >
+          <DialogTitle id="question-dialog-title">
+            {"Question"}
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText id="question-dialog-description">
+              {questionData?.question || null}
+            </DialogContentText>
+            {questionData?.options? (
+              <Select
+                value={answer}
+                onChange={handleAnswerChange}
+                fullWidth={true}
+              >
+                {questionData.options.map((option) => (
+                  <MenuItem key={option} value={option}>{option}</MenuItem>
+                ))}
+              </Select>
+            ) : (
+              <TextField>
+              </TextField>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleAnswer} autoFocus>Submit</Button>
+          </DialogActions>
+        </Dialog>
         <MulliganDialog
           open={openMulliganDialog}
           setOpen={setOpenMulliganDialog}
@@ -480,7 +609,14 @@ export default function PlayPage() {
         />
         <CreateTokenDialog
           open={openCreateTokenDialog} setOpen={setOpenCreateTokenDialog}
+          actionTargetCard={actionTargetCard} isCopy={targetIsCopy}
+        />
+        <InspectGherkinDialog
+          open={openInspectGherkinDialog} setOpen={setOpenInspectGherkinDialog}
           actionTargetCard={actionTargetCard}
+          cardName={inspectCardName}
+          gherkin={inspectGherkin}
+          sendMessage={sendMessage}
         />
       </>
     )

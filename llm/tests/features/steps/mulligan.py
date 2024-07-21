@@ -1,31 +1,26 @@
 from behave import *
+import json
 from langchain_openai import ChatOpenAI
-from langchain.prompts.chat import ChatPromptTemplate, MessagesPlaceholder
-from langchain.prompts import SystemMessagePromptTemplate, HumanMessagePromptTemplate
-from langchain.agents import create_openai_tools_agent
-from langchain.agents import AgentType
-from langchain.agents.agent import AgentExecutor
 from langchain.chains.conversation.memory import ConversationBufferMemory
-from langchain.tools.render import render_text_description
-import re
 
 import os
 import sys
 import inspect
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 llmrootdir = os.path.dirname(currentdir + '/../../../')
-sys.path.insert(0, llmrootdir)
+rootdir = os.path.dirname(currentdir + '/../../../../')
+sys.path.insert(0, rootdir)
 from payload import g_payload
-from prompts.mulligan import MulliganPromptPreset as MPP
-from agents.agent import ChatAndThenSubmitAgentExecutor as CSAgentExecutor
+from llm.prompts.mulligan import MulliganPromptPreset as MPP
+from llm.agents.agent import ChatAndThenSubmitAgentExecutor as CSAgentExecutor
 
 from dotenv import load_dotenv
 load_dotenv()
 
-@given('the AI player is GPT from OpenAI')
+@given('the AI player for mulligan is GPT from OpenAI')
 def step_impl(context):
-    #context.llm = ChatOpenAI(model_name='gpt-3.5-turbo', temperature=0, max_tokens=1024)
-    context.llm = ChatOpenAI(model_name='gpt-4', temperature=0, max_tokens=1024)
+    context.llm = ChatOpenAI(model_name='gpt-3.5-turbo', temperature=0, max_tokens=2048)
+    #context.llm = ChatOpenAI(model_name='gpt-4', temperature=0, max_tokens=2048)
     context.tools = MPP.tools
     context.chat_prompt = MPP.chat_prompt
     context.tools_prompt = MPP.tools_prompt
@@ -623,7 +618,7 @@ def step_impl(context):
 def step_impl(context):
     context.response = context.agent_executor.chatter.invoke({
         'data': "It's a good day for a Magic tournament.",
-        'input': 'Hello, my opponent! High roll?',
+        'input': 'Hello, my opponent! What do you think of this phase?',
     })
 
 @when('the system asks the AI player for mulligan decision (bottoming 0)')
@@ -632,9 +627,11 @@ def step_impl(context):
         return
     to_bottom_count = 0
     land_count = MPP.count_lands(context.hand)
+    land_warning_string = MPP.land_warning_string(land_count)
     hand_analysis = MPP.hand_analysis.format(
-            hand=context.hand,
+            hand=json.dumps(context.hand, indent=4),
             land_count=land_count,
+            land_warning_string=land_warning_string,
             to_bottom_count=to_bottom_count,
             keep_card_count=7-to_bottom_count,
     )
@@ -653,9 +650,11 @@ def step_impl(context):
         return
     to_bottom_count = 2
     land_count = MPP.count_lands(context.hand)
+    land_warning_string = MPP.land_warning_string(land_count)
     hand_analysis = MPP.hand_analysis.format(
-            hand=context.hand,
+            hand=json.dumps(context.hand, indent=4),
             land_count=land_count,
+            land_warning_string=land_warning_string,
             to_bottom_count=to_bottom_count,
             keep_card_count=7-to_bottom_count,
     )
