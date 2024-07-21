@@ -36,6 +36,16 @@ class MulliganPromptPreset():
     ])
 
     requests = [
+        "\n\n"
+        "1. How many cards to bottom, and how many cards to keep?\n"
+        "2. Split your hand into two piles: the cards that will stay in your hand, and the cards that will be put to the bottom of your library. The lists should have ID, name, and impression.\n"
+        "3. Do you want to keep the hand? Why?\n"
+        "4. Order the cards that you would put to the bottom of the library (include card IDs); the last card of the array will be the bottom card of the library. Format is python `List[card_ids]`\n"
+        "5. Final Verdict: Mulligan, or Keep?\n",
+    ]
+
+    """
+    requests = [
         "1. How many mana sources are there in Ned Decker's hand? (only integer)\n"
         "1a. Classify Ned Decker's hand as one of the following: "
         "["
@@ -78,10 +88,11 @@ class MulliganPromptPreset():
         "(If should mulligan but mulligan is not worth having one less card, "
             "then Ned Decker should reluctantly keep instead.)\n"
         "\n"
-        "7. Final Verdict: keep or mulligan (answer starts with \"Because...\")?\n",
-        "\n",
-        "Answer in a way that the user can infer what was the question that you are answering. Also, take the hand if you have to bottom too many cards!"
+        "7. Final Verdict: keep or mulligan (answer starts with \"Because...\")?\n"
+        "\n"
+        "Answer the questions above in a way that the user can infer what was asked.",
     ]
+    """
 
     def count_lands(hand):
         assert hand and hand[0].get('type_line', None)

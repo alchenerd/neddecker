@@ -422,7 +422,7 @@ class GameRulesWriter:
 
         return chain.invoke({'ability': ability})['abilitity_type']
 
-    def write_lambda(self, gherkin_rule, gherkin_line, gherkin_type, exception=None) -> str:
+    def write_lambda(self, gherkin_rule, gherkin_line, gherkin_type, exception=None, **kwargs) -> str:
         basic_game_knowledge = (
                 "You may access the game state via `context.game`\n"
                 "`context.game` is a class `Game` defined as below:\n"
@@ -512,12 +512,13 @@ class GameRulesWriter:
                 )
         prompt = ChatPromptTemplate.from_messages(
             [
-                ('user', basic_game_knowledge),
-                ('user', request),
+                ('system', basic_game_knowledge),
             ]
         )
+        # rewrite: context, rule, statement, exception
         if exception:
             prompt.append(('system', str(exception)))
+        prompt.append(('user', request))
         model = self.llm
         parser = StrOutputParser()
         chain = prompt | model | parser
@@ -620,3 +621,44 @@ class GameRulesWriter:
             created_rules.append(created_rule)
         print(created_rules)
         return created_rules
+
+    def rewrite_lambda(self, context:Any, rule:Rule, statement:str, exception:Exception) -> str:
+        """
+        Have LLM rewrite existing lambda code, given the exception and context.
+        The rewritten lambda code will be saved in GherkinImpl and be returned.
+        """
+        # get the full rule text
+        rule_text = '\n'.join(rule.gherkin)
+        # get the imepelemted GherkinImpl
+        impl = GherkinImpl.objects.get(gherkin_line=statement)
+        # expect bool for given or when; modified events List[Any] for then
+        excepted_return = "modified game engine events: `List[str]`" if impl.gherkin_type == 'then' else "`bool`"
+        # the string that describes the exception
+        e_str = f"\n\nError: An exception has been raised when handling LLM-written python lambda code: {str(exception)}\n\n"
+        # render battlefield, hand, graveyard, exile
+        players = context.game.players
+        prompt = ChatPromptTemplate.from_messages([
+            ('system', 'Expecting output: python lambda function that returns {}'.format(excepted_return)),
+            ('system', e_str),
+            ('user', "Entering recovery mode..."),
+            ('user', "Loading context when the exception happened...\n\n"),
+            ('user', "Pending game engine events: " + str(context.events)),
+            ('user', "Battlefield: " + str({p.player_name: p.battlefield for p in players} + "\n\n")),
+            ('user', "Hand: " + str({p.player_name: p.hand for p in players} + "\n\n")),
+            ('user', "Graveyard: " + str({p.player_name: p.graveyard for p in players} + "\n\n")),
+            ('user', "Exile: " + str({p.player_name: p.exile for p in players} + "\n\n")),
+            ('user', "Fetched gherkin feature file of the bad code: " + rule_text + "\n\n"),
+            ('user', "The bad code to be rewritten: " + impl.lambda_code + "\n\n"),
+            ('user', "Please rewrite the python lambda code. Output python code only, and start with \"lambda context:\""),
+        ])
+        model = self.llm
+        parser = StrOutputParser()
+        chain = prompt | model | parser
+        response = chain.invoke({})
+        response = response.split('lambda context:')[-1]
+        response = 'lambda context:' + response
+        response = response.split('```')[0]
+        if response:
+            impl.lambda_code = response
+            impl.save()
+        return response or "lambda x: exec('raise NotImplementedError())'"

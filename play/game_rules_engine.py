@@ -8,7 +8,7 @@ from functools import wraps
 from .game import Match, Game, Player
 from .rules import Rule, SYSTEM_RULES
 from .game_rules_writer import GameRulesWriter as Naya
-from .models import GherkinRule, get_card_orm_by_name
+from .models import GherkinRule, GherkinImpl, get_card_orm_by_name
 
 class GameRulesEngine:
     def __init__(self, consumer):
@@ -173,7 +173,11 @@ class GameRulesEngine:
             for event, effect in to_apply:
                 #print('applying', effect, 'to', event)
                 self.matched_event = event
-                self.events = effect(self)
+                try:
+                    self.events = effect(self)
+                except Exception as e:
+                    effect = eval(self.naya.rewrite_lambda(self, rule, statement, exception=e))
+                    self.events = effect(self)
         self.changes = []
 
     def generate_changes_by_rules(self):
@@ -197,8 +201,13 @@ class GameRulesEngine:
                     #"""
                     match start:
                         case 'Given' | 'When':
-                            if not f(self):
-                                break
+                            try:
+                                if not f(self):
+                                    break
+                            except Exception as e:
+                                f = eval(self.naya.rewrite_lambda(self, rule, statement, exception=e))
+                                if not f(self):
+                                    break
                         case 'Then':
                             #print('appending ', f)
                             self.changes.append((item, f))
@@ -339,8 +348,14 @@ class GameRulesEngine:
             rules = self.naya.write_rules(card=card)
             card['rules'] = rules
             self.update_frontend_gherkin(card)
-        self.update_game_state()
         rules = self.naya.create_gherkin_rules_from_gherkin(rules)
+        for rule in rules:
+            for line in rule.gherkin:
+                assert type(card) == dict
+                if 'lambdas' not in card:
+                    card['lambdas'] = {}
+                card['lambdas'][line] = GherkinImpl.objects.get(gherkin_line=line).lambda_code
+        self.update_game_state()
         self.seen[card.get('name')] = rules
         self.events.append(['interact', who, card])
 
@@ -432,6 +447,7 @@ class GameRulesEngine:
         cards = self.game.find_cards_by_name(card_name)
         for card in cards:
             card['rules'] = gherkin.split('\n\n')
+            card['lambdas'] = {line: GherkinImpl.objects.get(gherkin_line=line).lambda_code for line in gherkin.split('\n') if any(line.lower().startswith(x) for x in ('given', 'when', 'then', 'but', 'and'))}
         self.update_game_state()
 
     def set_as_companion(self, *args):

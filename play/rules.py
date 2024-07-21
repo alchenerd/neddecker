@@ -362,7 +362,7 @@ SYSTEM_RULE_MULLIGAN_CHECK = [
     ),
 ]
 
-def current_player_could_mulligan(context) -> bool:
+def current_player_would_be_asked_to_take_mulligan(context) -> bool:
     # expecting context.matched_event = ['mulligan_at', player_id]
     if context.matched_event[0] != 'mulligan_at':
         return False
@@ -373,9 +373,9 @@ def current_player_could_mulligan(context) -> bool:
     return context.matched_event[1] < len(players)
 
 def ask_player_mulligan(context) -> List[Any]:
-    ret = [line for line in context.events]
     if 'mulligan_at' != context.matched_event[0]:
-        return ret
+        return context.events
+    ret = [line for line in context.events]
     players = context.game.players
     if context.matched_event[1] >= len(players):
         return ret
@@ -393,11 +393,11 @@ SYSTEM_RULE_MULLIGAN_ASK = [
         lambda context: context.game.phase == 'mulligan phase'
     ),
     (
-        'When a player could take a mulligan',
-        current_player_could_mulligan,
+        'When a player would be asked to take a mulligan',
+        current_player_would_be_asked_to_take_mulligan,
     ),
     (
-        "And the game haven't ask the player",
+        "And the game haven't asked the player",
         lambda context: not any('ask_mulligan' in line for line in context.events)
     ),
     (
@@ -406,7 +406,7 @@ SYSTEM_RULE_MULLIGAN_ASK = [
     ),
 ]
 
-def current_player_has_kept_hand(context) -> bool:
+def current_player_can_decide_mulligan(context) -> bool:
     # expecting context.matched_event = ['mulligan_at', player_id]
     if context.matched_event[0] != 'mulligan_at':
         return False
@@ -421,7 +421,20 @@ def current_player_has_kept_hand(context) -> bool:
         return False
     interested_line = interested_line[0]
     has_keep_hand = interested_line[2]
-    return has_keep_hand
+    if has_keep_hand:
+        return False
+    to_bottom = interested_line[3]
+    if to_bottom >= 7:
+        context.events.append( # ['bottom_cards', player, cards: List[card_id]]
+            [
+                'bottom_cards',
+                interested_line[1],
+                [card['in_game_id'] for card in interested_line[1].hand]
+            ]
+        ) # bottom all cards
+        interested_line[2] = True # always keep a 0 card hand
+        return False
+    return True
 
 def increment_mulligan_at(context) -> List[Any]:
     ret = [line for line in context.events]
@@ -436,12 +449,12 @@ SYSTEM_RULE_MULLIGAN_SKIP = [
         lambda context: context.game.phase == 'mulligan phase'
     ),
     (
-        'When a player could take a mulligan',
-        current_player_could_mulligan,
+        'When a player would be asked to take a mulligan',
+        current_player_would_be_asked_to_take_mulligan,
     ),
     (
-        'And the current player has already kept their hand',
-        current_player_has_kept_hand,
+        'And the current player is unable to decide',
+        lambda context: not current_player_can_decide_mulligan(context),
     ),
     (
         'Then the game increments mulligan_at',
