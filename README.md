@@ -20,3 +20,6 @@ This prototype will be left alone indefinitely due to time pressure.
 - simulate a game using preconstructed decks instead of modern meta decks
 - rely less on LLM when there exists a deterministic solution
 - making a simple game from scratch seems easier than coding an MTG engine
+
+# Fan Content Policy
+Ned Decker is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC.
