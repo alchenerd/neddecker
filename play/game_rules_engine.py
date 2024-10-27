@@ -113,8 +113,9 @@ class GameRulesEngine:
         self.seen = {name: rules for name, rules in self.seen.items() if card_is_visible(name)}
         rules_to_check = []
         rules_to_check.extend(SYSTEM_RULES)
-        for rules in self.seen.values():
-            rules_to_check.extend(rules)
+        # FIXME: Don't load card rules yet for they are dangerous
+        # for rules in self.seen.values():
+            # rules_to_check.extend(rules)
         for rule in rules_to_check:
             given_statements = []
             for statement in rule.gherkin:
@@ -123,7 +124,7 @@ class GameRulesEngine:
                 given_statements.append(statement)
             if all(rule.implementations[s](self) for s in given_statements):
                 self.rules.append(rule)
-                print('\n'.join(rule.gherkin), '\nis loaded.')
+                #print('\n'.join(rule.gherkin), '\nis loaded.')
         assert self.rules
 
     def _evaluate(self):
@@ -357,7 +358,7 @@ class GameRulesEngine:
                 card['lambdas'][line] = GherkinImpl.objects.get(gherkin_line=line).lambda_code
         self.update_game_state()
         self.seen[card.get('name')] = rules
-        self.events.append(['interact', who, card])
+        # self.events.append(['interact', who, card]) # FIXME: Don't put the interaction into events for now
 
     def update_frontend_gherkin(self, card):
         payload = {
@@ -771,6 +772,7 @@ class GameRulesEngine:
         self.question(player, question, eligible_cards)
 
     def check_sba(self, *args):
+        print('Check State Based Action')
         to_check = [
             'sba_check_zero_or_less_life', # CR 704.5a
             'sba_check_draw_from_empty_library', # CR 704.5b

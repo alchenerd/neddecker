@@ -1,6 +1,6 @@
 import json
 from typing import Optional, Sequence, Type
-from langchain.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 from langchain.tools import BaseTool
 
 import os
@@ -19,8 +19,8 @@ class MulliganInput(BaseModel):
     )
 
 class submit_mulligan_decision(BaseTool):
-    name = 'submit_mulligan_descision'
-    description = """Use this tool to submit "mulligan" or "keep"; if "keep" was chosen, Ned Decker has to submit cards to put from his hand to the bottom of his library (e.g. ["n1#1", "n1#2", "n2#1"]); if Ned Decker chose to keep a seven-card hand, the submitted value for "to_bottom" should be "[]"."""
+    name: str = 'submit_mulligan_descision'
+    description: str = """Use this tool to submit "mulligan" or "keep"; if "keep" was chosen, Ned Decker has to submit cards to put from his hand to the bottom of his library (e.g. ["n1#1", "n1#2", "n2#1"]); if Ned Decker chose to keep a seven-card hand, the submitted value for "to_bottom" should be "[]"."""
     args_schema: Type[BaseModel] = MulliganInput
 
     def _run(self, choice: str, **kwargs) -> str:

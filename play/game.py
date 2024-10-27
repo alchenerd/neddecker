@@ -4,7 +4,7 @@ from random import shuffle
 from string import Formatter
 from copy import copy
 from typing import Optional, List, Dict, Union, Literal, Any
-from langchain_core.pydantic_v1 import Field
+from pydantic import Field
 from .models import get_card_by_name_as_dict, get_faces_by_name_as_dict
 from .ned import Ned
 from .iterables import MtgTurnsAndPhases as MTGTNPS

@@ -104,7 +104,8 @@ class Ned():
     def interact_one(self, data):
         """Interact with up to one card based on the board state"""
         #print(data)
-        if not data['interactable']:
+        #if not data['interactable']:
+        if True or not data['interactable']: # FIXME: always pass for debugging
             return 'Pass', {'type': 'pass_priority', 'who': 'ned', 'actions': [], 'grouping': []}
         # the player can see: all battlefields, all graveyards, all exiles, player's hand
         prompt = ChatPromptTemplate.from_messages(["system", "(Your are Ned Decker. You are playing an online Magic: the Gathering game. You glance at {zone}, and see:\n\n```json\n{data}```\n\nPlease briefly summarize the zone and describe what you see, highlighting what you should pay attention on as a player."])

@@ -4,7 +4,7 @@ import re
 from typing import List, Dict, Any, Optional, Literal
 from collections import OrderedDict
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.pydantic_v1 import BaseModel, Field, validator, ValidationError
+from pydantic import BaseModel, Field, validator, ValidationError
 from langchain.output_parsers.openai_tools import JsonOutputKeyToolsParser
 from langchain_core.output_parsers.openai_tools import PydanticToolsParser
 from langchain_core.output_parsers import PydanticOutputParser, StrOutputParser
@@ -93,9 +93,12 @@ class WriteRegexResponse(BaseModel):
     regex_expression: str = Field(description="the regex expression that can match the ability from the card text")
     matches_example: str = Field(description="a mock rules text that the regex expression would match")
 
+
 class MultiWriteRegexResponse(BaseModel):
     """Submits one or more regex responses."""
+
     regex_list: List[WriteRegexResponse] = Field(description="one or more expressions that can match the ability (and its variants, if any) from the card text")
+
 
 class GameRulesWriter:
     llm = ChatOpenAI(model_name='gpt-4o-mini', temperature=0, max_tokens=4096)
@@ -357,9 +360,13 @@ class GameRulesWriter:
             ('user', "Also, keep in mind that there won't be any square brackets in actual card texts (except for the special-case abiliity 'Cleave'.)"),
             ('user', "Example target card text: {example}"),
         ])
+        print(f"create model with {self.llm}")
         model = self.llm.bind_tools([MultiWriteRegexResponse])
+        print("create parser")
         parser = JsonOutputKeyToolsParser(key_name="MultiWriteRegexResponse", first_tool_only=True)
+        print("create chain")
         chain = prompt | model | parser
+        print("get reply")
         reply = chain.invoke({'info': info, 'example': example})
         print('LLM replies:', reply)
         try:
@@ -634,7 +641,7 @@ class GameRulesWriter:
         # expect bool for given or when; modified events List[Any] for then
         excepted_return = "modified game engine events: `List[str]`" if impl.gherkin_type == 'then' else "`bool`"
         # the string that describes the exception
-        e_str = f"\n\nError: An exception has been raised when handling LLM-written python lambda code: {str(exception)}\n\n"
+        e_str = f"\n\nError: An exception has been raised when handling LLM-written python lambda code: {escape_curly_braces(str(exception))}\n\n"
         # render battlefield, hand, graveyard, exile
         players = context.game.players
         prompt = ChatPromptTemplate.from_messages([
@@ -642,13 +649,13 @@ class GameRulesWriter:
             ('system', e_str),
             ('user', "Entering recovery mode..."),
             ('user', "Loading context when the exception happened...\n\n"),
-            ('user', "Pending game engine events: " + str(context.events)),
-            ('user', "Battlefield: " + str({p.player_name: p.battlefield for p in players}) + "\n\n"),
-            ('user', "Hand: " + str({p.player_name: p.hand for p in players}) + "\n\n"),
-            ('user', "Graveyard: " + str({p.player_name: p.graveyard for p in players}) + "\n\n"),
-            ('user', "Exile: " + str({p.player_name: p.exile for p in players}) + "\n\n"),
-            ('user', "Fetched gherkin feature file of the bad code: " + rule_text + "\n\n"),
-            ('user', "The bad code to be rewritten: " + impl.lambda_code + "\n\n"),
+            ('user', "Pending game engine events: " + escape_curly_braces(str(context.events))),
+            ('user', "Battlefield: " + escape_curly_braces(str({p.player_name: p.battlefield for p in players})) + "\n\n"),
+            ('user', "Hand: " + escape_curly_braces(str({p.player_name: p.hand for p in players})) + "\n\n"),
+            ('user', "Graveyard: " + escape_curly_braces(str({p.player_name: p.graveyard for p in players})) + "\n\n"),
+            ('user', "Exile: " + escape_curly_braces(str({p.player_name: p.exile for p in players})) + "\n\n"),
+            ('user', "Fetched gherkin feature file of the bad code: " + escape_curly_braces(rule_text) + "\n\n"),
+            ('user', "The bad code to be rewritten: " + escape_curly_braces(impl.lambda_code) + "\n\n"),
             ('user', "Please rewrite the python lambda code. Output python code only, and start with \"lambda context:\""),
         ])
         model = self.llm
@@ -662,3 +669,6 @@ class GameRulesWriter:
             impl.lambda_code = response
             impl.save()
         return response or "lambda x: exec('raise NotImplementedError())'"
+
+def escape_curly_braces(s: str) -> str:
+    return s.replace('{', '{{').replace('}', '}}')

@@ -1,9 +1,10 @@
 from langchain.chains.conversation.memory import ConversationBufferMemory
-from langchain.agents import create_openai_tools_agent
+#from langchain.agents import create_openai_tools_agent
+from langchain.agents import create_tool_calling_agent
 from langchain.agents.agent import AgentExecutor
 from langchain.chains import LLMChain
 from langchain.prompts.chat import MessagesPlaceholder
-from langchain.pydantic_v1 import ValidationError
+from pydantic import ValidationError
 
 import os
 import sys
@@ -61,7 +62,7 @@ class SubmitAgentExecutor():
         self.memory = memory
         self.verbose = verbose
         self.requests = requests
-        self.agent = create_openai_tools_agent(self.llm, self.tools, self.prompt)
+        self.agent = create_tool_calling_agent(self.llm, self.tools, self.prompt)
         self.chain = AgentExecutor(
                 agent=self.agent,
                 tools=self.tools,

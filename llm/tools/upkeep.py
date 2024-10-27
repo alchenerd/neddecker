@@ -1,5 +1,5 @@
 from typing import Required, Type, Dict, Any
-from langchain.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 from langchain.tools import BaseTool
 
 import os
@@ -12,8 +12,8 @@ import payload
 from .actions import CreateTrigger
 
 class PassUpkeep(BaseTool):
-    name = "pass_upkeep"
-    description = """Pass the upkeep step. If no action is needed according to the TODO list, immediately call this only."""
+    name: str = "pass_upkeep"
+    description: str = """Pass the upkeep step. If no action is needed according to the TODO list, immediately call this only."""
     def _to_args_and_kwargs(self, tool_input):
         return (), {}
     def _run(self):
